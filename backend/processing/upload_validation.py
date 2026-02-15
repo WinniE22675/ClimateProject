@@ -13,9 +13,9 @@ detect upload mode (attribute / time / mixed), and validate compatibility.
 Functions:
 - inspect_file(path) -> dict (variables, dims, coords, time_range, resolution, units)
 - detect_mode(metadata_list) -> ("attribute"|"time"|"mixed", grouping_info, diagnostics)
-- validate_attribute_mode(meta_list) -> (ok, errors)
-- validate_time_mode(meta_list) -> (ok, errors)
-- validate_mixed_mode(meta_list) -> (ok, errors, groups)
+-
+-
+-
 """
 
 COORD_ALIASES = {
@@ -514,68 +514,6 @@ def detect_mode(metas: List[Dict[str, Any]]) -> Tuple[str, Dict[str, Any], List[
     diagnostics.append("Mixed mode detected: Overlapping variables found across files.")
     
     return mode, info, diagnostics
-
-def validate_attribute_mode(metas: List[Dict[str, Any]]) -> Tuple[bool, List[str]]:
-    """
-    Attribute mode validation:
-      - all files must have the SAME time_start/time_end
-      - spatial dims (lat/lon sizes) should match
-    """
-    errors = []
-    # time equality
-    times = [(m.get("time_start"), m.get("time_end")) for m in metas]
-    if len(set(times)) != 1:
-        errors.append("Time ranges across files are not identical. Attribute mode requires identical time dimension.")
-    # spatial sizes
-    lat_sizes = [m["shape"].get("latitude") or m["shape"].get("lat") or None for m in metas]
-    lon_sizes = [m["shape"].get("longitude") or m["shape"].get("lon") or None for m in metas]
-    if len(set(lat_sizes)) != 1 or len(set(lon_sizes)) != 1:
-        errors.append("Spatial dimensions (latitude/longitude sizes) differ across files.")
-    return (len(errors) == 0), errors
-
-def validate_time_mode(metas: List[Dict[str, Any]]) -> Tuple[bool, List[str]]:
-    """
-    Time mode validation:
-      - all files should contain exactly the same variable
-      - spatial dims and resolution should match
-      - units should match (warn if not)
-    """
-    errors = []
-    # same single variable
-    vars_ = [list(m.get("variables", [])) for m in metas]
-    if not all(len(v) == 1 for v in vars_):
-        errors.append("Not all files contain a single variable required for time mode.")
-    else:
-        var_names = [v[0] for v in vars_]
-        if len(set(var_names)) != 1:
-            errors.append("Files do not share the same variable (time mode requires same variable across files).")
-    # spatial dims & resolution
-    res = [m.get("spatial_resolution") for m in metas]
-    if len(set(res)) != 1:
-        errors.append("Spatial resolution differs across files.")
-    # units
-    units = [list(m.get("variable_units", {}).values())[0] if m.get("variable_units") else None for m in metas]
-    if len(set(units)) != 1:
-        errors.append("Variable units differ across files (warning: may need conversion).")
-    return (len(errors) == 0), errors
-
-def validate_mixed_mode(metas: List[Dict[str, Any]]) -> Tuple[bool, List[str], Dict[str, List[int]]]:
-    """
-    Mixed mode: group by variable then validate each group as time-mode.
-    Returns groups (variable -> list of indices).
-    """
-    errors = []
-    groups = {}
-    for idx, m in enumerate(metas):
-        for v in m.get("variables", []):
-            groups.setdefault(v, []).append(idx)
-    # validate each group
-    for v, idxs in groups.items():
-        group_meta = [metas[i] for i in idxs]
-        ok, errs = validate_time_mode(group_meta)
-        if not ok:
-            errors.append({v: errs})
-    return (len(errors) == 0), errors, groups
 
 # (call before Clip)
 def validate_compatibility(metas: List[Dict[str, Any]]) -> Tuple[bool, List[str]]:

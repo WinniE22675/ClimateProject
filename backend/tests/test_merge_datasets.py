@@ -73,7 +73,7 @@ class TestMergeDatasets(unittest.TestCase):
         ds.to_netcdf(path)
         ds.close()
         return path
-    '''
+    
     def test_merge_attribute_mode_success(self):
         """
         Test merging two files with different variables (Spatial Merge).
@@ -499,7 +499,7 @@ class TestMergeDatasets(unittest.TestCase):
             
             if out is not None:
                 out.close()
-    '''                
+                    
     def test_merge_mixed_mode(self):
         """
         Test mixed mode: Multiple variables, each having multiple time files.
@@ -658,7 +658,7 @@ class TestMergeDatasets(unittest.TestCase):
 
         finally:
             ds.close()
-    '''
+    
     def test_error_handling_invalid_file(self):
         """
         Test robustness against missing or invalid files.
@@ -675,6 +675,6 @@ class TestMergeDatasets(unittest.TestCase):
         self.assertIn("Failed to open", errors[0])
         # Check more to make sure the file isn't found
         self.assertIn("No such file or directory", errors[0])
-    '''
+    
 if __name__ == '__main__':
     unittest.main()
