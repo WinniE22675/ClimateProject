@@ -111,6 +111,7 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
   const [spiPrepared, setSpiPrepared] = useState([]);
 
   const safeFormat = (v) => (Number.isFinite(v) ? v.toFixed(2) : "–");
+  
 
   // useEffect(() => {
   //   const apiBase = "http://localhost:8000";
@@ -415,13 +416,14 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
 
       {isSPI ? (
         // <SPIBarChart data={spiMonthlyData} />
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={250}>
           <BarChart data={spiSeries}>
-            <CartesianGrid strokeDasharray="3 3" />
+            {/* <CartesianGrid strokeDasharray="3 3" /> */}
 
-            <XAxis dataKey="date" interval={6} tick={{ fontSize: 11 }} />
+            <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 11 }} />
 
             <YAxis
+              width={70}
               domain={[-3, 3]}
               label={{
                 value: "SPI",
@@ -456,11 +458,12 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
           </BarChart>
         </ResponsiveContainer>
       ) : (
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={250}>
           <LineChart data={mergedData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="year" interval={9} allowDecimals={false} />
             <YAxis
+              width={70}
               label={{ value: unit, angle: -90, position: "insideLeft" }}
             />
             <Tooltip formatter={(value) => value.toFixed(2)} />
@@ -545,13 +548,13 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
               return window.innerWidth < 450 ? short[v - 1] : full[v - 1]; // window.innerWidth is now width if less than 450px use short | v-1 because month start 1 but index start 0
             }}
           />
-          <YAxis label={{ value: unit, angle: -90, position: "insideLeft" }} />
+          <YAxis width={70} tickFormatter={(v) => (isSPI ? v.toFixed(3): v)} label={{ value: unit, angle: -90, position: "insideLeft" }} />
           <Tooltip formatter={(value) => value.toFixed(2)} />
           <ReLegend />
           <Line
             dataKey="value"
             stroke="#0077cc"
-            name={`${baseIndexName} Monthly Climatology (${startDate}-${endDate})`}
+            name={`${baseIndexName} Seasonal Cycle (${startDate}-${endDate})`}
             dot
           />
         </LineChart>

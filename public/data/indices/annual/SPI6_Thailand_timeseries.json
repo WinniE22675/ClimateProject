@@ -2,7 +2,7 @@
   "type": "TimeSeries",
   "metadata": {
     "index": "SPI6",
-    "unit": "1",
+    "unit": "SPI",
     "method": "annual mean",
     "years": [
       1960,

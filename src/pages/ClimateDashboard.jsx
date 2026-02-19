@@ -79,7 +79,7 @@ export default function ClimateDashboard() {
   const [mode, setMode] = useState("actual"); // trend / actual
   // const [datamode, setDataMode] = useState("default"); // default | upload
 
-  const [country, setCountry] = useState("SEA"); //"Thailand"
+  const [country, setCountry] = useState("Thailand"); //"SEA"
   // const [datasetId, setDatasetId] = useState("default"); // default, 1, 2, 3, 4
   const [datasetList, setDatasetList] = useState([]);
   const [activeDataset, setActiveDataset] = useState("default");
@@ -200,10 +200,10 @@ export default function ClimateDashboard() {
     <div className="container-fluid">
       {/* <h2 className="text-xl font-bold whitespace-nowrap">Climate Change</h2> */}
       {/* Controls Container bg-light rounded shadow-sm*/}
-      <div className="d-flex gap-3 p-2">
+      <div className="d-flex align-items-end gap-3 p-2">
         {/* 2. Dataset Selector (รวม Default) */}
         <div>
-          <label className="form-label small fw-bold text-muted">
+          <label className="form-label small fw-bold text-muted ">
             Dataset Source
           </label>
           {/* <select

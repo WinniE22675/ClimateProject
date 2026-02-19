@@ -602,7 +602,7 @@ export default function GridMapViewer({
   return (
     <div>
       {/* mode button */}
-      <div className="flex gap-2 p-2">
+      {/* <div className="flex gap-2 p-2">
         <button
           onClick={() => setMode("actual")}
           className={mode === "actual" ? "bg-blue-500 text-white px-2" : "px-2"}
@@ -612,6 +612,20 @@ export default function GridMapViewer({
         <button
           onClick={() => setMode("trend")}
           className={mode === "trend" ? "bg-blue-500 text-white px-2" : "px-2"}
+        >
+          Trend Map
+        </button>
+      </div> */}
+      <div className="d-flex gap-2 p-2">
+        <button
+          onClick={() => setMode("actual")}
+          className={`btn ${mode === "actual" ? "btn-primary shadow-sm" : "btn-light border"}`}
+        >
+          Actual Map
+        </button>
+        <button
+          onClick={() => setMode("trend")}
+          className={`btn ${mode === "trend" ? "btn-primary shadow-sm" : "btn-light border"}`}
         >
           Trend Map
         </button>
@@ -685,7 +699,7 @@ export default function GridMapViewer({
           // zoom={5}
           center={mapView.center}
           zoom={mapView.zoom}
-          style={{ height: "770px", width: "100%" }}
+          style={{ height: "450px", width: "100%" }}
         >
           <MapViewUpdater center={mapView.center} zoom={mapView.zoom} />
 
