@@ -335,39 +335,50 @@ class TestMergeDatasets(unittest.TestCase):
         Test merging files with a large time gap (e.g., missing year).
         Expectation: Merge success, time coordinate contains the gap, no data invention.
         """
+
+        # Arrange
         # Prepare: File 1 (End of 2023)
         path1 = self.create_dummy_nc("gap_2023.nc", "tmax", "2023-12-31", 1)
         
         # Prepare: File 2 (Start of 2025) -> Skipped entire 2024
         path2 = self.create_dummy_nc("gap_2025.nc", "tmax", "2025-01-01", 1)
         
-        # Act
-        success, result, errors = merge_time_mode([path1, path2])
-        
-        # Assert
-        self.assertTrue(success, f"Merge with gap failed: {errors}")
-        ds = result['dataset']
-        
-        # 1. จำนวนวันต้องรวมกันได้ถูกต้อง (1 วัน + 1 วัน = 2 วัน)
-        self.assertEqual(ds.sizes['time'], 2)
-        
-        # 2. ตรวจสอบค่าเวลาว่ากระโดดจริงไหม
-        times = pd.to_datetime(ds.time.values)
-        
-        # time[0] should be 2023-12-31
-        self.assertEqual(times[0].year, 2023)
-        self.assertEqual(times[0].month, 12)
-        
-        # time[1] should be 2025-01-01
-        self.assertEqual(times[1].year, 2025)
-        self.assertEqual(times[1].month, 1)
-        
-        # เช็คระยะห่าง (Delta) ว่ามากกว่า 1 วัน (365+ วัน)
-        time_diff = times[1] - times[0]
-        self.assertTrue(time_diff.days > 360, f"Gap should be large, but found {time_diff.days} days")
+        ds = None # Init variable for cleanup safety
 
-        # Cleanup
-        ds.close()
+        try:
+            # Act
+            success, result, errors = merge_time_mode([path1, path2])
+            
+            # Assert
+            self.assertTrue(success, f"Merge with gap failed: {errors}")
+            
+            ds = result['dataset']
+            
+            # 1. จำนวนวันต้องรวมกันได้ถูกต้อง 
+            # (1 วันปี 23 + 366 วันปี 24 + 1 วันปี 25 = 368 วัน)
+            self.assertEqual(ds.sizes['time'], 368, f"Expected 368 days, got {ds.sizes['time']}")
+            
+            # 2. ตรวจสอบค่าเวลา
+            times = pd.to_datetime(ds.time.values)
+            
+            # time[0] should be 2023-12-31
+            self.assertEqual(times[0].year, 2023)
+            self.assertEqual(times[0].month, 12)
+            
+            # time[-1] (ตัวสุดท้าย) should be 2025-01-01
+            # หมายเหตุ: index 1 คือวันที่ 2 มกรา (ถ้า gap filled) 
+            # ดังนั้นต้องเช็คตัวสุดท้าย (-1) หรือเช็ค Gap ตรงกลาง
+            self.assertEqual(times[-1].year, 2025)
+            self.assertEqual(times[-1].month, 1)
+            
+            # เช็คระยะห่างระหว่างตัวแรกกับตัวสุดท้าย
+            time_diff = times[-1] - times[0]
+            self.assertTrue(time_diff.days > 360, f"Gap should be large, but found {time_diff.days} days")
+
+        finally:
+            # Cleanup: การันตีการปิดไฟล์เสมอ
+            if ds:
+                ds.close()
 
     def test_merge_time_mode_missing_months(self):
         """
@@ -500,164 +511,197 @@ class TestMergeDatasets(unittest.TestCase):
             if out is not None:
                 out.close()
                     
-    def test_merge_mixed_mode(self):
+    def test_merge_mixed_mode_success(self):
         """
-        Test mixed mode: Multiple variables, each having multiple time files.
+        Test mixed mode (Happy Path): 
+        Multiple variables (tmax, pr), each variable consists of multiple time-split files.
+        Scenario:
+          - tmax: file1 (Jan 1-2), file2 (Jan 3-4) -> Total 4 days
+          - pr:   file1 (Jan 1-2), file2 (Jan 3-4) -> Total 4 days
         """
-        # Prepare Files
-        # Group 1: Temperature (2 files)
-        t1 = self.create_dummy_nc("temp_p1.nc", "tmax", "2023-01-01", 2)
-        t2 = self.create_dummy_nc("temp_p2.nc", "tmax", "2023-01-03", 2)
+        # Arrange
+        # Group 1: Temperature (2 files, continuous time)
+        t1 = self.create_dummy_nc("temp_p1.nc", "tmax", "2023-01-01", 2) # Jan 1, 2
+        t2 = self.create_dummy_nc("temp_p2.nc", "tmax", "2023-01-03", 2) # Jan 3, 4
         
-        # Group 2: Pressure (2 files)
-        p1 = self.create_dummy_nc("precip_p1.nc", "pr", "2023-01-01", 2)
-        p2 = self.create_dummy_nc("precip_p2.nc", "pr", "2023-01-03", 2)
+        # Group 2: Precipitation (2 files, continuous time)
+        p1 = self.create_dummy_nc("precip_p1.nc", "pr", "2023-01-01", 2) # Jan 1, 2
+        p2 = self.create_dummy_nc("precip_p2.nc", "pr", "2023-01-03", 2) # Jan 3, 4
         
         # Setup arguments for mixed mode
-        all_paths = [t1, t2, p1, p2] # Mimics temp_paths list
+        # The 'paths' list usually comes from the uploaded files list
+        all_paths = [t1, t2, p1, p2] 
         
-        # indices mapping to all_paths
+        # Groups: indices mapping to all_paths
         groups = {
-            "tmax": [0, 1],
-            "pr": [2, 3]
+            "tmax": [0, 1], # indices for t1, t2
+            "pr":   [2, 3]  # indices for p1, p2
         }
         
-        metas = [] # Not used in logic but required by signature
+        metas = [] # Not used in logic directly but required by function signature
         
         # Act
-        success, result, errors = merge_mixed_mode(paths=[], groups=groups, metas=metas, temp_paths=all_paths)
+        success, result, errors = merge_mixed_mode(
+            paths=all_paths, 
+            groups=groups, 
+            metas=metas, 
+            temp_paths=all_paths
+        )
         
         # Assert
         self.assertTrue(success, f"Mixed merge failed: {errors}")
+        self.assertIsNotNone(result)
         
-        ds_out = xr.open_dataset(result['path'])
-        self.assertIn("tmax", ds_out.data_vars)
-        self.assertIn("pr", ds_out.data_vars)
-        self.assertEqual(ds_out.sizes['time'], 4) # Should have concatenated time for both vars
-        ds_out.close()
+        # Verify output content
+        with xr.open_dataset(result['path']) as ds_out:
+            # Check variables existence
+            self.assertIn("tmax", ds_out.data_vars)
+            self.assertIn("pr", ds_out.data_vars)
+            
+            # Check dimensions
+            # Should have concatenated time: Jan 1, 2, 3, 4 = 4 days
+            self.assertEqual(ds_out.sizes['time'], 4) 
+            
+            # Verify time values
+            times = ds_out.indexes['time'].astype(str)
+            self.assertEqual(times[0], "2023-01-01")
+            self.assertEqual(times[-1], "2023-01-04")
 
     def test_merge_mixed_mode_global_gap(self):
         """
         [CRITICAL] Test Global Gap Filling in Mixed Mode.
         Scenario:
-            - File 1 (tas): End of 2023 (2023-12-31)
-            - File 2 (pr):  Start of 2025 (2025-01-01)
+            - File 1 (tmax): End of 2023 (2023-12-31)
+            - File 2 (pr):   Start of 2025 (2025-01-01)
             - GAP: Entire year of 2024 is missing.
         Expectation:
             - The merged dataset MUST contain the gap (2024).
-            - Variables in the gap must be NaN.
+            - Variables in the gap must be filled with NaN.
         """
         import xarray as xr
         import numpy as np
         
-        # 1. Prepare Data
-        # tas: 1 day (2023-12-31)
-        path1 = self.create_dummy_nc("mixed_tas_2023.nc", "tmax", "2023-12-31", 1, value_offset=10.0)
+        # ---------------------------------------------------------------------
+        # 1. Arrange
+        # ---------------------------------------------------------------------
+        # tmax: 1 day (2023-12-31)
+        path1 = self.create_dummy_nc("mixed_tmax_2023.nc", "tmax", "2023-12-31", 1, value_offset=10.0)
         # pr: 1 day (2025-01-01)
         path2 = self.create_dummy_nc("mixed_pr_2025.nc", "pr", "2025-01-01", 1, value_offset=20.0)
         
-        # 2. Prepare Arguments for merge_mixed_mode
-        # จำลองสิ่งที่ detect_mode จะส่งมาให้
         paths = [path1, path2]
-        temp_paths = [path1, path2]
+        
+        # Mock metadata (usually comes from detect_mode)
         metas = [
             {"variables": ["tmax"], "time_start": "2023-12-31"},
-            {"variables": ["pr"],  "time_start": "2025-01-01"}
+            {"variables": ["pr"],   "time_start": "2025-01-01"}
         ]
+        
         # Groups: map variable -> index in paths list
         groups = {
-            "tmax": [0], # path1 is tas
-            "pr":  [1]  # path2 is pr
+            "tmax": [0], # path1
+            "pr":   [1]  # path2
         }
 
-        # 3. Execute
-        success, result, errors = merge_mixed_mode(paths, groups, metas, temp_paths)
+        # ---------------------------------------------------------------------
+        # 2. Act
+        # ---------------------------------------------------------------------
+        success, result, errors = merge_mixed_mode(
+            paths=paths, 
+            groups=groups, 
+            metas=metas, 
+            temp_paths=paths
+        )
+
+        # ---------------------------------------------------------------------
+        # 3. Assert
+        # ---------------------------------------------------------------------
         self.assertTrue(success, f"Mixed merge failed: {errors}")
         
-        # 4. Verify Global Gap Filling
-        ds = xr.open_dataset(result['path'])
-        try:
-            # คำนวณจำนวนวันรวม:
-            # 2023: 1 วัน
-            # 2024: 366 วัน (Leap Year) <-- GAP ที่ต้องถูกถม
-            # 2025: 1 วัน
-            # รวม = 368 วัน
+        # Verify Global Gap Filling
+        with xr.open_dataset(result['path']) as ds:
+            # Calculate expected total days:
+            # 2023: 1 day (Dec 31)
+            # 2024: 366 days (Leap Year) <-- The Gap
+            # 2025: 1 day (Jan 01)
+            # Total = 368 days
             self.assertEqual(ds.sizes['time'], 368, 
                              f"Time axis mismatch. Gap filling might be missing. Got {ds.sizes['time']}")
             
-            # ตรวจสอบวันที่ใน Gap (เช่น กลางปี 2024)
-            gap_date = "2024-07-01"
-            self.assertIn(gap_date, ds.time.dt.strftime("%Y-%m-%d"))
+            # Check values in the gap (e.g., mid-year 2024) -> Must be NaN
+            val_tmax = ds.sel(time="2024-07-01")['tmax'].values
+            val_pr   = ds.sel(time="2024-07-01")['pr'].values
             
-            # ค่าต้องเป็น NaN ทั้งคู่
-            val_tas = ds.sel(time=gap_date)['tmax'].values
-            val_pr  = ds.sel(time=gap_date)['pr'].values
-            self.assertTrue(np.isnan(val_tas).all(), "tmax in global gap should be NaN")
+            self.assertTrue(np.isnan(val_tmax).all(), "tmax in global gap should be NaN")
             self.assertTrue(np.isnan(val_pr).all(), "pr in global gap should be NaN")
             
-            # ตรวจสอบค่าจริง (Original Data) ยังอยู่ครบ
-            self.assertFalse(np.isnan(ds.sel(time="2023-12-31")['tmax'].values).any())
-            self.assertFalse(np.isnan(ds.sel(time="2025-01-01")['pr'].values).any())
-
-        finally:
-            ds.close()
+            # Check original data validity (should NOT be NaN)
+            val_tmax_orig = ds.sel(time="2023-12-31")['tmax'].values
+            val_pr_orig   = ds.sel(time="2025-01-01")['pr'].values
+            
+            self.assertFalse(np.isnan(val_tmax_orig).any(), "Original tmax data should remain valid")
+            self.assertFalse(np.isnan(val_pr_orig).any(), "Original pr data should remain valid")
 
     def test_merge_mixed_mode_internal_gap(self):
         """
         Test Mixed Mode with internal gaps inside specific variables.
         Scenario:
-            - File 1 (tas): Jan 1, Jan 3 (Missing Jan 2)
-            - File 2 (pr):  Jan 1, Jan 2, Jan 3 (Complete)
+            - File 1 (tmax): Jan 1, Jan 3 (Missing Jan 2)
+            - File 2 (pr):   Jan 1, Jan 2, Jan 3 (Complete)
         Expectation:
-            - Result has Jan 1, 2, 3.
-            - tas at Jan 2 is NaN (filled by internal merge_time_mode).
+            - Result time axis has Jan 1, 2, 3.
+            - tmax at Jan 2 is NaN (filled by internal merge logic).
             - pr at Jan 2 is Valid (from original file).
         """
         import xarray as xr
         import numpy as np
 
-        # 1. Prepare Data
-        # tas: 3 days, remove Jan 2
-        path1 = self.create_dummy_nc("mixed_tas_gap.nc", "tmax", "2023-01-01", 3, value_offset=10.0)
+        # Arrange
+        # Prepare tmax: Create 3 days, then physically remove Jan 2 to simulate gap
+        path1 = self.create_dummy_nc("mixed_tmax_gap.nc", "tmax", "2023-01-01", 3, value_offset=10.0)
+        
+        # Open, drop Jan 2, and save back
+        ds_to_modify = None
         with xr.open_dataset(path1) as ds_temp:
-            ds1 = ds_temp.drop_sel(time="2023-01-02")
-            ds1.load()
-        ds1.to_netcdf(path1)
-        ds1.close()
-
-        # pr: 3 days (Full)
+            ds_to_modify = ds_temp.drop_sel(time="2023-01-02")
+            ds_to_modify.load() # Load into memory before saving
+        
+        ds_to_modify.to_netcdf(path1) # Overwrite file
+        ds_to_modify.close()
+            
+        # Prepare pr: 3 days continuous (Jan 1, 2, 3)
         path2 = self.create_dummy_nc("mixed_pr_full.nc", "pr", "2023-01-01", 3, value_offset=20.0)
         
-        # 2. Arguments
         paths = [path1, path2]
         groups = {"tmax": [0], "pr": [1]}
-        metas = [{}, {}] # dummy metas
+        metas = [{}, {}] # Dummy metas
 
-        # 3. Execute
-        success, result, errors = merge_mixed_mode(paths, groups, metas, paths)
+        # Act
+        success, result, errors = merge_mixed_mode(
+            paths=paths, 
+            groups=groups, 
+            metas=metas, 
+            temp_paths=paths
+        )
+
+        # Assert
         self.assertTrue(success, f"Merge failed: {errors}")
 
-        # 4. Verify
-        ds = xr.open_dataset(result['path'])
-        try:
-            # ต้องมี 3 วัน
+        with xr.open_dataset(result['path']) as ds:
+            # Must cover the union of all times (Jan 1, 2, 3)
             self.assertEqual(ds.sizes['time'], 3)
-
+            
             target_date = "2023-01-02"
             
             val_tmax = ds.sel(time=target_date)['tmax'].values
             val_pr   = ds.sel(time=target_date)['pr'].values
 
-            # --- CHECK 1: tmax ต้องเป็น NaN (เพราะข้อมูลขาด) ---
-            self.assertTrue(np.isnan(val_tmax).all(), f"tmax at {target_date} should be NaN")
+            # CHECK 1: tmax should be NaN (because it was missing in file 1)
+            self.assertTrue(np.isnan(val_tmax).all(), f"tmax at {target_date} should be NaN due to internal gap")
 
-            # --- CHECK 2: pr ต้องมีค่า (ไม่ใช่ NaN) ---
-            # ไม่ต้องเช็คค่าตัวเลขเป๊ะๆ เพราะ Dummy Data มี Random Noise
-            # แค่เช็คว่ามันมีค่าอยู่จริง ก็ถือว่า Merge ถูกต้องแล้ว
+            # CHECK 2: pr should be valid (because it existed in file 2)
+            # Use ~np.isnan().any() to ensure data is present
             self.assertFalse(np.isnan(val_pr).any(), f"pr at {target_date} should be valid (Not NaN)")
-
-        finally:
-            ds.close()
     
     def test_error_handling_invalid_file(self):
         """

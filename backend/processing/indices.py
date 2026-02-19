@@ -35,19 +35,7 @@ def slice_baseline(
 
     return baseline
 
-
-# def compute_pr_percentiles(ds: xr.Dataset, t_type: None):
-#     pr_base = ds['pr'].sel(time=slice(str(ds.time.dt.year.min().item()),str(ds.time.dt.year.min().item() + 29)))
-#     wet_days = pr_base.where(pr_base >= 1.0)
-    
-#     if t_type == "pr_95" :
-#         out  = percentile_doy(wet_days, per=95, window=5).sel(percentiles=95)
-#     if t_type == "pr_99" : 
-#         out  = percentile_doy(wet_days, per=99, window=5).sel(percentiles=99)
-
-#     return out 
-
-def compute_pr_percentiles(ds: xr.Dataset, baseline=None, per_list=(95,)):
+def compute_pr_percentiles(ds: xr.Dataset, percentile: int, baseline=None):
     """
     Compute precipitation percentiles using a baseline period.
     If baseline is None, fallback to first 30 years.
@@ -61,55 +49,21 @@ def compute_pr_percentiles(ds: xr.Dataset, baseline=None, per_list=(95,)):
 
     wet_days = pr_base.where(pr_base >= 1.0)
 
-    out = {}
-    for p in per_list:
-        out[p] = percentile_doy(wet_days, per=p, window=5).sel(percentiles=p, drop=True)
+    return percentile_doy(wet_days, per=percentile, window=5).sel(percentiles=percentile, drop=True)
 
-    return out
-
-
-
-# def compute_temp_percentiles(ds: xr.Dataset, t_type: None):
-#     tmin_base = ds["tmin"].sel(time=slice(str(ds.time.dt.year.min().item()),str(ds.time.dt.year.min().item() + 29)))
-#     tmax_base = ds["tmax"].sel(time=slice(str(ds.time.dt.year.min().item()),str(ds.time.dt.year.min().item() + 29)))
-
-#     if t_type == "tmin_10":
-#         out = percentile_doy(tmin_base, per=10, window=5).sel(percentiles=10)
-#     if t_type == "tmin_90":
-#         out = percentile_doy(tmin_base, per=90, window=5).sel(percentiles=90)
-#     if t_type == "tmax_10":
-#         out = percentile_doy(tmax_base, per=10, window=5).sel(percentiles=10)
-#     if t_type == "tmax_90":
-#         out = percentile_doy(tmax_base, per=90, window=5).sel(percentiles=90)
-        
-#     return out
-
-def compute_temp_percentiles(ds: xr.Dataset, t_type: str, baseline=None):
+def compute_temp_percentiles(ds: xr.Dataset, var_name: str, percentile: int, baseline=None):
     """
     Compute temperature percentiles using a baseline period.
     """
-    # if baseline and baseline.start_year and baseline.end_year:
-    tmin_base = slice_baseline(
-        ds["tmin"],
+    temp_data = ds[var_name]
+
+    temp_base = slice_baseline(
+        temp_data,
         baseline.start_year if baseline else None,
         baseline.end_year if baseline else None,
     )
-
-    tmax_base = slice_baseline(
-        ds["tmax"],
-        baseline.start_year if baseline else None,
-        baseline.end_year if baseline else None,
-    )
-
-    if t_type == "tmin_10":
-        return percentile_doy(tmin_base, per=10, window=5).sel(percentiles=10, drop=True)
-    if t_type == "tmin_90":
-        return percentile_doy(tmin_base, per=90, window=5).sel(percentiles=90, drop=True)
-    if t_type == "tmax_10":
-        return percentile_doy(tmax_base, per=10, window=5).sel(percentiles=10, drop=True)
-    if t_type == "tmax_90":
-        return percentile_doy(tmax_base, per=90, window=5).sel(percentiles=90, drop=True)
-
+    
+    return percentile_doy(temp_base, per=percentile, window=5).sel(percentiles=percentile, drop=True)
 
 # ==================== Precipitation Indices ====================
 def sdii(ds: xr.Dataset, freq="YS"):
@@ -131,20 +85,20 @@ def prcptot(ds: xr.Dataset, freq="YS"):
     return xc.indicators.icclim.PRCPTOT(pr=ds["pr"], freq=freq)
 
 def r95p(ds: xr.Dataset, freq="YS", baseline=None):
-    pr_per = compute_pr_percentiles(ds, baseline=baseline, per_list=(95,))[95]
-    return xc.indicators.icclim.R95p(pr=ds["pr"], pr_per=pr_per, freq=freq)
+    pr_95 = compute_pr_percentiles(ds, percentile=95, baseline=baseline)
+    return xc.indicators.icclim.R95p(pr=ds["pr"], pr_per=pr_95, freq=freq)
 
 def r99p(ds: xr.Dataset, freq="YS", baseline=None):
-    pr_per = compute_pr_percentiles(ds, baseline=baseline, per_list=(99,))[99]
-    return xc.indicators.icclim.R99p(pr=ds["pr"], pr_per=pr_per, freq=freq)
+    pr_99 = compute_pr_percentiles(ds, percentile=99, baseline=baseline)
+    return xc.indicators.icclim.R99p(pr=ds["pr"], pr_per=pr_99, freq=freq)
 
 def r95ptot(ds: xr.Dataset, freq="YS", baseline=None):
-    pr_per = compute_pr_percentiles(ds, baseline=baseline, per_list=(95,))[95]
-    return xc.indicators.icclim.R95pTOT(pr=ds["pr"], pr_per=pr_per, freq=freq)
+    pr_95 = compute_pr_percentiles(ds, percentile=95, baseline=baseline)
+    return xc.indicators.icclim.R95pTOT(pr=ds["pr"], pr_per=pr_95, freq=freq)
 
 def r99ptot(ds: xr.Dataset, freq="YS", baseline=None):
-    pr_per = compute_pr_percentiles(ds, baseline=baseline, per_list=(99,))[99]
-    return xc.indicators.icclim.R99pTOT(pr=ds["pr"], pr_per=pr_per, freq=freq)
+    pr_99 = compute_pr_percentiles(ds, percentile=99, baseline=baseline)
+    return xc.indicators.icclim.R99pTOT(pr=ds["pr"], pr_per=pr_99, freq=freq)
 
 # ==================== Temperature Indices ====================
 def txx(ds: xr.Dataset, freq="YS"):
@@ -184,28 +138,28 @@ def cwd(ds: xr.Dataset, freq="YS"):
     return xc.indicators.icclim.CWD(pr=ds["pr"], freq=freq)
 
 def wsdi(ds: xr.Dataset, freq="YS", baseline=None):
-    tmax_90 = compute_temp_percentiles(ds, t_type="tmax_90", baseline=baseline)
+    tmax_90 = compute_temp_percentiles(ds, var_name="tmax", percentile=90, baseline=baseline)
     return xc.indicators.icclim.WSDI(tasmax=ds["tmax"], tasmax_per=tmax_90, freq=freq)
 
 def csdi(ds: xr.Dataset, freq="YS", baseline=None):
-    tmin_10 = compute_temp_percentiles(ds, t_type="tmin_10", baseline=baseline)
+    tmin_10 = compute_temp_percentiles(ds, var_name="tmin", percentile=10, baseline=baseline)
     return xc.indicators.icclim.CSDI(tasmin=ds["tmin"], tasmax_per=tmin_10, freq=freq)
 
 def tn10p(ds: xr.Dataset, freq="YS", baseline=None):
-    tmin_10 = compute_temp_percentiles(ds, t_type="tmin_10", baseline=baseline)
+    tmin_10 = compute_temp_percentiles(ds, var_name="tmin", percentile=10, baseline=baseline)
     return xc.indicators.icclim.TN10p(tasmin=ds["tmin"], tasmin_per=tmin_10, freq=freq)
 
 def tx10p(ds: xr.Dataset, freq="YS", baseline=None):
-    tmax_10 = compute_temp_percentiles(ds, t_type="tmax_10", baseline=baseline)
+    tmax_10 = compute_temp_percentiles(ds, var_name="tmax", percentile=10, baseline=baseline)
     return xc.indicators.icclim.TX10p(tasmax=ds["tmax"], tasmax_per=tmax_10, freq=freq)
 
 def tn90p(ds: xr.Dataset, freq="YS", baseline=None):
-    per = compute_temp_percentiles(ds, t_type="tmin_90", baseline=baseline)
-    return xc.indicators.icclim.TN90p(tasmin=ds["tmin"], tasmin_per=per, freq=freq)
+    tmin_90 = compute_temp_percentiles(ds, var_name="tmin", percentile=90, baseline=baseline)
+    return xc.indicators.icclim.TN90p(tasmin=ds["tmin"], tasmin_per=tmin_90, freq=freq)
 
 def tx90p(ds: xr.Dataset, freq="YS", baseline=None):
-    per = compute_temp_percentiles(ds, t_type="tmax_90", baseline=baseline)
-    return xc.indicators.icclim.TX90p(tasmax=ds["tmax"], tasmax_per=per, freq=freq)
+    tmax_90 = compute_temp_percentiles(ds, var_name="tmax", percentile=90, baseline=baseline)
+    return xc.indicators.icclim.TX90p(tasmax=ds["tmax"], tasmax_per=tmax_90, freq=freq)
 
 # ========================= SPI CALCULATION =========================
 def spi(ds: xr.Dataset, window: int, freq="MS"):
@@ -214,7 +168,7 @@ def spi(ds: xr.Dataset, window: int, freq="MS"):
     )
 
 # ========================= Event characteristic per time series =========================
-def event_characteristics(spi_ts, threshold=-1.0, event_type="drought"):
+def event_characteristics(spi_ts, threshold=-1.0, event_type="drought", min_duration=2):
     values = np.asarray(spi_ts)
     n = len(values)
     if np.all(np.isnan(values)):
@@ -241,6 +195,8 @@ def event_characteristics(spi_ts, threshold=-1.0, event_type="drought"):
             in_event = False
     if in_event:
         events.append((start, n - 1))
+
+    events = [e for e in events if (e[1] - e[0] + 1) >= min_duration]
 
     durations, peaks, severities = [], [], []
     for (s, e) in events:
@@ -288,84 +244,6 @@ def calc_event_maps(spi: xr.DataArray, threshold=-1.0, event_type="drought"):
 
     return out
 
-# ==================== Registry ====================
-# INDICES_REGISTRY = {
-    # "SDII": sdii,
-    # "Rx1day": rx1day,
-    # "Rx5day": rx5day,
-    # "R10mm": r10mm,
-    # "R20mm": r20mm,
-    # "PRCPTOT": prcptot,
-    # "TXx": txx,
-    # "TNx": tnx,
-    # "TXn": txn,
-    # "TNn": tnn,
-    # "DTR": dtr,
-    # "ETR": etr,
-    # "FD": fd,
-    # "SU": su,
-    # "ID": id,
-    # "TR": tr,
-    # "CDD": cdd,
-    # "CWD": cwd,
-    # "WSDI": wsdi,
-    # "CSDI": csdi,
-    # "R95p": r95p,
-    # "R99p": r99p,
-    # "R95pTOT": r95ptot,
-    # "R99pTOT": r99ptot,
-    # "TN10p": tn10p,
-    # "TX10p": tx10p,
-    # "TN90p": tn90p,
-    # "TX90p": tx90p,
-# }
-
-def calculate_spi_group(ds, window: int) -> dict:
-    """
-    Calculate SPI only window (3,6,9,12)
-    """
-    base_spi = f"SPI{window}"
-    spi_data = spi(ds=ds, window=window, freq="MS")
-
-    return {base_spi: spi_data}
-
-
-def spi_event_factory(window, event_type, threshold, metric):
-    """
-    create event metrics for window, event_type, metric
-    only user call
-    """
-    def compute(ds, freq):
-        # calulate SPI
-        spi_data = spi(ds=ds, window=window, freq="MS")
-
-        # calulate event map
-        maps = calc_event_maps(spi_data, threshold, event_type.lower())
-
-        return maps[metric]
-
-    return compute
-
-def build_spi_event_indices(selected_indices):
-    """
-    check user select SPI window ? (like SPI3)
-    creat event indices only that window 
-    """
-    event_indices = {}
-
-    spi_windows = []
-    for idx in selected_indices:
-        if idx.startswith("SPI") and idx[3:].isdigit():
-            spi_windows.append(int(idx[3:]))
-
-    for window in spi_windows:
-        for event_type, threshold in [("Drought", -1.0), ("Flood", 1.0)]:
-            for metric in ["Frequency", "Duration", "Peak", "Severity"]:
-                name = f"SPI{window}_{event_type}_{metric}"
-                event_indices[name] = spi_event_factory(window, event_type, threshold, metric)
-
-    return event_indices
-
 PR_INDICES = {
     "SDII": sdii,
     "Rx1day": rx1day,
@@ -400,10 +278,10 @@ TMIN_INDICES = {
 }
 
 SPI_INDICES = {
-    "SPI3": lambda ds, freq: calculate_spi_group(ds, 3)["SPI3"],
-    "SPI6": lambda ds, freq: calculate_spi_group(ds, 6)["SPI6"],
-    "SPI9": lambda ds, freq: calculate_spi_group(ds, 9)["SPI9"],
-    "SPI12": lambda ds, freq: calculate_spi_group(ds, 12)["SPI12"],
+    "SPI3": lambda ds, freq: spi(ds=ds, window=3, freq="MS"),
+    "SPI6": lambda ds, freq: spi(ds=ds, window=6, freq="MS"),
+    "SPI9": lambda ds, freq: spi(ds=ds, window=9, freq="MS"),
+    "SPI12": lambda ds, freq: spi(ds=ds, window=12, freq="MS"),
 }
 
 BASELINE_REQUIRED_INDICES = {
@@ -424,8 +302,9 @@ BASELINE_REQUIRED_INDICES = {
     "CSDI",
 }
 
-def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, baseline=None) -> xr.Dataset:
+SPI_WINDOWS = [3, 6, 9, 12] 
 
+def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, baseline=None) -> xr.Dataset:
     print(f"Calculating Indices")
 
     results = {}
@@ -434,27 +313,30 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
         **PR_INDICES,
         **TMAX_INDICES,
         **TMIN_INDICES,
-        **SPI_INDICES,
     }
 
-    if selected_indices is not None:
-        spi_event_registry = build_spi_event_indices(selected_indices)
-        active_registry.update(spi_event_registry)
+    requested_spi_windows = set()
+    if selected_indices is None:
+        requested_spi_windows = set(SPI_WINDOWS)
+    else:
+        for idx in selected_indices:
+            if idx.startswith("SPI") and idx[3:].isdigit():
+                # Extract window e.g., "SPI3" -> 3, "SPI3_Drought_..." -> 3
+                try:
+                    window_str = "".join(filter(str.isdigit, idx.split("_")[0]))
+                    if window_str:
+                        requested_spi_windows.add(int(window_str))
+                except ValueError:
+                    continue
 
+    # 3. Calculate General Indices (Non-SPI)
     for name, func in active_registry.items():
-
         if selected_indices is not None:
             if name not in selected_indices:
                 continue
             
         print(f"Calculating {name} ...")
-            
-        # try:
-        #     results[name] = func(ds, freq=freq)
-        # except Exception as e:
-        #     print(f"Error calculating {name}: {e}")
         try:
-            # results[name] = func(ds, freq=freq)
             if name in BASELINE_REQUIRED_INDICES:
                 results[name] = func(ds, freq=freq, baseline=baseline)
             else:
@@ -464,5 +346,41 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
         except Exception as e:
             print(f"Error calculating {name}: {e}")
             raise ValueError(f"Failed calculating {name}: {e}")
-    
+
+    # 4. Calculate SPI and related Event Indices (Optimized Block)
+    for window in requested_spi_windows:
+        if window not in SPI_WINDOWS:
+            continue
+
+        base_name = f"SPI{window}"
+        print(f"Calculating {base_name} and events ...")
+
+        try:
+            # Step 4.1: Calculate SPI ONCE
+            # Ensure freq matches your SPI requirements (e.g., "MS")
+            spi_data = spi(ds=ds, window=window, freq="MS")
+            
+            if selected_indices is None or base_name in selected_indices:
+                 results[base_name] = spi_data
+
+            # Step 4.2: Calculate Event Maps using the SAME spi_data
+            # Define event configurations
+            event_configs = [("Drought", -1.0), ("Flood", 1.0)]
+            metrics = ["Frequency", "Duration", "Peak", "Severity"]
+
+            for event_type, threshold in event_configs:
+                # Calculate maps once per event type
+                maps = calc_event_maps(spi_data, threshold=threshold, event_type=event_type.lower())
+
+                for metric in metrics:
+                    # Construct key: e.g., "SPI3_Drought_Frequency"
+                    full_key = f"{base_name}_{event_type}_{metric}"
+                    
+                    if selected_indices is None or base_name in selected_indices:
+                        results[full_key] = maps[metric]
+
+        except Exception as e:
+            print(f"Error calculating SPI{window} group: {e}")
+            raise ValueError(f"Failed calculating SPI{window} group: {e}")
+
     return xr.Dataset(results)

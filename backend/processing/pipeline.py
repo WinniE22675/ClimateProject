@@ -177,8 +177,8 @@ SEA_COUNTRIES = [
 #         print(f"Overlay applied to {input_path}")
 #     except Exception as e:
 #         print(f"Failed overlay for {input_path}: {e}")
-
-def clear_upload_folder(file_path=r"D:\Students\YearFour\Project\ClimateRiskMap\ClimReact\my-app\backend\uploads\merged"):
+# def clear_upload_folder(file_path=r"D:\Students\YearFour\Project\ClimateRiskMap\ClimReact\my-app\backend\uploads\merged"):
+def clear_upload_folder(file_path=r"D:\WinnieWork\SubProject\Project\ClimateProject\ClimReact\my-app\backend\uploads\merged"):
 
     if os.path.isdir(file_path):  
         for f in os.listdir(file_path):
@@ -191,22 +191,22 @@ def clear_upload_folder(file_path=r"D:\Students\YearFour\Project\ClimateRiskMap\
                     print(f"Error removing {file_to_remove}: {e}")
 
 
-import pandas as pd
-def prepare_for_xclim(ds: xr.Dataset) -> xr.Dataset:
-    time = ds.time.to_index()
+# import pandas as pd
+# def prepare_for_xclim(ds: xr.Dataset) -> xr.Dataset:
+#     time = ds.time.to_index()
 
-    inferred = pd.infer_freq(time)
-    if inferred is None:
-        # บังคับ daily (สำหรับ CMIP6 daily)
-        ds = ds.assign_coords(
-            time=pd.date_range(
-                start=str(time[0]),
-                periods=len(time),
-                freq="D",
-            )
-        )
+#     inferred = pd.infer_freq(time)
+#     if inferred is None:
+#         # บังคับ daily (สำหรับ CMIP6 daily)
+#         ds = ds.assign_coords(
+#             time=pd.date_range(
+#                 start=str(time[0]),
+#                 periods=len(time),
+#                 freq="D",
+#             )
+#         )
 
-    return ds
+#     return ds
 
 
 def generate_all(file_input, selected_indices, dataset_name, baseline=None):

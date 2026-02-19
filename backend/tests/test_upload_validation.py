@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock, patch
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -8,7 +9,10 @@ from typing import List, Dict, Any
 from processing.upload_validation import (
     filter_dataset_vars, 
     map_and_rename_coord, 
-    detect_mode
+    detect_mode,
+    get_spatial_resolution,
+    inspect_file,
+    validate_compatibility
 )
 
 class TestUploadValidation(unittest.TestCase):
@@ -108,7 +112,7 @@ class TestUploadValidation(unittest.TestCase):
         # Dataset uses 'lat', but we want 'latitude'
         ds = xr.Dataset(coords={"lat": [10, 20], "lon": [100, 110]})
         canonical_name = "latitude"
-        aliases = ["lat", "latitude", "nav_lat"]
+        aliases = ["lat", "latitude"]
 
         # Act
         result_ds, result_name = map_and_rename_coord(ds, canonical_name, aliases)
@@ -273,192 +277,354 @@ class TestUploadValidation(unittest.TestCase):
         self.assertCountEqual(info['groups']['tmax'], [0, 1])
         self.assertEqual(info['groups']['pr'], [2])
 
+    
+    # =========================================================================
+    # Tests for get_spatial_resolution
+    # Priority: Rio > Attributes > Coordinates
+    # =========================================================================
+
+    def test_get_spatial_resolution_priority_1_rioxarray(self):
+        """
+        Test Priority 1: If 'rio' accessor exists (rioxarray), use it.
+        Fix: Use a full MagicMock instead of real xr.Dataset to avoid AttributeError.
+        """
+        # Arrange
+        # use MagicMock instead xr.Dataset to avoid limit __setattr__ of xarray
+        ds = MagicMock()
+        
+        # Setup behavior for .rio.resolution()
+        # Returns (x_res, y_res) -> (lon_res, lat_res)
+        ds.rio.resolution.return_value = (0.5, -0.5)
+
+        # Setup attributes 
+        ds.attrs = {"geospatial_lat_resolution": "999.0"} 
+
+        # Act
+        lat_res, lon_res = get_spatial_resolution(ds)
+
+        # Assert
+        self.assertEqual(lat_res, 0.5)
+        self.assertEqual(lon_res, 0.5)
+
+    def test_get_spatial_resolution_priority_2_attributes(self):
+        """
+        Test Priority 2: If no rio, parse global attributes.
+        """
+        # Arrange
+        ds = xr.Dataset(coords={"latitude": [10, 20], "longitude": [100, 110]})
+        
+        # Mock no .rio (default xr.Dataset don't have)
+        if hasattr(ds, "rio"): 
+            del ds.rio 
+            
+        ds.attrs = {
+            "geospatial_lat_resolution": "0.1 degrees",
+            "geospatial_lon_resolution": 0.1
+        }
+
+        # Act
+        lat_res, lon_res = get_spatial_resolution(ds)
+
+        # Assert
+        self.assertEqual(lat_res, 0.1)
+        self.assertEqual(lon_res, 0.1)
+
+    def test_get_spatial_resolution_priority_3_calculation(self):
+        """
+        Test Priority 3: Calculate from coordinate arrays.
+        """
+        # Arrange
+        lat_vals = [10.0, 12.5, 15.0]
+        lon_vals = [100.0, 102.5, 105.0]
+        time_vals = pd.date_range("2024-01-01", periods=3)
+
+        ds = xr.Dataset(
+            coords={
+                "latitude": lat_vals,
+                "longitude": lon_vals,
+                "time": time_vals 
+            }
+        )
+        ds.attrs = {}
+
+        # Act
+        lat_res, lon_res = get_spatial_resolution(ds)
+
+        # Assert
+        self.assertEqual(lat_res, 2.5)
+        self.assertEqual(lon_res, 2.5)
+
+    def test_get_spatial_resolution_fail_single_coordinate(self):
+        """
+        Edge Case: Single point.
+        """
+        # Arrange
+        ds = xr.Dataset(
+            coords={
+                "latitude": [10.0],
+                "longitude": [100.0],
+                "time": [1] 
+            }
+        )
+
+        # Act
+        lat_res, lon_res = get_spatial_resolution(ds)
+
+        # Assert
+        self.assertIsNone(lat_res)
+        self.assertIsNone(lon_res)
+
+    def test_get_spatial_resolution_fail_missing_coords(self):
+        """
+        Edge Case: Missing standard coordinates entirely.
+        """
+        # Arrange
+        ds = xr.Dataset(coords={"x": [1, 2], "y": [3, 4]}) 
+
+        # Act & Assert
+        # will Raise KeyError because can't find Time (follow Logic map_and_rename_coord)
+        
+        with self.assertRaises(KeyError):
+            get_spatial_resolution(ds)
+
+    # =========================================================================
+    # Tests for inspect_file
+    # Complexity: High (Involves File I/O, xarray, time conversion)
+    # Strategy: Mock ALL external dependencies (xarray, os, helpers)
+    # =========================================================================
+
+    @patch("processing.upload_validation.xr.open_dataset")
+    @patch("processing.upload_validation.os.path.getsize")
+    @patch("processing.upload_validation.get_spatial_resolution")
+    @patch("processing.upload_validation.map_and_rename_coord")
+    @patch("processing.upload_validation.normalize_var_name")
+    @patch("processing.upload_validation.ALLOWED_VARS", {"tmax"}) # Mock constant
+    def test_inspect_file_success_standard_metadata(
+        self, 
+        mock_normalize, 
+        mock_map_coord, 
+        mock_get_res, 
+        mock_getsize, 
+        mock_open_ds
+    ):
+        """
+        Test Case: A standard NetCDF file with Time, Lat, Lon, and variables.
+        Expectation: Returns a full dictionary with parsed metadata.
+        """
+        
+        # Arrange 
+    
+        path = "dummy_data.nc"
+        
+        # Mock file size (e.g., 1 MB)
+        mock_getsize.return_value = 1024 * 1024 
+
+        # Mock Helper: normalize_var_name
+        mock_normalize.return_value = "tmax"
+
+        # Mock Helper: get_spatial_resolution
+        mock_get_res.return_value = (0.5, 0.5)
+
+        # Mock Helper: map_and_rename_coord
+        mock_map_coord.side_effect = lambda ds, name, aliases: (ds, name)
+
+        # Mock xarray Dataset
+        mock_ds = MagicMock()
+        
+        # Mock Coordinates (Time, Lat, Lon)
+        mock_ds.coords = {
+            "time": MagicMock(),
+            "latitude": MagicMock(),
+            "longitude": MagicMock()
+        }
+        mock_ds.data_vars = {"tmax": MagicMock()} 
+        mock_ds.sizes = {"time": 10, "latitude": 20, "longitude": 20}
+
+        # Mock Time Values 
+        # create datetime array 2020-01-01 to 2020-12-31 (1 year)
+        mock_time_obj = MagicMock()
+        t_start = np.datetime64("2020-01-01")
+        t_end = np.datetime64("2020-12-31")
+        mock_time_obj.values = np.array([t_start, t_end])
+        mock_time_obj.min.return_value = t_start
+        mock_time_obj.max.return_value = t_end
+        # Mock Attributes for Calendar
+        mock_time_obj.encoding = {"calendar": "gregorian"}
+        
+        # Mock Attributes for Units/Standard Names
+        mock_var_obj = MagicMock()
+        mock_var_obj.attrs = {"units": "K", "standard_name": "air_temperature"}
+        
+        def getitem_side_effect(key):
+            if key == "time":
+                return mock_time_obj
+            else:
+                return mock_var_obj
+        
+        mock_ds.__getitem__.side_effect = getitem_side_effect
+        # connect Mock Dataset to xr.open_dataset
+        mock_open_ds.return_value = mock_ds
+
+        # Act 
+        result = inspect_file(path)
+
+        # Assert 
+        # Check File Info
+        self.assertEqual(result["file_size"], "1.00 MB")
+        self.assertEqual(result["shape"], {"time": 10, "latitude": 20, "longitude": 20})
+        
+        # Check Time Logic
+        self.assertEqual(result["time_start"], "2020-01-01T00:00:00")
+        self.assertEqual(result["time_end"], "2020-12-31T00:00:00")
+        # 365 days / 365.25 approx 0.99 or 1.00 depending on rounding in code
+        self.assertIsNotNone(result["time_years"]) 
+
+        # Check Spatial Resolution (Logic: f"{lat:.3f}° x {lon:.3f}°")
+        self.assertEqual(result["spatial_resolution"], "0.500° x 0.500°")
+        
+        # Check Variables & Units
+        self.assertIn("tmax", result["variables"])
+        self.assertEqual(result["variable_units"]["tmax"], "K")
+
+    @patch("processing.upload_validation.xr.open_dataset")
+    @patch("processing.upload_validation.os.path.getsize")
+    def test_inspect_file_io_error(self, mock_getsize, mock_open_ds):
+        """
+        Test Case: File is corrupted or cannot be opened.
+        Expectation: Returns a dict with "error" key.
+        """
+        # Arrange
+        path = "bad_file.nc"
+        mock_getsize.return_value = 0
+        # xr.open_dataset Raise Exception
+        mock_open_ds.side_effect = Exception("File corrupted")
+
+        # Act
+        result = inspect_file(path)
+
+        # Assert
+        self.assertIn("error", result, "Should return dictionary with error key.")
+        self.assertEqual(result["error"], "File corrupted")
+
+    # =========================================================================
+    # Tests for validate_compatibility
+    # Checks: Empty list, File errors, Calendar mismatch, Resolution mismatch
+    # =========================================================================
+
+    # def test_validate_compatibility_empty_input(self, mock_detect_mode):
+    #     """
+    #     Test Case: Input list is empty.
+    #     Expectation: Returns False with specific error message.
+    #     """
+    #     # Arrange
+    #     metas = []
+
+    #     # Act
+    #     from processing.upload_validation import validate_compatibility
+    #     is_valid, errors = validate_compatibility(metas)
+
+    #     # Assert
+    #     self.assertFalse(is_valid)
+    #     self.assertIn("No files provided.", errors)
+    #     # Verify detect_mode was NOT called (it should return early)
+    #     mock_detect_mode.assert_not_called()
+
+    def test_validate_compatibility_with_error_files(self):
+        """
+        Test Case: Input contains files that failed inspection (have "error" key).
+        Expectation: Returns False immediately.
+        """
+        # Arrange
+        metas = [
+            {"filename": "good.nc", "calendar": "gregorian"}, # Valid file
+            {"filename": "bad.nc", "error": "Corrupted file"} # Error file
+        ]
+
+        # Act
+        is_valid, errors = validate_compatibility(metas)
+
+        # Assert
+        self.assertFalse(is_valid)
+        self.assertIn("Some files could not be read.", errors)
+
+    def test_validate_compatibility_inconsistent_calendar(self):
+        """
+        Test Case: Files have different calendar systems.
+        Expectation: Returns False with calendar error.
+        """
+        # Arrange
+        metas = [
+            {"filename": "f1.nc", "calendar": "gregorian", "lat_res": 0.5, "lon_res": 0.5},
+            {"filename": "f2.nc", "calendar": "noleap",    "lat_res": 0.5, "lon_res": 0.5}
+        ]
+
+        # Act
+        is_valid, errors = validate_compatibility(metas)
+
+        # Assert
+        self.assertFalse(is_valid)
+        # Check if error message mentions inconsistent calendars
+        self.assertTrue(any("Inconsistent calendars" in e for e in errors))
+
+    def test_validate_compatibility_inconsistent_resolution(self):
+        """
+        Test Case: Files have significantly different spatial resolutions.
+        Expectation: Returns False with resolution error.
+        """
+        # Arrange
+        metas = [
+            {"filename": "f1.nc", "calendar": "gregorian", "lat_res": 0.5, "lon_res": 0.5},
+            {"filename": "f2.nc", "calendar": "gregorian", "lat_res": 0.25, "lon_res": 0.25}
+        ]
+
+        # Act
+        is_valid, errors = validate_compatibility(metas)
+
+        # Assert
+        self.assertFalse(is_valid)
+        # Check specific error content
+        self.assertTrue(any("Inconsistent spatial resolution" in e for e in errors))
+        self.assertTrue(any("0.25" in e for e in errors))
+
+    # def test_validate_compatibility_resolution_tolerance_success(self, mock_detect_mode):
+    #     """
+    #     Test Case: Files have slightly different resolutions (floating point noise).
+    #     Expectation: Returns True because np.isclose allows small tolerance (1e-05).
+    #     """
+    #     # Arrange
+    #     metas = [
+    #         # Base file: 0.5
+    #         {"filename": "f1.nc", "calendar": "standard", "lat_res": 0.5, "lon_res": 0.5},
+    #         # Second file: 0.5000001 (very small difference)
+    #         {"filename": "f2.nc", "calendar": "standard", "lat_res": 0.5000001, "lon_res": 0.5}
+    #     ]
+    #     # Mock detect_mode to allow passing through
+    #     mock_detect_mode.return_value = ("time", {}, [])
+
+    #     # Act
+    #     is_valid, errors = validate_compatibility(metas)
+
+    #     # Assert
+    #     self.assertTrue(is_valid, "Should allow small floating point differences.")
+    #     self.assertEqual(len(errors), 0)
+
+    def test_validate_compatibility_happy_path(self):
+        """
+        Test Case: All files are perfectly compatible.
+        Expectation: Returns True with no errors.
+        """
+        # Arrange
+        metas = [
+            {"filename": "f1.nc", "calendar": "gregorian", "lat_res": 0.5, "lon_res": 0.5},
+            {"filename": "f2.nc", "calendar": "gregorian", "lat_res": 0.5, "lon_res": 0.5}
+        ]
+
+        # Act
+        is_valid, errors = validate_compatibility(metas)
+
+        # Assert
+        self.assertTrue(is_valid)
+        self.assertEqual(len(errors), 0)
+
 if __name__ == '__main__':
     unittest.main()
-
-# import unittest
-# from typing import List, Dict, Any
-
-# # =============================================================================
-# # สมมติว่า detect_mode ถูก import มาจาก Module หลักของคุณ
-# # (ปรับแก้ path ตามโครงสร้างโปรเจกต์จริง เช่น from app.services.upload import detect_mode)
-# # =============================================================================
-# from processing.upload_validation import detect_mode 
-
-# class TestUploadValidation(unittest.TestCase):
-#     """
-#     Unit Tests for `detect_mode` function.
-#     Focuses on Set Theory logic to categorize upload modes:
-#     1. Time Mode: Sets are identical (A == B)
-#     2. Attribute Mode: Sets are disjoint (A intersect B == empty)
-#     3. Mixed Mode: Everything else (Overlaps, Subsets)
-#     """
-
-#     def make_meta(self, variables: List[str], start="2023-01-01", end="2023-12-31") -> Dict[str, Any]:
-#         """Helper to create dummy metadata dict."""
-#         return {
-#             "variables": variables,
-#             "time_start": start,
-#             "time_end": end,
-#             "filename": "dummy.nc"
-#         }
-
-#     # =========================================================================
-#     # 1. TIME MODE TESTS (Variable Sets must be Identical)
-#     # =========================================================================
-
-#     def test_time_mode_single_var_identical(self):
-#         """
-#         Case 1.1: Single variable, identical across files.
-#         File A: ['tmax']
-#         File B: ['tmax']
-#         -> Expect: TIME
-#         """
-#         metas = [
-#             self.make_meta(['tmax']),
-#             self.make_meta(['tmax'])
-#         ]
-#         mode, info, _ = detect_mode(metas)
-        
-#         self.assertEqual(mode, "time")
-#         self.assertCountEqual(info['variables'], ['tmax'])
-
-#     def test_time_mode_multi_vars_identical(self):
-#         """
-#         Case 1.2: Multiple variables, identical sets (Exact Match).
-#         File A: ['tmax', 'pr']
-#         File B: ['tmax', 'pr']
-#         -> Expect: TIME
-#         """
-#         metas = [
-#             self.make_meta(['tmax', 'pr']),
-#             self.make_meta(['tmax', 'pr']) # Order doesn't matter for set equality usually, but input is list
-#         ]
-#         # Note: detect_mode logic uses list comparison or set comparison. 
-#         # If your logic converts to set, order implies equality.
-#         mode, info, _ = detect_mode(metas)
-        
-#         self.assertEqual(mode, "time")
-#         # เช็คว่า info เก็บตัวแปรครบ
-#         self.assertTrue('tmax' in info['variables'])
-#         self.assertTrue('pr' in info['variables'])
-
-#     # =========================================================================
-#     # 2. ATTRIBUTE MODE TESTS (Variable Sets must be Disjoint)
-#     # =========================================================================
-
-#     def test_attribute_mode_single_var_disjoint(self):
-#         """
-#         Case 2.1: Single variable, completely different.
-#         File A: ['tmax']
-#         File B: ['pr']
-#         -> Expect: ATTRIBUTE
-#         """
-#         metas = [
-#             self.make_meta(['tmax']),
-#             self.make_meta(['pr'])
-#         ]
-#         mode, info, _ = detect_mode(metas)
-        
-#         self.assertEqual(mode, "attribute")
-#         # Check var_map structure
-#         self.assertEqual(info['var_map']['tmax'], 0) # File index 0
-#         self.assertEqual(info['var_map']['pr'], 1)  # File index 1
-
-#     def test_attribute_mode_multi_vars_disjoint(self):
-#         """
-#         Case 2.2: Multiple variables, no overlap at all.
-#         File A: ['tmax', 'tasmax']
-#         File B: ['pr', 'hurs']
-#         -> Expect: ATTRIBUTE
-#         """
-#         metas = [
-#             self.make_meta(['tmax', 'tmin']),
-#             self.make_meta(['pr', 'hurs'])
-#         ]
-#         mode, info, _ = detect_mode(metas)
-        
-#         self.assertEqual(mode, "attribute")
-#         self.assertEqual(len(info['var_map']), 4) # Should map 4 variables
-
-#     def test_attribute_mode_misaligned_time(self):
-#         """
-#         Case 2.3: Disjoint variables but different times.
-#         (Logic should ignore time and look only at variables)
-#         File A: ['tmax'] (2023)
-#         File B: ['pr']  (2025)
-#         -> Expect: ATTRIBUTE
-#         """
-#         metas = [
-#             self.make_meta(['tmax'], start="2023-01-01"),
-#             self.make_meta(['pr'],  start="2025-01-01")
-#         ]
-#         mode, _, _ = detect_mode(metas)
-        
-#         self.assertEqual(mode, "attribute")
-
-#     # =========================================================================
-#     # 3. MIXED MODE TESTS (Partial Overlap / Complex)
-#     # =========================================================================
-
-#     def test_mixed_mode_subset_overlap(self):
-#         """
-#         Case 3.1: Subset (Variable missing in one file).
-#         File A: ['tmax', 'pr']
-#         File B: ['tmax']       (Missing pr)
-#         -> Expect: MIXED
-#         """
-#         metas = [
-#             self.make_meta(['tmax', 'pr']),
-#             self.make_meta(['tmax'])
-#         ]
-#         mode, info, _ = detect_mode(metas)
-        
-#         self.assertEqual(mode, "mixed")
-#         # 'tmax' should be in both files (index 0 and 1)
-#         self.assertCountEqual(info['groups']['tmax'], [0, 1])
-#         # 'pr' should be only in file 0
-#         self.assertCountEqual(info['groups']['pr'], [0])
-
-#     def test_mixed_mode_cross_overlap(self):
-#         """
-#         Case 3.2: Cross Overlap (Chained).
-#         File A: ['tmax', 'pr']
-#         File B: ['pr', 'hurs']
-#         -> Expect: MIXED (Because 'pr' is repeated, fails Attribute check)
-#         """
-#         metas = [
-#             self.make_meta(['tmax', 'pr']),
-#             self.make_meta(['pr', 'hurs'])
-#         ]
-#         mode, info, _ = detect_mode(metas)
-        
-#         self.assertEqual(mode, "mixed")
-#         # 'pr' is the link causing mixed mode
-#         self.assertCountEqual(info['groups']['pr'], [0, 1])
-#         self.assertEqual(info['groups']['tmax'], [0])
-#         self.assertEqual(info['groups']['hurs'], [1])
-
-#     def test_mixed_mode_three_files_hybrid(self):
-#         """
-#         Case 3.3: Hybrid case (A and B match, but C is different).
-#         File A: ['tmax']
-#         File B: ['tmax']
-#         File C: ['pr']
-#         -> Expect: MIXED
-#         (Why? Time check fails because A!=C. Attribute check fails because A overlaps B.)
-#         """
-#         metas = [
-#             self.make_meta(['tmax']), # 0
-#             self.make_meta(['tmax']), # 1
-#             self.make_meta(['pr'])   # 2
-#         ]
-#         mode, info, _ = detect_mode(metas)
-        
-#         self.assertEqual(mode, "mixed")
-#         # Logic should group them correctly
-#         self.assertCountEqual(info['groups']['tmax'], [0, 1])
-#         self.assertCountEqual(info['groups']['pr'], [2])
-
-# if __name__ == "__main__":
-#     unittest.main()

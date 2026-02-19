@@ -1,152 +1,265 @@
 import pytest
-import xarray as xr
 import numpy as np
+import xarray as xr
+import rioxarray
 import geopandas as gpd
-import rioxarray 
-from shapely.geometry import Polygon, Point
+from shapely.geometry import box, Polygon
+from unittest.mock import patch, MagicMock
+
+# Import functions from the source module
+# Adjust the import path according to your project structure
 from processing.clipping import (
     resolve_country_names,
     prep_for_rio,
-    mask_by_country,
-    clip_to_shape
+    clip_to_shape,
+    get_spatial_weights,
+    calc_weighted_mean
 )
-from unittest.mock import patch, MagicMock
 
 # ==========================================
-# Create Synthetic Spatial Data
+# Fixtures (Setup common data for tests)
 # ==========================================
+
 @pytest.fixture
-def spatial_da():
+def sample_dataarray():
     """
-    Creates a 10x10 degree DataArray covering lat/lon (0-10, 0-10).
-    Value is 1.0 everywhere.
-    Resolution is 1.0 degree per pixel.
+    Arrange: Create a synthetic xarray.DataArray for testing.
+    Grid: 10x10 degrees, covering 0-10 lat/lon.
     """
-    lon = np.arange(0.5, 10.5, 1)  # 0.5, 1.5, ... 9.5
-    lat = np.arange(0.5, 10.5, 1)
-    data = np.ones((10, 10))
+    lon = np.arange(0, 10, 1)
+    lat = np.arange(0, 10, 1)
+    data = np.ones((len(lat), len(lon))) * 10.0  # Constant value 10
     
     da = xr.DataArray(
         data,
-        coords={"latitude": lat, "longitude": lon},
-        dims=("latitude", "longitude"),
-        name="test_var"
+        coords={'latitude': lat, 'longitude': lon},
+        dims=('latitude', 'longitude'),
+        name='test_data'
     )
     return da
 
 @pytest.fixture
-def mock_countries_gdf():
+def sample_dataarray_with_time():
     """
-    Creates a GeoDataFrame with two polygons:
-    1. 'BigCountry': Covers half the map.
-    2. 'SmallIsland': Tiny point/polygon inside a pixel.
+    Arrange: Create a synthetic DataArray with Time dimension.
+    Shape: (2 time steps, 10 lat, 10 lon)
+    Values: 
+        - Time 0: All values = 10.0
+        - Time 1: All values = 20.0
     """
-    # Big square from (-1 ถึง 6)
-    poly_big = Polygon([(-1, -1), (6, -1), (6, 6), (-1, 6)])
+    lon = np.arange(0, 10, 1)
+    lat = np.arange(0, 10, 1)
+    time = np.array(['2024-01-01', '2024-01-02'], dtype='datetime64[ns]')
     
-    # Tiny square at (8.1, 8.1) to (8.2, 8.2) - smaller than grid resolution
-    poly_small = Polygon([(8.1, 8.1), (8.2, 8.1), (8.2, 8.2), (8.1, 8.2)])
+    # Create data with shape (2, 10, 10)
+    data = np.zeros((2, len(lat), len(lon)))
+    data[0, :, :] = 10.0
+    data[1, :, :] = 20.0
     
+    da = xr.DataArray(
+        data,
+        coords={'time': time, 'latitude': lat, 'longitude': lon},
+        dims=('time', 'latitude', 'longitude'),
+        name='test_data_time'
+    )
+    return da
+
+@pytest.fixture
+def sample_geodataframe():
+    """
+    Arrange: Create a synthetic GeoDataFrame with a known polygon.
+    Polygon: A box from (1,1) to (4,4).
+    """
+    geometry = [box(1, 1, 4, 4)]
     gdf = gpd.GeoDataFrame(
-        {
-            "ADMIN": ["BigCountry", "SmallIsland"],
-            "geometry": [poly_big, poly_small]
-        },
+        {'NAME_EN': ['TestCountry'], 'geometry': geometry},
         crs="EPSG:4326"
     )
     return gdf
 
 # ==========================================
-# Test Helper Functions
+# Unit Tests
 # ==========================================
-def test_resolve_country_names_no_alias():
-    # Test that country without alias returns itself only
-    names = resolve_country_names("Thailand")
-    assert names == ["Thailand"]
 
-def test_resolve_country_names_with_alias():
-    # Test that country with alias returns all possible names
-    names = resolve_country_names("Timor-Leste")
-    assert "Timor-Leste" in names
-    assert "East Timor" in names
+def test_resolve_country_names():
+    """
+    Test logic for resolving country aliases.
+    """
+    # Arrange & Act
+    res_normal = resolve_country_names("Thailand")
+    res_alias = resolve_country_names("Timor-Leste")
 
-def test_prep_for_rio_sets_crs(spatial_da):
-    # Test CRS assignment
-    assert spatial_da.rio.crs is None
-    da = prep_for_rio(spatial_da)
-    assert da.rio.crs is not None
-    assert da.rio.crs.to_string() == "EPSG:4326"
+    # Assert
+    assert res_normal == ["Thailand"], "Should return list with single name if no alias exists"
+    assert "East Timor" in res_alias, "Should include alias for Timor-Leste"
+    assert "Timor Leste" in res_alias, "Should include alias for Timor-Leste"
 
-def test_prep_for_rio_sets_spatial_dims(spatial_da):
-    # Test spatial dimension names
-    da = prep_for_rio(spatial_da)
-    assert da.rio.x_dim == "longitude"
-    assert da.rio.y_dim == "latitude"
+def test_prep_for_rio(sample_dataarray):
+    """
+    Test if rioxarray metadata is correctly assigned.
+    """
+    # Arrange
+    da = sample_dataarray
 
-# ==========================================
-# Test Masking
-# ==========================================
-def test_mask_by_country_normal_clip(spatial_da, mock_countries_gdf):
-    """
-    Test standard clipping logic.
-    'BigCountry' covers top-left 5x5 area.
-    Expect: Data inside is 1.0, outside is NaN.
-    """
-    da_ready = prep_for_rio(spatial_da)
-    
-    clipped = mask_by_country(da_ready, "BigCountry", mock_countries_gdf)
-    
-    assert clipped is not None
-    # Check that we have some valid data
-    assert clipped.notnull().any()
-    
-    # Check size (Should be smaller or equal to original bounding box)
-    assert clipped.shape != spatial_da.shape
+    # Act
+    da_processed = prep_for_rio(da)
 
-def test_mask_by_country_fallback_logic(spatial_da, mock_countries_gdf):
-    """
-    Test the critical 'Fallback' logic for small islands.
-    'SmallIsland' is too small for standard clip (might fall between grid centers).
-    The code should switch to 'nearest' neighbor interpolation.
-    """
-    da_ready = prep_for_rio(spatial_da)
-    log_dict = {}
-    
-    # SmallIsland is at 8.5, 8.5. Grid has point at 8.5, 8.5.
-    result = mask_by_country(da_ready, "SmallIsland", mock_countries_gdf, log=log_dict)
-    
-    assert result is not None
-    
-    # It should return a single point (0D or 1x1 2D array depending on impl)
-    # The 'nearest' selection usually returns a scalar or reduced dim
-    assert result.size == 1 
-    assert result.item() == 1.0 # The value in our data
-    
-    # Verify log indicates fallback was used
-    assert "SmallIsland" in log_dict
-    assert log_dict["SmallIsland"]["method"] == "nearest"
+    # Assert
+    assert da_processed.rio.crs == "EPSG:4326", "CRS should be set to EPSG:4326"
+    assert da_processed.rio.x_dim == "longitude", "X dim should be longitude"
+    assert da_processed.rio.y_dim == "latitude", "Y dim should be latitude"
 
-@patch("geopandas.read_file")
-def test_clip_to_shape_file_io(mock_read_file, spatial_da):
+@patch('geopandas.read_file')
+def test_clip_to_shape_success(mock_read_file, sample_dataarray, sample_geodataframe):
     """
-    Test clip_to_shape without real files.
-    We mock geopandas.read_file to return a dummy GeoDataFrame.
+    Test clipping functionality with a mocked shapefile.
     """
-    # Setup Mock
-    dummy_gdf = gpd.GeoDataFrame(
-        {"geometry": [Polygon([(0,0), (1,0), (1,1), (0,1)])]},
+    # Arrange
+    mock_read_file.return_value = sample_geodataframe  # Mock reading shapefile
+    da = sample_dataarray
+    
+    # Act
+    clipped = clip_to_shape(da, "dummy_path.shp")
+
+    # Assert
+    # Original was 0-9, Clip is box(1,1,4,4). 
+    # Bounds should be tighter than original.
+    assert clipped.shape != da.shape, "Shape should change after clipping"
+    assert not np.isnan(clipped.values).all(), "Result should not be all NaN"
+    assert clipped.rio.crs == "EPSG:4326", "Result should maintain CRS"
+
+@patch('geopandas.read_file')
+def test_clip_to_shape_invalid_input(mock_read_file, sample_geodataframe, sample_dataarray):
+    """
+    Test that TypeError is raised when input is not a DataArray.
+    """
+    # Arrange
+    mock_read_file.return_value = sample_geodataframe
+    ds = sample_dataarray.to_dataset()  # Convert to Dataset (which code says raises TypeError)
+
+    # Act & Assert
+    with pytest.raises(TypeError) as excinfo:
+        clip_to_shape(ds, "dummy_path.shp")
+    
+    assert "Input must be xarray.Dataset" in str(excinfo.value), \
+        "Should raise TypeError for Dataset input (based on current implementation)"
+
+def test_get_spatial_weights():
+    """
+    Test calculation of intersection area weights.
+    """
+    # Arrange
+    # Create a small 2x2 grid (0,0) to (2,2)
+    lon = [0.5, 1.5]
+    lat = [0.5, 1.5]
+    data = np.zeros((2, 2))
+    da = xr.DataArray(data, coords={'latitude': lat, 'longitude': lon}, dims=('latitude', 'longitude'))
+    
+    # Create a polygon that covers ONLY the bottom-left pixel (0,0) to (1,1)
+    # The pixel center is at 0.5, 0.5. Grid spacing is 1.0. 
+    # Pixel bounds are 0-1.
+    country_geom = box(0, 0, 1, 1)
+
+    # Act
+    weights = get_spatial_weights(da, country_geom)
+
+    # Assert
+    # Bottom-left pixel (index 0,0) should have area = 1.0 * 1.0 = 1.0
+    assert np.isclose(weights.values[0, 0], 1.0), "Full intersection should be area 1.0"
+    # Top-right pixel (index 1,1) should have area = 0.0
+    assert weights.values[1, 1] == 0.0, "No intersection should be 0.0"
+
+def test_calc_weighted_mean_variable_values():
+    """
+    Test with VARYING values to ensure weights are actually applied.
+    Scenario:
+    - Pixel 1: Value=10, Weight=1.0 (Full overlap)
+    - Pixel 2: Value=50, Weight=0.5 (Half overlap)
+    
+    Expected: (10*1.0 + 50*0.5) / (1.0 + 0.5) = 35 / 1.5 = 23.333...
+    If weights were ignored (simple mean), result would be 30.
+    """
+    # 1. Arrange DataArray (1 row, 2 cols)
+    # Grid centers at 0.5 and 1.5 (Pixel width=1.0)
+    lon = np.array([0.5, 1.5]) 
+    lat = np.array([0.5])
+    data = np.array([[10.0, 50.0]]) # 1x2 array
+    
+    da = xr.DataArray(
+        data,
+        coords={'latitude': lat, 'longitude': lon},
+        dims=('latitude', 'longitude'),
+        name='test_data_var'
+    )
+
+    # 2. Arrange Geometry
+    # Create a box from x=0 to x=1.5 (Full coverage of first pixel, half of second)
+    # y=0 to y=1 (Full height coverage)
+    geometry = [box(0, 0, 1.5, 1)]
+    gdf = gpd.GeoDataFrame(
+        {'NAME_EN': ['VariableCountry'], 'geometry': geometry},
         crs="EPSG:4326"
     )
-    mock_read_file.return_value = dummy_gdf
-    
-    # Prepare Input
-    da_ready = prep_for_rio(spatial_da)
-    
-    # Run Function
-    result = clip_to_shape(da_ready, "dummy_path.shp")
-    
+
+    # 3. Act
+    result = calc_weighted_mean(da, "VariableCountry", gdf)
+
+    # 4. Assert
+    # Check if result is close to 23.333...
+    expected_value = 23.333333
+    assert np.isclose(result, expected_value, rtol=1e-5), \
+        f"Expected weighted mean ~{expected_value}, but got {result}. Weights might be ignored."
+
+def test_calc_weighted_mean_country_not_found(sample_dataarray, sample_geodataframe):
+    """
+    Test behavior when country name is not found in GeoDataFrame.
+    """
+    # Arrange
+    target_country = "NonExistentCountry"
+
+    # Act
+    result = calc_weighted_mean(sample_dataarray, target_country, sample_geodataframe)
+
     # Assert
-    mock_read_file.assert_called_with("dummy_path.shp")
-    assert result is not None
-    # Should be clipped to the dummy polygon (0-1)
-    assert result.shape == (1, 1) # roughly, depending on grid alignment
+    assert result is None, "Should return None if country not found"
+
+def test_calc_weighted_mean_missing_column(sample_dataarray):
+    """
+    Test error handling when GDF lacks name columns.
+    """
+    # Arrange
+    # Create GDF without NAME, ADMIN, or NAME_EN
+    gdf_broken = gpd.GeoDataFrame({'WRONG_COL': ['A'], 'geometry': [box(0,0,1,1)]})
+    
+    # Act
+    # The function prints error and returns None due to try-except block
+    result = calc_weighted_mean(sample_dataarray, "A", gdf_broken)
+
+    # Assert
+    assert result is None, "Should return None if column lookup fails"
+
+def test_calc_weighted_mean_with_time_dimension(sample_dataarray_with_time, sample_geodataframe):
+    """
+    Test if the function correctly handles data with a 'time' dimension.
+    It should broadcast the 2D weights over the time dimension and return a time series.
+    """
+    # Arrange
+    da = sample_dataarray_with_time
+    target_country = "TestCountry" # Corresponds to sample_geodataframe fixture
+
+    # Act
+    result = calc_weighted_mean(da, target_country, sample_geodataframe)
+
+    # Assert
+    # 1. Check if result is not None
+    assert result is not None, "Result should not be None for valid input"
+
+    # 2. Check dimensions - 'time' should be preserved, lat/lon should be gone
+    assert 'time' in result.dims, "Result should preserve the 'time' dimension"
+    assert 'latitude' not in result.dims, "Spatial dims should be reduced"
+    assert result.shape == (2,), "Result shape should match number of time steps (2,)"
+
+    # 3. Check values
+    # Time 0 should average to 10.0, Time 1 should average to 20.0
+    expected_values = np.array([10.0, 20.0])
+    np.testing.assert_allclose(result.values, expected_values, err_msg="Weighted mean should be calculated independently for each time step")

@@ -566,8 +566,8 @@ def validate_compatibility(metas: List[Dict[str, Any]]) -> Tuple[bool, List[str]
                 )
     
     # 2. Check Mode Validity
-    mode, info, diag = detect_mode(metas)
-    if mode == "mixed": #
-        pass 
+    # mode, info, diag = detect_mode(metas)
+    # if mode == "mixed": #
+    #     pass 
     
     return len(errors) == 0, errors
