@@ -177,8 +177,8 @@ SEA_COUNTRIES = [
 #         print(f"Overlay applied to {input_path}")
 #     except Exception as e:
 #         print(f"Failed overlay for {input_path}: {e}")
-# def clear_upload_folder(file_path=r"D:\Students\YearFour\Project\ClimateRiskMap\ClimReact\my-app\backend\uploads\merged"):
-def clear_upload_folder(file_path=r"D:\WinnieWork\SubProject\Project\ClimateProject\ClimReact\my-app\backend\uploads\merged"):
+def clear_upload_folder(file_path=r"D:\Students\YearFour\Project\ClimateRiskMap\ClimReact\my-app\backend\uploads\merged"):
+# def clear_upload_folder(file_path=r"D:\WinnieWork\SubProject\Project\ClimateProject\ClimReact\my-app\backend\uploads\merged"):
 
     if os.path.isdir(file_path):  
         for f in os.listdir(file_path):
