@@ -426,6 +426,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     print(f"Skipping Thailand Overview seasonal for {var}")
 
             for province in THAILAND_PROVINCES_LIST:
+                print(f"Start {province}")
                 weighted_da = calc_weighted_mean(
                     da=indices_monthly[var], 
                     region_name=province, 

@@ -140,21 +140,47 @@ export default function DatasetUploader({ slotId, onUploadSuccess }) {
   };
 
   return (
-    <div className="flex gap-2 items-center">
+    // Converted to Bootstrap Input Group for a seamless, attached button look
+    <div className="input-group input-group-sm shadow-sm">
       <input
         type="file"
+        id="ncFileInput"
         multiple
         accept=".nc"
         onChange={(e) => setFiles(e.target.files)}
-        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+        className="form-control"
       />
       <button 
         onClick={handleUpload} 
         disabled={uploading || files.length === 0}
-        className="bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
+        className="btn btn-primary px-3"
       >
-        {uploading ? "Uploading..." : "Upload Raw"}
+        {uploading ? (
+          <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></>
+        ) : (
+          "Upload Raw"
+        )}
       </button>
     </div>
   );
 }
+
+//   return (
+//     <div className="flex gap-2 items-center">
+//       <input
+//         type="file"
+//         multiple
+//         accept=".nc"
+//         onChange={(e) => setFiles(e.target.files)}
+//         className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+//       />
+//       <button 
+//         onClick={handleUpload} 
+//         disabled={uploading || files.length === 0}
+//         className="bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
+//       >
+//         {uploading ? "Uploading..." : "Upload Raw"}
+//       </button>
+//     </div>
+//   );
+// }

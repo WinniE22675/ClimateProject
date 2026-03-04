@@ -67,6 +67,31 @@ import MapViewUpdater from "./MapViewUpdater";
 //   return null;
 // }
 
+function MapBoundsController({ province, geojsonData, fallbackView }) {
+  const map = useMap();
+
+  useEffect(() => {
+    // 1. If a specific province is selected, calculate its bounds and zoom
+    if (province && geojsonData && geojsonData.features && geojsonData.features.length > 0) {
+      // Create a temporary Leaflet layer to calculate the bounding box
+      const layer = L.geoJSON(geojsonData);
+      const bounds = layer.getBounds();
+      
+      if (bounds.isValid()) {
+        // fitBounds automatically calculates the perfect center and zoom level!
+        // padding ensures the map doesn't touch the exact edges of the container
+        map.fitBounds(bounds, { padding: [30, 30], animate: true });
+      }
+    } 
+    // 2. If no province is selected (Whole Country), use the default COUNTRY_VIEW
+    else if (fallbackView) {
+      map.setView(fallbackView.center, fallbackView.zoom, { animate: true });
+    }
+  }, [province, geojsonData, fallbackView, map]);
+
+  return null;
+}
+
 function BoundaryMaskLayer({ mask }) {
   const map = useMap();
 
@@ -728,83 +753,98 @@ useEffect(() => {
   if (noData) return <div className="p-3 text-warning border rounded">No map data available for the selected parameters.</div>;
 
   return (
-    <div>
-      {/* mode button */}
-      {/* <div className="flex gap-2 p-2">
-        <button
-          onClick={() => setMode("actual")}
-          className={mode === "actual" ? "bg-blue-500 text-white px-2" : "px-2"}
-        >
-          Actual Map
-        </button>
-        <button
-          onClick={() => setMode("trend")}
-          className={mode === "trend" ? "bg-blue-500 text-white px-2" : "px-2"}
-        >
-          Trend Map
-        </button>
-      </div> */}
-      <div className="d-flex gap-2 p-2">
-        <button
-          onClick={() => setMode("actual")}
-          className={`btn ${mode === "actual" ? "btn-primary shadow-sm" : "btn-light border"}`}
-        >
-          Actual Map
-        </button>
-        <button
-          onClick={() => setMode("trend")}
-          className={`btn ${mode === "trend" ? "btn-primary shadow-sm" : "btn-light border"}`}
-        >
-          Trend Map
-        </button>
-      </div>
+    <div className="card  border-0">
+      
+      {/* 1. Header Section: Mode Buttons & Map Title */}
+      <div className="card-header bg-white d-flex justify-content-between align-items-center p-3 border-bottom">
+        
+        {/* Left: Mode Buttons (Grouped for better UI) */}
+        <div className="btn-group" role="group">
+          <button
+            onClick={() => setMode("actual")}
+            className={`btn btn-sm ${mode === "actual" ? "btn-primary shadow-sm" : "btn-outline-secondary"}`}
+          >
+            Actual Map
+          </button>
+          <button
+            onClick={() => setMode("trend")}
+            className={`btn btn-sm ${mode === "trend" ? "btn-primary shadow-sm" : "btn-outline-secondary"}`}
+          >
+            Trend Map
+          </button>
+        </div>
 
-      {/* toggle significant points */}
-      {mode === "trend" && (
-        <div className="p-2">
-          <label>
+        {/* Center: Checkbox for Significant Points (Only in Trend mode) */}
+        {mode === "trend" && (
+          <div className="form-check form-switch mb-0 ms-3 me-auto">
             <input
+              className="form-check-input"
               type="checkbox"
+              id="sigPointsToggle"
               checked={showSig}
               onChange={() => setShowSig((s) => !s)}
-            />{" "}
-            Significant Points
-          </label>
+            />
+            <label className="form-check-label small text-muted fw-bold" htmlFor="sigPointsToggle">
+              Show Significant Points (p &lt; 0.05)
+            </label>
+          </div>
+        )}
+
+        {/* Right: Dynamic Map Title */}
+        <div className="text-end">
+          <h6 className="mb-0 fw-bold text-secondary">
+            {indexName} {mode === "actual" ? "Average" : "Trend"} Map
+          </h6>
+          <small className="text-muted">
+            {startYear} - {endYear} {province ? `| ${province}` : "| Whole Country"}
+          </small>
         </div>
-      )}
-      <div className="flex flex-col">
+      </div>
+
+      {/* 2. Checkbox for Significant Points (Only in Trend mode) */}
+      {/* {mode === "trend" && (
+        <div className="px-3 pt-2">
+          <div className="form-check form-switch">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="sigPointsToggle"
+              checked={showSig}
+              onChange={() => setShowSig((s) => !s)}
+            />
+            <label className="form-check-label small text-muted" htmlFor="sigPointsToggle">
+              Show Significant Points (p &lt; 0.05)
+            </label>
+          </div>
+        </div>
+      )} */}
+
+      {/* 3. Map Container */}
+      <div className="card-body p-0 position-relative">
         <MapContainer
-          // center={[15, 101]}
-          // zoom={5}
           center={mapView.center}
           zoom={mapView.zoom}
-          style={{ height: "450px", width: "100%" }}
+          style={{ height: "450px", width: "100%", zIndex: 0 }}
         >
-          <MapViewUpdater center={mapView.center} zoom={mapView.zoom} />
-
-          {/* {maskData && <BoundaryMaskLayer mask={maskData} />} */}
+          {/* <MapViewUpdater center={mapView.center} zoom={mapView.zoom} /> */}
+          <MapBoundsController 
+            province={province} 
+            geojsonData={displayProvinceBoundary} 
+            fallbackView={mapView} 
+          />
 
           {/* Mask first */}
           {maskData && <BoundaryMaskLayer mask={maskData} />}
 
           {/* Boundary always on top */}
-          {boundaryData && <BoundaryLayer data={boundaryData} weight={2.0}/>}
+          {boundaryData && <BoundaryLayer data={boundaryData} weight={2.0} />}
 
           {/* Province Boundaries */}
           {displayProvinceBoundary && (
             <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
           )}
 
-          {/* SEA view */}
-          {/* {seaBoundary && !countryBoundary && (
-            <BoundaryLayer data={seaBoundary} type="sea" />
-          )} */}
-
-          {/* Country view */}
-          {/* {countryBoundary && (
-            <BoundaryLayer data={countryBoundary} type="country" />
-          )} */}
-
+          {/* Map Data Layers */}
           {mode === "trend" && gridData.trend && (
             <GeoJSON
               data={gridData.trend}
@@ -825,66 +865,224 @@ useEffect(() => {
           {showSig &&
             significantPoints.map((f, i) => <SigPoint key={i} feature={f} />)}
         </MapContainer>
+      </div>
 
+      {/* 4. Legend & Controls Footer */}
+      <div className="card-footer bg-white border-top pt-2 pb-4 px-0">
+        
+        {/* Color Bar */}
         {scales[mode] && binsAll[mode]?.length > 0 && (
-          <Legend
-            bins={binsAll[mode]}
-            scale={scales[mode]}
-            mode={mode}
-            unit={unit}
-          />
+          <div className="mb-1">
+            <Legend
+              bins={binsAll[mode]}
+              scale={scales[mode]}
+              mode={mode}
+              unit={unit}
+            />
+          </div>
         )}
+
+        {/* Legend Range Controls */}
+        <div className="d-flex justify-content-center align-items-center gap-2">
+          <span className="small fw-bold text-muted me-2">Legend Range:</span>
+
+          <input
+            type="number"
+            placeholder="Min"
+            value={legendRange[mode].min ?? ""}
+            onChange={(e) =>
+              setLegendRange((r) => ({
+                ...r,
+                [mode]: {
+                  ...r[mode],
+                  min: e.target.value === "" ? null : +e.target.value,
+                },
+              }))
+            }
+            className="form-control form-control-sm text-center"
+            style={{ width: "80px" }}
+          />
+          
+          <span className="text-muted">-</span>
+
+          <input
+            type="number"
+            placeholder="Max"
+            value={legendRange[mode].max ?? ""}
+            onChange={(e) =>
+              setLegendRange((r) => ({
+                ...r,
+                [mode]: {
+                  ...r[mode],
+                  max: e.target.value === "" ? null : +e.target.value,
+                },
+              }))
+            }
+            className="form-control form-control-sm text-center"
+            style={{ width: "80px" }}
+          />
+
+          <button
+            className="btn btn-sm btn-outline-secondary ms-2"
+            onClick={() =>
+              setLegendRange((r) => ({
+                ...r,
+                [mode]: { min: null, max: null },
+              }))
+            }
+          >
+            Auto Fix
+          </button>
+        </div>
+
       </div>
-
-      {/* legend range control */}
-      <div className="flex gap-2 p-2 items-center">
-        <span className="text-sm">Legend range:</span>
-
-        <input
-          type="number"
-          placeholder="Min"
-          value={legendRange[mode].min ?? ""}
-          onChange={(e) =>
-            setLegendRange((r) => ({
-              ...r,
-              [mode]: {
-                ...r[mode],
-                min: e.target.value === "" ? null : +e.target.value,
-              },
-            }))
-          }
-          className="border px-1 w-24"
-        />
-
-        <input
-          type="number"
-          placeholder="Max"
-          value={legendRange[mode].max ?? ""}
-          onChange={(e) =>
-            setLegendRange((r) => ({
-              ...r,
-              [mode]: {
-                ...r[mode],
-                max: e.target.value === "" ? null : +e.target.value,
-              },
-            }))
-          }
-          className="border px-1 w-24"
-        />
-
-        <button
-          className="text-sm underline"
-          onClick={() =>
-            setLegendRange((r) => ({
-              ...r,
-              [mode]: { min: null, max: null },
-            }))
-          }
-        >
-          Auto
-        </button>
-      </div>
-
     </div>
   );
 }
+//   return (
+//     <div>
+//       {/* mode button */}
+//       <div className="d-flex gap-2 p-2">
+//         <button
+//           onClick={() => setMode("actual")}
+//           className={`btn ${mode === "actual" ? "btn-primary shadow-sm" : "btn-light border"}`}
+//         >
+//           Actual Map
+//         </button>
+//         <button
+//           onClick={() => setMode("trend")}
+//           className={`btn ${mode === "trend" ? "btn-primary shadow-sm" : "btn-light border"}`}
+//         >
+//           Trend Map
+//         </button>
+//       </div>
+
+//       {/* toggle significant points */}
+//       {mode === "trend" && (
+//         <div className="p-2">
+//           <label>
+//             <input
+//               type="checkbox"
+//               checked={showSig}
+//               onChange={() => setShowSig((s) => !s)}
+//             />{" "}
+//             Significant Points
+//           </label>
+//         </div>
+//       )}
+//       <div className="flex flex-col">
+//         <MapContainer
+//           // center={[15, 101]}
+//           // zoom={5}
+//           center={mapView.center}
+//           zoom={mapView.zoom}
+//           style={{ height: "450px", width: "100%" }}
+//         >
+//           <MapViewUpdater center={mapView.center} zoom={mapView.zoom} />
+
+//           {/* {maskData && <BoundaryMaskLayer mask={maskData} />} */}
+
+//           {/* Mask first */}
+//           {maskData && <BoundaryMaskLayer mask={maskData} />}
+
+//           {/* Boundary always on top */}
+//           {boundaryData && <BoundaryLayer data={boundaryData} weight={2.0}/>}
+
+//           {/* Province Boundaries */}
+//           {displayProvinceBoundary && (
+//             <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
+//           )}
+
+//           {/* SEA view */}
+//           {/* {seaBoundary && !countryBoundary && (
+//             <BoundaryLayer data={seaBoundary} type="sea" />
+//           )} */}
+
+//           {/* Country view */}
+//           {/* {countryBoundary && (
+//             <BoundaryLayer data={countryBoundary} type="country" />
+//           )} */}
+
+//           {mode === "trend" && gridData.trend && (
+//             <GeoJSON
+//               data={gridData.trend}
+//               style={style("trend")}
+//               onEachFeature={onEachFeature("trend")}
+//               ref={(ref) => (layersRef.current.trend = ref)}
+//             />
+//           )}
+//           {mode === "actual" && gridData.actual && (
+//             <GeoJSON
+//               data={gridData.actual}
+//               style={style("actual")}
+//               onEachFeature={onEachFeature("actual")}
+//               ref={(ref) => (layersRef.current.actual = ref)}
+//             />
+//           )}
+
+//           {showSig &&
+//             significantPoints.map((f, i) => <SigPoint key={i} feature={f} />)}
+//         </MapContainer>
+
+//         {scales[mode] && binsAll[mode]?.length > 0 && (
+//           <Legend
+//             bins={binsAll[mode]}
+//             scale={scales[mode]}
+//             mode={mode}
+//             unit={unit}
+//           />
+//         )}
+//       </div>
+
+//       {/* legend range control */}
+//       <div className="flex gap-2 p-2 items-center">
+//         <span className="text-sm">Legend range:</span>
+
+//         <input
+//           type="number"
+//           placeholder="Min"
+//           value={legendRange[mode].min ?? ""}
+//           onChange={(e) =>
+//             setLegendRange((r) => ({
+//               ...r,
+//               [mode]: {
+//                 ...r[mode],
+//                 min: e.target.value === "" ? null : +e.target.value,
+//               },
+//             }))
+//           }
+//           className="border px-1 w-24"
+//         />
+
+//         <input
+//           type="number"
+//           placeholder="Max"
+//           value={legendRange[mode].max ?? ""}
+//           onChange={(e) =>
+//             setLegendRange((r) => ({
+//               ...r,
+//               [mode]: {
+//                 ...r[mode],
+//                 max: e.target.value === "" ? null : +e.target.value,
+//               },
+//             }))
+//           }
+//           className="border px-1 w-24"
+//         />
+
+//         <button
+//           className="text-sm underline"
+//           onClick={() =>
+//             setLegendRange((r) => ({
+//               ...r,
+//               [mode]: { min: null, max: null },
+//             }))
+//           }
+//         >
+//           Auto
+//         </button>
+//       </div>
+
+//     </div>
+//   );
+// }

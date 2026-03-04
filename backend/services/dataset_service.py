@@ -170,6 +170,8 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         # เพื่อความปลอดภัยของไฟล์ย่อย
         process_and_clip(slot_id, dataset_name, scope)
 
+        print(f"[Dataset {dataset_name}] Clipping")
+
         save_metadata_json(
             dataset_name,
             {
@@ -181,6 +183,8 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         
         # 3. Merge (ใช้ Logic จาก prepare_merged_file_for_calculation)
         merged_filename = prepare_merged_file_for_calculation(dataset_name)
+
+        print(f"[Dataset {dataset_name}] Merge Dataset")
         
         # proc_dir = get_processed_path(slot_id)
         # files = [os.path.join(proc_dir, f) for f in os.listdir(proc_dir) if f.endswith('.nc')]
@@ -201,6 +205,8 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         # Merge Logic
         merged_metadata = get_dataset_metadata_merged(dataset_name)
 
+        print(f"[Dataset {dataset_name}] Get metadata")
+
         if merged_metadata is None:
             raise Exception("Failed to extract merged dataset metadata")
             
@@ -218,10 +224,10 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         print(f"[Dataset {dataset_name}] Async Task Completed.")
 
         # background_tasks = BackgroundTasks()
-        background_tasks.add_task(
-            run_preview_visualization,
-            dataset_name
-        )
+        # background_tasks.add_task(
+        #     run_preview_visualization,
+        #     dataset_name
+        # )
 
     except Exception as e:
         print(f"[{dataset_name}] Task Failed: {e}")

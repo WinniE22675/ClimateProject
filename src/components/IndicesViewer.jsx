@@ -395,12 +395,12 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
       </div> */}
 
       {/* Select average window size */}
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-center p-2">
         <label>Year Average Window:</label>
         <input
           type="number"
           value={windowSize}
-          onChange={(e) => setWindowSize(parseInt(+e.target.value))}
+          onChange={(e) => setWindowSize(parseInt(e.target.value))}
           className="border p-1 w-20 rounded"
         />
       </div>
@@ -465,10 +465,11 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
         <ResponsiveContainer width="100%" height={250}>
           <LineChart data={mergedData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="year" interval={9} allowDecimals={false} />
+            <XAxis dataKey="year" interval="preserveStartEnd" allowDecimals={false} />
             <YAxis
               width={70}
               label={{ value: unit, angle: -90, position: "insideLeft" }}
+              // padding={{ top: 35 }}
             />
             <Tooltip formatter={(value) => value.toFixed(2)} />
             <ReLegend />

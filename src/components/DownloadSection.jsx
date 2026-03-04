@@ -54,113 +54,132 @@ export default function DownloadSection({ datasetName, datasetStatus }) {
   };
 
   return (
-    <div className="bg-gray-50 rounded mt-4">
-      {/* <h4 className="font-bold mb-2">Download Options</h4> */}
-
-      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded">
-        <div>
-          Inputs for Time/Lat/Lon (Copy UI มาจากหน้า Upload ได้เลย)
-          <label className="block font-semibold">Time Range (Year)</label>
-          <div className="flex gap-2">
-            <input
-              type="number"
-              placeholder="Start Year"
-              value={scope.startYear}
-              onChange={(e) =>
-                setScope({ ...scope, startYear: parseInt(e.target.value) })
-              }
-              className="border p-1 rounded"
-            />
-            <input
-              type="number"
-              placeholder="End Year"
-              value={scope.endYear}
-              onChange={(e) =>
-                setScope({ ...scope, endYear: parseInt(e.target.value) })
-              }
-              className="border p-1 rounded"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold">Latitude (Min - Max)</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={scope.minLat}
-                onChange={(e) =>
-                  setScope({ ...scope, minLat: Number(e.target.value) })
-                }
-                className="border p-1 w-full"
-              />
-              <input
-                type="number"
-                value={scope.maxLat}
-                onChange={(e) =>
-                  setScope({ ...scope, maxLat: Number(e.target.value) })
-                }
-                className="border p-1 w-full"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block font-semibold">Longitude (Min - Max)</label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={scope.minLon}
-                onChange={(e) =>
-                  setScope({ ...scope, minLon: Number(e.target.value) })
-                }
-                className="border p-1 w-full"
-              />
-              <input
-                type="number"
-                value={scope.maxLon}
-                onChange={(e) =>
-                  setScope({ ...scope, maxLon: Number(e.target.value) })
-                }
-                className="border p-1 w-full"
-              />
-            </div>
-          </div>
-        </div>
-      </div> */}
-
-      {/* <button
-        onClick={handleDownload}
-        disabled={downloading}
-        className="bg-blue-600 text-white px-4 py-2 rounded w-full disabled:bg-gray-400"
-      >
-        {downloading
-          ? "Processing & Downloading..."
-          : "Download Merged Dataset"}
-      </button>
-    </div>
-  );
-} */}
-      <button
-        onClick={handleDownload}
-        disabled={isDisabled}
-        className={`w-full px-4 py-2 rounded font-medium transition
-          ${
-            isReady && !downloading
-              ? "bg-blue-600 text-white hover:bg-blue-700"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }
-        `}
-      >
-        {downloading
-          ? "Downloading..."
-          : isReady
-          ? "Download Merged Dataset"
-          : "Wait for Dataset"} 
-      </button>
-
-      {/* {!isReady && (
-        <p className="text-xs text-gray-400 mt-2 text-center">
-          Download will be available after processing is completed
-        </p>
-      )} */}
-    </div>
+    <button
+      onClick={handleDownload}
+      disabled={isDisabled}
+      className={`btn w-100 fw-bold shadow-sm ${
+        isReady && !downloading
+          ? "btn-primary"
+          : "btn-secondary"
+      }`}
+    >
+      {downloading
+        ? "Downloading..."
+        : isReady
+        ? "Download Merged Dataset"
+        : "Wait for Dataset"} 
+    </button>
   );
 }
+
+//   return (
+//     <div className="bg-gray-50 rounded mt-4">
+//       {/* <h4 className="font-bold mb-2">Download Options</h4> */}
+
+//       {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded">
+//         <div>
+//           Inputs for Time/Lat/Lon (Copy UI มาจากหน้า Upload ได้เลย)
+//           <label className="block font-semibold">Time Range (Year)</label>
+//           <div className="flex gap-2">
+//             <input
+//               type="number"
+//               placeholder="Start Year"
+//               value={scope.startYear}
+//               onChange={(e) =>
+//                 setScope({ ...scope, startYear: parseInt(e.target.value) })
+//               }
+//               className="border p-1 rounded"
+//             />
+//             <input
+//               type="number"
+//               placeholder="End Year"
+//               value={scope.endYear}
+//               onChange={(e) =>
+//                 setScope({ ...scope, endYear: parseInt(e.target.value) })
+//               }
+//               className="border p-1 rounded"
+//             />
+//           </div>
+//           <div>
+//             <label className="block font-semibold">Latitude (Min - Max)</label>
+//             <div className="flex gap-2">
+//               <input
+//                 type="number"
+//                 value={scope.minLat}
+//                 onChange={(e) =>
+//                   setScope({ ...scope, minLat: Number(e.target.value) })
+//                 }
+//                 className="border p-1 w-full"
+//               />
+//               <input
+//                 type="number"
+//                 value={scope.maxLat}
+//                 onChange={(e) =>
+//                   setScope({ ...scope, maxLat: Number(e.target.value) })
+//                 }
+//                 className="border p-1 w-full"
+//               />
+//             </div>
+//           </div>
+//           <div>
+//             <label className="block font-semibold">Longitude (Min - Max)</label>
+//             <div className="flex gap-2">
+//               <input
+//                 type="number"
+//                 value={scope.minLon}
+//                 onChange={(e) =>
+//                   setScope({ ...scope, minLon: Number(e.target.value) })
+//                 }
+//                 className="border p-1 w-full"
+//               />
+//               <input
+//                 type="number"
+//                 value={scope.maxLon}
+//                 onChange={(e) =>
+//                   setScope({ ...scope, maxLon: Number(e.target.value) })
+//                 }
+//                 className="border p-1 w-full"
+//               />
+//             </div>
+//           </div>
+//         </div>
+//       </div> */}
+
+//       {/* <button
+//         onClick={handleDownload}
+//         disabled={downloading}
+//         className="bg-blue-600 text-white px-4 py-2 rounded w-full disabled:bg-gray-400"
+//       >
+//         {downloading
+//           ? "Processing & Downloading..."
+//           : "Download Merged Dataset"}
+//       </button>
+//     </div>
+//   );
+// } */}
+//       <button
+//         onClick={handleDownload}
+//         disabled={isDisabled}
+//         className={`w-full px-4 py-2 rounded font-medium transition
+//           ${
+//             isReady && !downloading
+//               ? "bg-blue-600 text-white hover:bg-blue-700"
+//               : "bg-gray-300 text-gray-500 cursor-not-allowed"
+//           }
+//         `}
+//       >
+//         {downloading
+//           ? "Downloading..."
+//           : isReady
+//           ? "Download Merged Dataset"
+//           : "Wait for Dataset"} 
+//       </button>
+
+//       {/* {!isReady && (
+//         <p className="text-xs text-gray-400 mt-2 text-center">
+//           Download will be available after processing is completed
+//         </p>
+//       )} */}
+//     </div>
+//   );
+// }

@@ -114,92 +114,185 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
   //   );
   // }
   return (
-    <div className="card p-4 h-full">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="mb-0">Select Indices</h4>
-        {/* ปุ่ม Select All Global */}
-        <button onClick={selectAll} className="btn btn-sm btn-outline-primary">
-          {Object.values(availableIndices)
-            .flat()
-            .every((i) => selected.includes(i)) && selected.length > 0
+    <div className="card shadow-sm border-0 h-100">
+      <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h5 className="mb-0 fw-bold text-dark">Select Indices</h5>
+        <button onClick={selectAll} className="btn btn-sm btn-outline-primary shadow-sm">
+          {Object.values(availableIndices).flat().every((i) => selected.includes(i)) && selected.length > 0
             ? "Unselect All"
             : "Select All"}
         </button>
       </div>
 
-      <div className="border rounded p-2 mb-3 bg-light">
-        <h6 className="mb-2">Baseline Period (for percentile-based indices)</h6>
-
-        <div className="d-flex gap-2">
-          <input
-            type="number"
-            className="form-control form-control-sm"
-            placeholder="Start Year (e.g. 1981)"
-            value={baselineStart}
-            onChange={(e) => setBaselineStart(e.target.value)}
-          />
-
-          <input
-            type="number"
-            className="form-control form-control-sm"
-            placeholder="End Year (e.g. 2010)"
-            value={baselineEnd}
-            onChange={(e) => setBaselineEnd(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="overflow-auto" style={{ maxHeight: "600px" }}>
-        {Object.keys(availableIndices).map((variable) => (
-          <div key={variable} className="mb-3 border p-2 rounded">
-            <div
-              className="d-flex justify-content-between align-items-center cursor-pointer bg-light p-1 rounded mb-2"
-              onClick={() => selectCategory(variable)}
-              style={{ cursor: "pointer" }}
-            >
-              <h5 className="mb-0 font-bold text-uppercase text-primary">
-                {variable}
-              </h5>
-              <small className="text-muted">Click to select all</small>
-            </div>
-
-            <div className="row g-2">
-              {availableIndices[variable].map((ind) => (
-                <div key={ind} className="col-6">
-                  <label className="d-flex align-items-center gap-2 border p-1 rounded hover:bg-gray-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(ind)}
-                      onChange={() => toggleSelect(ind)}
-                    />
-                    <span>{ind}</span>
-                  </label>
-                </div>
-              ))}
-            </div>
+      <div className="card-body p-4 d-flex flex-column">
+        
+        {/* Baseline Input */}
+        <div className="bg-light border rounded p-3 mb-4 shadow-sm">
+          <label className="form-label fw-bold small text-muted mb-2">Baseline Period (for percentile-based indices)</label>
+          <div className="input-group input-group-sm">
+            <span className="input-group-text bg-white">Start Year</span>
+            <input
+              type="number"
+              className="form-control text-center"
+              placeholder="e.g. 1981"
+              value={baselineStart}
+              onChange={(e) => setBaselineStart(e.target.value)}
+            />
+            <span className="input-group-text bg-white border-start-0 border-end-0">-</span>
+            <span className="input-group-text bg-white">End Year</span>
+            <input
+              type="number"
+              className="form-control text-center"
+              placeholder="e.g. 2010"
+              value={baselineEnd}
+              onChange={(e) => setBaselineEnd(e.target.value)}
+            />
           </div>
-        ))}
-      </div>
+        </div>
 
-      {/* <button
-        className="btn btn-primary w-100 mt-3 py-2 fw-bold"
-        onClick={() => onCalculate(selected)}
-        disabled={selected.length === 0}
-      >
-        Calculate Selected Indices ({selected.length})
-      </button> */}
-      <button
-        className="btn btn-primary w-100 mt-3 py-2 fw-bold"
-        onClick={() =>
-          onCalculate(selected, {
-            start_year: baselineStart ? parseInt(baselineStart) : null,
-            end_year: baselineEnd ? parseInt(baselineEnd) : null,
-          })
-        }
-        disabled={selected.length === 0}
-      >
-        Calculate Selected Indices ({selected.length})
-      </button>
+        {/* Indices Checkboxes (Scrollable) */}
+        <div className="overflow-auto pe-2 flex-grow-1" style={{ maxHeight: "450px" }}>
+          {Object.keys(availableIndices).map((variable) => (
+            <div key={variable} className="mb-4">
+              
+              <div
+                className="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-2 border"
+                onClick={() => selectCategory(variable)}
+                style={{ cursor: "pointer" }}
+              >
+                <h6 className="mb-0 fw-bold text-primary text-uppercase">{variable}</h6>
+                <span className="badge bg-secondary" style={{ fontSize: "0.7rem" }}>Click to select all</span>
+              </div>
+
+              <div className="row g-2 px-1">
+                {availableIndices[variable].map((ind) => (
+                  <div key={ind} className="col-6 col-md-4">
+                    <div className="form-check border rounded p-2 ps-4 bg-white shadow-sm" style={{ cursor: "pointer" }}>
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id={`check-${ind}`}
+                        checked={selected.includes(ind)}
+                        onChange={() => toggleSelect(ind)}
+                        style={{ cursor: "pointer" }}
+                      />
+                      <label className="form-check-label w-100 fw-bold text-dark" htmlFor={`check-${ind}`} style={{ cursor: "pointer", fontSize: "0.85rem" }}>
+                        {ind}
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Action Button */}
+        <button
+          className="btn btn-primary w-100 mt-4 py-2 fw-bold shadow-sm"
+          onClick={() =>
+            onCalculate(selected, {
+              start_year: baselineStart ? parseInt(baselineStart) : null,
+              end_year: baselineEnd ? parseInt(baselineEnd) : null,
+            })
+          }
+          disabled={selected.length === 0}
+        >
+          <i className="bi bi-calculator me-2"></i>
+          Calculate Selected Indices ({selected.length})
+        </button>
+
+      </div>
     </div>
   );
 }
+//   return (
+//     <div className="card p-4 h-full">
+//       <div className="d-flex justify-content-between align-items-center mb-3">
+//         <h4 className="mb-0">Select Indices</h4>
+//         {/* ปุ่ม Select All Global */}
+//         <button onClick={selectAll} className="btn btn-sm btn-outline-primary">
+//           {Object.values(availableIndices)
+//             .flat()
+//             .every((i) => selected.includes(i)) && selected.length > 0
+//             ? "Unselect All"
+//             : "Select All"}
+//         </button>
+//       </div>
+
+//       <div className="border rounded p-2 mb-3 bg-light">
+//         <h6 className="mb-2">Baseline Period (for percentile-based indices)</h6>
+
+//         <div className="d-flex gap-2">
+//           <input
+//             type="number"
+//             className="form-control form-control-sm"
+//             placeholder="Start Year (e.g. 1981)"
+//             value={baselineStart}
+//             onChange={(e) => setBaselineStart(e.target.value)}
+//           />
+
+//           <input
+//             type="number"
+//             className="form-control form-control-sm"
+//             placeholder="End Year (e.g. 2010)"
+//             value={baselineEnd}
+//             onChange={(e) => setBaselineEnd(e.target.value)}
+//           />
+//         </div>
+//       </div>
+
+//       <div className="overflow-auto" style={{ maxHeight: "600px" }}>
+//         {Object.keys(availableIndices).map((variable) => (
+//           <div key={variable} className="mb-3 border p-2 rounded">
+//             <div
+//               className="d-flex justify-content-between align-items-center cursor-pointer bg-light p-1 rounded mb-2"
+//               onClick={() => selectCategory(variable)}
+//               style={{ cursor: "pointer" }}
+//             >
+//               <h5 className="mb-0 font-bold text-uppercase text-primary">
+//                 {variable}
+//               </h5>
+//               <small className="text-muted">Click to select all</small>
+//             </div>
+
+//             <div className="row g-2">
+//               {availableIndices[variable].map((ind) => (
+//                 <div key={ind} className="col-6">
+//                   <label className="d-flex align-items-center gap-2 border p-1 rounded hover:bg-gray-50 cursor-pointer">
+//                     <input
+//                       type="checkbox"
+//                       checked={selected.includes(ind)}
+//                       onChange={() => toggleSelect(ind)}
+//                     />
+//                     <span>{ind}</span>
+//                   </label>
+//                 </div>
+//               ))}
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+
+//       {/* <button
+//         className="btn btn-primary w-100 mt-3 py-2 fw-bold"
+//         onClick={() => onCalculate(selected)}
+//         disabled={selected.length === 0}
+//       >
+//         Calculate Selected Indices ({selected.length})
+//       </button> */}
+//       <button
+//         className="btn btn-primary w-100 mt-3 py-2 fw-bold"
+//         onClick={() =>
+//           onCalculate(selected, {
+//             start_year: baselineStart ? parseInt(baselineStart) : null,
+//             end_year: baselineEnd ? parseInt(baselineEnd) : null,
+//           })
+//         }
+//         disabled={selected.length === 0}
+//       >
+//         Calculate Selected Indices ({selected.length})
+//       </button>
+//     </div>
+//   );
+// }

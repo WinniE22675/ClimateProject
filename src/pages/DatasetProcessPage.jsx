@@ -301,224 +301,332 @@ export default function DatasetProcessPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 pb-20 relative">
-      {/* Header & Navigation */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Dataset Processor</h1>
-          {/* Slot Selector (Dataset 1, 2, 3, 4) */}
-          {/* {[1, 2, 3, 4].map((id) => (
-            <button
-              key={id}
-              onClick={() => setActiveSlot(id)}
-              className={`px-3 py-1 rounded border ${
-                activeSlot === id
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-700"
-              }`}
-            >
-              Selected Dataset {id}
-            </button>
-          ))} */}
-          <div className="flex gap-2 items-center">
-            <label>Dataset:</label>
+    <div className="container-fluid position-relative">
+      
+      {/* 1. Header & Navigation */}
+      <div className="d-flex justify-content-between align-items-center mb-2 pb-3 border-bottom">
+        <h2 className="h3 fw-bold mb-0 text-dark"> Dataset Processor</h2>
+        
+        <div className="d-flex gap-2 align-items-center">
+          <div className="input-group input-group-sm shadow-sm">
+            <span className="input-group-text bg-white fw-bold text-muted">Dataset:</span>
             <select
               value={activeDataset}
               onChange={(e) => setActiveDataset(e.target.value)}
-              className="border px-3 py-1 rounded"
+              className="form-select"
             >
               {datasetList.length === 0 && (
                 <option value="">No dataset available</option>
               )}
-
               {datasetList.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
+                <option key={name} value={name}>{name}</option>
               ))}
             </select>
           </div>
-      </div>
-
-      {/* Loading State */}
-      {/* {status === "processing" && (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-2/3 bg-gray-200 rounded-full h-3 mb-4">
-            <div
-              className="bg-blue-600 h-3 rounded-full transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          <p className="text-lg font-medium text-gray-700">
-            {step ? step.toUpperCase() : "PROCESSING"}
-          </p>
-
-          <p className="text-sm text-gray-500 mt-1">
-            {statusMessage || "Processing dataset..."}
-          </p>
-
-          <p className="text-xs text-gray-400 mt-2">{progress}% completed</p>
+          
+          <button
+            className="btn btn-sm btn-outline-danger shadow-sm"
+            disabled={!activeDataset || activeDataset === "default"}
+            onClick={handleDeleteDataset}
+          >
+            Delete
+          </button>
         </div>
-      )} */}
+      </div>
 
       {/* Error State */}
       {status === "error" && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline">
-            {" "}
-            Something went wrong during processing.
-          </span>
+        <div className="alert alert-danger shadow-sm mb-4" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-2"></i>
+          <strong>Error!</strong> Something went wrong during processing.
         </div>
       )}
 
-      {/* --- Part 1: Selected Files (Updated UI) --- */}
-      <div className="bg-white p-4 rounded shadow mb-6 border">
-        {/* File List Container */}
-        <h4 className="text-md font-semibold mb-2 text-gray-700">
-          Download Select Dataset
-        </h4>
-        <p className="text-sm text-gray-500 mb-3">
-          Download as a single merged NetCDF file.
-          {/* Select a specific range (Time/Area) to  */}
-        </p>
-        {/* sent slotId to Component use API */}
-        <DownloadSection datasetName={activeDataset} datasetStatus={status} />
+      {/* 2. Download Section */}
+      <div className="card shadow-sm border-0 mb-2">
+        <div className="card-body d-flex flex-column flex-md-row justify-content-between align-items-center p-3">
+          <div className="mb-3 mb-md-0">
+            <h5 className="fw-bold mb-1 text-dark">Download Merged Dataset</h5>
+            <p className="text-muted small mb-0">Download the selected area and time as a single merged NetCDF file.</p>
+          </div>
+          <div style={{ minWidth: "250px" }}>
+            <DownloadSection datasetName={activeDataset} datasetStatus={status} />
+          </div>
+        </div>
       </div>
 
-      <div className="row mb-5">
+      {/* 3. Main Content (Preview & Indices) */}
+      <div className="row g-4 mb-5">
+        
         {/* LEFT: Metadata */}
-        <div className="col-12 col-lg-6 mb-4 lg:mb-0">
-          <div className="card h-100 shadow-sm">
-            <div className="card-body">
-              {metadata ? (
-                // send [metadata] is array
-                <DatasetPreview
-                  metadata={[metadata]}
-                  selectedFile={0}
-                  onSelectFile={() => {}}
-                />
-              ) : (
-                <div className="text-center p-5 text-muted">
-                  {loadingMeta
-                    ? "Loading..."
-                    : "No Metadata (Please clip data first)"}
-                </div>
-              )}
+        <div className="col-12 col-lg-6">
+          {metadata ? (
+            <DatasetPreview
+              metadata={[metadata]}
+              selectedFile={0}
+              onSelectFile={() => {}}
+            />
+          ) : (
+            <div className="card h-100 shadow-sm border-0">
+              <div className="card-body d-flex align-items-center justify-content-center text-muted bg-light rounded">
+                {loadingMeta ? "Loading..." : "No Metadata (Please clip data first)"}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* RIGHT: Indices Selector */}
         <div className="col-12 col-lg-6">
-          <div className="card h-100 shadow-sm">
-            <div className="card-body">
-              {metadata && metadata.variables ? (
-                <IndicesSelector
-                  availableVars={metadata.variables}
-                  onCalculate={handleCalculateIndices}
-                />
-              ) : (
-                <div className="text-center p-5 text-muted">
-                  Waiting for metadata...
-                </div>
-              )}
+          {metadata && metadata.variables ? (
+            <IndicesSelector
+              availableVars={metadata.variables}
+              onCalculate={handleCalculateIndices}
+            />
+          ) : (
+            <div className="card h-100 shadow-sm border-0">
+              <div className="card-body d-flex align-items-center justify-content-center text-muted bg-light rounded">
+                Waiting for metadata...
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* --- Part 4 (Bottom): Visualization --- */}
-      {/* <div className="bg-white p-6 rounded shadow border">
-        <h3 className="font-bold text-xl mb-4 border-b pb-2">
-          Visualization Preview
-        </h3> */}
-
-      {/* Controls */}
-      {/* <div className="flex gap-4 mb-6 items-end">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">
-              Select Variable
-            </label>
-            <select
-              value={selectedVar}
-              onChange={(e) => {
-                setSelectedVar(e.target.value);
-                setPreviewReady(false);
-              }}
-              className="border p-2 rounded w-40"
-              disabled={!metadata}
-            >
-              {metadata?.variables?.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            onClick={handleGeneratePreview}
-            disabled={!selectedVar || loadingMeta}
-            className="bg-indigo-600 text-white px-4 py-2 rounded font-medium hover:bg-indigo-700 disabled:bg-gray-400"
-          >
-            Load Graphs & Map
-          </button>
-        </div> */}
-
-      {/* Graphs & Maps Area */}
-      {/* {previewReady && previewBaseUrl ? (
-          <div className="row">
-            ใช้ row class ของ bootstrap หรือ flex ของ tailwind ตาม existing css
-            <div className="col-12 col-lg-6 mb-4">
-              <h4 className="text-md font-semibold mb-2">
-                Timeseries (Area Average)
-              </h4>
-              Reuse Existing Component
-              <RawTimeseriesViewer
-                fileIndex={activeSlot}
-                variable={selectedVar}
-              />
-            </div>
-            <div className="col-12 col-lg-6">
-              <h4 className="text-md font-semibold mb-2">
-                Spatial Map (Time Average)
-              </h4>
-              Reuse Existing Component
-              <RawMapViewer fileIndex={activeSlot} variable={selectedVar} />
-            </div>
-          </div>
-        ) : (
-          <div className="h-64 bg-gray-50 flex items-center justify-center border-2 border-dashed rounded text-gray-400">
-            Select a variable and click "Load Graphs & Map" to visualize.
-          </div>
-        )}
-      </div> */}
-
-      <button
-        className="btn btn-sm btn-danger"
-        disabled={!activeDataset || activeDataset === "default"}
-        onClick={handleDeleteDataset}
-      >
-        Delete Dataset
-      </button>
-
+      {/* Loading Overlay */}
       {isCalculating && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60">
-          <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full text-center">
-            <div className="animate-spin rounded-full h-14 w-14 border-4 border-gray-200 border-t-blue-600 mx-auto mb-6"></div>
-
-            <h3 className="text-xl font-semibold mb-2">Calculating Indices</h3>
-
-            <p className="text-gray-600 text-sm mb-4">
-              Please wait while indices are being calculated.
-            </p>
-
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4" />
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: "rgba(0,0,0,0.6)", zIndex: 9999 }}>
+          <div className="bg-white p-5 rounded-4 shadow-lg text-center" style={{ maxWidth: "400px", width: "100%" }}>
+            <div className="spinner-border text-primary mb-4" style={{ width: "3rem", height: "3rem" }} role="status">
+              <span className="visually-hidden">Loading...</span>
             </div>
+            <h4 className="fw-bold mb-2">Calculating Indices</h4>
+            <p className="text-muted small mb-0">Please wait while indices are being calculated. This may take a while.</p>
           </div>
         </div>
       )}
     </div>
   );
 }
+
+//   return (
+//     <div className="container mx-auto p-6 pb-20 relative">
+//       {/* Header & Navigation */}
+//       <div className="flex justify-between items-center mb-6">
+//         <h1 className="text-3xl font-bold text-gray-800">Dataset Processor</h1>
+//           {/* Slot Selector (Dataset 1, 2, 3, 4) */}
+//           {/* {[1, 2, 3, 4].map((id) => (
+//             <button
+//               key={id}
+//               onClick={() => setActiveSlot(id)}
+//               className={`px-3 py-1 rounded border ${
+//                 activeSlot === id
+//                   ? "bg-blue-600 text-white"
+//                   : "bg-white text-gray-700"
+//               }`}
+//             >
+//               Selected Dataset {id}
+//             </button>
+//           ))} */}
+//           <div className="flex gap-2 items-center">
+//             <label>Dataset:</label>
+//             <select
+//               value={activeDataset}
+//               onChange={(e) => setActiveDataset(e.target.value)}
+//               className="border px-3 py-1 rounded"
+//             >
+//               {datasetList.length === 0 && (
+//                 <option value="">No dataset available</option>
+//               )}
+
+//               {datasetList.map((name) => (
+//                 <option key={name} value={name}>
+//                   {name}
+//                 </option>
+//               ))}
+//             </select>
+//           </div>
+//       </div>
+
+//       {/* Loading State */}
+//       {/* {status === "processing" && (
+//         <div className="flex flex-col items-center justify-center py-20">
+//           <div className="w-2/3 bg-gray-200 rounded-full h-3 mb-4">
+//             <div
+//               className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+//               style={{ width: `${progress}%` }}
+//             />
+//           </div>
+
+//           <p className="text-lg font-medium text-gray-700">
+//             {step ? step.toUpperCase() : "PROCESSING"}
+//           </p>
+
+//           <p className="text-sm text-gray-500 mt-1">
+//             {statusMessage || "Processing dataset..."}
+//           </p>
+
+//           <p className="text-xs text-gray-400 mt-2">{progress}% completed</p>
+//         </div>
+//       )} */}
+
+//       {/* Error State */}
+//       {status === "error" && (
+//         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+//           <strong className="font-bold">Error!</strong>
+//           <span className="block sm:inline">
+//             {" "}
+//             Something went wrong during processing.
+//           </span>
+//         </div>
+//       )}
+
+//       {/* --- Part 1: Selected Files (Updated UI) --- */}
+//       <div className="bg-white p-4 rounded shadow mb-6 border">
+//         {/* File List Container */}
+//         <h4 className="text-md font-semibold mb-2 text-gray-700">
+//           Download Select Dataset
+//         </h4>
+//         <p className="text-sm text-gray-500 mb-3">
+//           Download as a single merged NetCDF file.
+//           {/* Select a specific range (Time/Area) to  */}
+//         </p>
+//         {/* sent slotId to Component use API */}
+//         <DownloadSection datasetName={activeDataset} datasetStatus={status} />
+//       </div>
+
+//       <div className="row mb-5">
+//         {/* LEFT: Metadata */}
+//         <div className="col-12 col-lg-6 mb-4 lg:mb-0">
+//           <div className="card h-100 shadow-sm">
+//             <div className="card-body">
+//               {metadata ? (
+//                 // send [metadata] is array
+//                 <DatasetPreview
+//                   metadata={[metadata]}
+//                   selectedFile={0}
+//                   onSelectFile={() => {}}
+//                 />
+//               ) : (
+//                 <div className="text-center p-5 text-muted">
+//                   {loadingMeta
+//                     ? "Loading..."
+//                     : "No Metadata (Please clip data first)"}
+//                 </div>
+//               )}
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* RIGHT: Indices Selector */}
+//         <div className="col-12 col-lg-6">
+//           <div className="card h-100 shadow-sm">
+//             <div className="card-body">
+//               {metadata && metadata.variables ? (
+//                 <IndicesSelector
+//                   availableVars={metadata.variables}
+//                   onCalculate={handleCalculateIndices}
+//                 />
+//               ) : (
+//                 <div className="text-center p-5 text-muted">
+//                   Waiting for metadata...
+//                 </div>
+//               )}
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* --- Part 4 (Bottom): Visualization --- */}
+//       {/* <div className="bg-white p-6 rounded shadow border">
+//         <h3 className="font-bold text-xl mb-4 border-b pb-2">
+//           Visualization Preview
+//         </h3> */}
+
+//       {/* Controls */}
+//       {/* <div className="flex gap-4 mb-6 items-end">
+//           <div>
+//             <label className="block text-sm font-bold text-gray-700 mb-1">
+//               Select Variable
+//             </label>
+//             <select
+//               value={selectedVar}
+//               onChange={(e) => {
+//                 setSelectedVar(e.target.value);
+//                 setPreviewReady(false);
+//               }}
+//               className="border p-2 rounded w-40"
+//               disabled={!metadata}
+//             >
+//               {metadata?.variables?.map((v) => (
+//                 <option key={v} value={v}>
+//                   {v}
+//                 </option>
+//               ))}
+//             </select>
+//           </div>
+//           <button
+//             onClick={handleGeneratePreview}
+//             disabled={!selectedVar || loadingMeta}
+//             className="bg-indigo-600 text-white px-4 py-2 rounded font-medium hover:bg-indigo-700 disabled:bg-gray-400"
+//           >
+//             Load Graphs & Map
+//           </button>
+//         </div> */}
+
+//       {/* Graphs & Maps Area */}
+//       {/* {previewReady && previewBaseUrl ? (
+//           <div className="row">
+//             ใช้ row class ของ bootstrap หรือ flex ของ tailwind ตาม existing css
+//             <div className="col-12 col-lg-6 mb-4">
+//               <h4 className="text-md font-semibold mb-2">
+//                 Timeseries (Area Average)
+//               </h4>
+//               Reuse Existing Component
+//               <RawTimeseriesViewer
+//                 fileIndex={activeSlot}
+//                 variable={selectedVar}
+//               />
+//             </div>
+//             <div className="col-12 col-lg-6">
+//               <h4 className="text-md font-semibold mb-2">
+//                 Spatial Map (Time Average)
+//               </h4>
+//               Reuse Existing Component
+//               <RawMapViewer fileIndex={activeSlot} variable={selectedVar} />
+//             </div>
+//           </div>
+//         ) : (
+//           <div className="h-64 bg-gray-50 flex items-center justify-center border-2 border-dashed rounded text-gray-400">
+//             Select a variable and click "Load Graphs & Map" to visualize.
+//           </div>
+//         )}
+//       </div> */}
+
+//       <button
+//         className="btn btn-sm btn-danger"
+//         disabled={!activeDataset || activeDataset === "default"}
+//         onClick={handleDeleteDataset}
+//       >
+//         Delete Dataset
+//       </button>
+
+//       {isCalculating && (
+//         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60">
+//           <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full text-center">
+//             <div className="animate-spin rounded-full h-14 w-14 border-4 border-gray-200 border-t-blue-600 mx-auto mb-6"></div>
+
+//             <h3 className="text-xl font-semibold mb-2">Calculating Indices</h3>
+
+//             <p className="text-gray-600 text-sm mb-4">
+//               Please wait while indices are being calculated.
+//             </p>
+
+//             <div className="w-full bg-gray-200 rounded-full h-2">
+//               <div className="bg-blue-600 h-2 rounded-full animate-pulse w-3/4" />
+//             </div>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
