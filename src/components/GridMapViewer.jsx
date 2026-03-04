@@ -127,6 +127,9 @@ export default function GridMapViewer({
   setMode,
   datasetName,
   country,
+  province,
+  startYear,
+  endYear
 }) {
   const [gridData, setGridData] = useState({ actual: null, trend: null });
   const [scales, setScales] = useState({ actual: null, trend: null });
@@ -142,6 +145,8 @@ export default function GridMapViewer({
   const [noData, setNoData] = useState(false);
 
   const [maskData, setMaskData] = useState(null);
+
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // const [seaBoundary, setSeaBoundary] = useState(null);
   // const [countryBoundary, setCountryBoundary] = useState(null);
@@ -239,18 +244,12 @@ export default function GridMapViewer({
     setLoading(true);
     setError(null);
     setNoData(false);
+    setIsGenerating(false);
 
     setGridData({ actual: null, trend: null });
     setScales({ actual: null, trend: null });
     setBinsAll({ actual: [], trend: [] });
     setUnit("");
-
-    const apiBase = "http://localhost:8000";
-    // const basePath = datamode === "upload" ? `${apiBase}/output` : "/data";
-    const datasetPath =
-      datasetName === "default" ? "/data" : `${apiBase}/output/${datasetName}`;
-
-    const cacheKey = Date.now();
 
     const NO_TREND_INDICES = [
       "pr",
@@ -260,34 +259,166 @@ export default function GridMapViewer({
 
     const supportsTrend = !NO_TREND_INDICES.includes(indexName);
 
-    const actualGridPath = province
-    ? `${datasetPath}/maps_grid/actual/${country}/${province}/${indexName}_actual_grid.geojson?v=${cacheKey}`
-    : `${datasetPath}/maps_grid/actual/${country}/${indexName}_actual_grid.geojson?v=${cacheKey}`;
-
-    const requests = [
-      fetch(
-        `${datasetPath}/maps_grid/actual/${indexName}_actual_grid.geojson?v=${cacheKey}`
-      ).then((res) => {
-        if (!res.ok) throw new Error("Actual grid fetch failed");
-        return res.json();
-      }),
-    ];
-
-    if (supportsTrend) {
-
-      const trendGridPath = province
-      ? `${datasetPath}/maps_grid/trend/${country}/${province}/${indexName}_trend_grid.geojson?v=${cacheKey}`
-      : `${datasetPath}/maps_grid/trend/${country}/${indexName}_trend_grid.geojson?v=${cacheKey}`;
-      
-      requests.push(
-        fetch(
-          `${datasetPath}/maps_grid/trend/${indexName}_trend_grid.geojson?v=${cacheKey}`
-        ).then((res) => {
-        if (!res.ok) throw new Error("Trend grid fetch failed");
-        return res.json();
-      }),
-      );
+    if (!supportsTrend && mode === "trend") {
+      setMode("actual");
     }
+
+    let isMounted = true;
+
+    const fetchAllMaps = async () => {
+      setLoading(true);
+      setError(null);
+      setNoData(false);
+      setIsGenerating(false);
+
+      const apiBase = "http://localhost:8000";
+      // Determine base path based on dataset type
+      const datasetPath = datasetName === "default" ? "/data" : `${apiBase}/output/${datasetName}`;
+      
+      // Determine area (use "overview" for country-level data)
+      const area = province ? province : "overview";
+      const cacheKey = Date.now();
+
+      // Construct file paths based on the domain-centric structure
+      const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${cacheKey}`;
+      const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${cacheKey}`;
+
+      // Helper function to handle fetch and return 404 gracefully instead of breaking
+      const fetchGracefully = async (url) => {
+        try {
+          const res = await fetch(url);
+          if (res.status === 404) return { status: 404, data: null };
+          if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+          return { status: 200, data: await res.json() };
+        } catch (err) {
+          throw new Error(`Fetch failed for ${url}: ${err.message}`);
+        }
+      };
+
+      try {
+        // --- Step 1: Initial Fetch ---
+        const requests = [fetchGracefully(actualGridPath)];
+        if (supportsTrend) {
+          requests.push(fetchGracefully(trendGridPath));
+        }
+
+        let results = await Promise.all(requests);
+        let actualRes = results[0];
+        let trendRes = supportsTrend ? results[1] : { status: 200, data: null };
+
+        // --- Step 2: Lazy Generation Check ---
+        // If file doesn't exist (404), ask backend to generate it
+        if (actualRes.status === 404 || (supportsTrend && trendRes.status === 404)) {
+          setIsGenerating(true);
+
+          // Trigger generation API
+          const generateRes = await fetch(`${apiBase}/api/maps/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              indexName,
+              datasetName,
+              country,
+              province: province || null, // Send null if empty string
+              startYear: parseInt(startYear, 10),
+              endYear: parseInt(endYear, 10),
+              supportsTrend
+            }),
+          });
+
+          if (!generateRes.ok) {
+            throw new Error("Backend failed to generate map data.");
+          }
+
+          // --- Step 3: Re-fetch after generation ---
+          const newCacheKey = Date.now(); 
+          const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${newCacheKey}`;
+          const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${newCacheKey}`;
+
+          const retryRequests = [fetchGracefully(retryActualPath)];
+          if (supportsTrend) retryRequests.push(fetchGracefully(retryTrendPath));
+
+          const retryResults = await Promise.all(retryRequests);
+          actualRes = retryResults[0];
+          trendRes = supportsTrend ? retryResults[1] : { status: 200, data: null };
+
+          if (actualRes.status === 404 || (supportsTrend && trendRes.status === 404)) {
+            throw new Error("Map generation succeeded, but files are still missing on the server.");
+          }
+        }
+
+        // --- Step 4: Update State ---
+        if (isMounted) {
+          const actualData = actualRes.data;
+          const trendData = trendRes.data;
+
+          // Check if data is truly empty
+          if (!actualData?.features?.length && (!supportsTrend || !trendData?.features?.length)) {
+            setNoData(true);
+          } else {
+            setGridData({ actual: actualData, trend: trendData });
+            // Extract unit from metadata
+            const u = actualData?.metadata?.unit || trendData?.metadata?.unit || "";
+            setUnit(u);
+          }
+        }
+
+      } catch (err) {
+        if (isMounted) {
+          console.error("Map Load Error:", err);
+          setError(err.message);
+        }
+      } finally {
+        if (isMounted) {
+          setIsGenerating(false);
+          setLoading(false);
+        }
+      }
+    };
+
+    if (startYear && endYear && indexName && datasetName && country) {
+      fetchAllMaps();
+    }
+
+    return () => { isMounted = false; };
+  }, [indexName, datasetName, country, province, startYear, endYear]);
+
+  // Define which dataset to render based on the current mode
+  const currentMapData = mode === "trend" ? gridData.trend : gridData.actual;
+
+    // const apiBase = "http://localhost:8000";
+    // // const basePath = datamode === "upload" ? `${apiBase}/output` : "/data";
+    // const datasetPath =
+    //   datasetName === "default" ? "/data" : `${apiBase}/output/${datasetName}`;
+
+    // const cacheKey = Date.now();
+
+    // const area = province ? province : "overview";
+
+    // // New Path Structure: datasetPath / country / area / indexName / maps_grid / [actual|trend] / {start}_{end}_[type]_grid.geojson
+    // const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${cacheKey}`;
+    // const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${cacheKey}`;
+
+    // const requests = [
+    //   fetch(
+    //     `${datasetPath}/maps_grid/actual/${indexName}_actual_grid.geojson?v=${cacheKey}`
+    //   ).then((res) => {
+    //     if (!res.ok) throw new Error("Actual grid fetch failed");
+    //     return res.json();
+    //   }),
+    // ];
+
+    // if (supportsTrend) {
+
+    //   requests.push(
+    //     fetch(
+    //       `${datasetPath}/maps_grid/trend/${indexName}_trend_grid.geojson?v=${cacheKey}`
+    //     ).then((res) => {
+    //     if (!res.ok) throw new Error("Trend grid fetch failed");
+    //     return res.json();
+    //   }),
+    //   );
+    // }
 
     // Promise.all([
     //   fetch(
@@ -303,24 +434,24 @@ export default function GridMapViewer({
     //     return res.json();
     //   }),
     // ])
-    Promise.all(requests)
-      .then(([actualData, trendData]) => {
-        if (!actualData?.features?.length && !trendData?.features?.length) {
-          setNoData(true);
-          return;
-        }
+  //   Promise.all(requests)
+  //     .then(([actualData, trendData]) => {
+  //       if (!actualData?.features?.length && !trendData?.features?.length) {
+  //         setNoData(true);
+  //         return;
+  //       }
 
-        setGridData({ actual: actualData, trend: trendData });
-        const u = actualData?.metadata?.unit || trendData?.metadata?.unit || "";
-        setUnit(u);
-      })
-      .catch((err) => {
-        setError(err.message);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [indexName, datasetName]); // , datamode
+  //       setGridData({ actual: actualData, trend: trendData });
+  //       const u = actualData?.metadata?.unit || trendData?.metadata?.unit || "";
+  //       setUnit(u);
+  //     })
+  //     .catch((err) => {
+  //       setError(err.message);
+  //     })
+  //     .finally(() => {
+  //       setLoading(false);
+  //     });
+  // }, [indexName, datasetName]); // , datamode
 
   // useEffect(() => {
   //   fetch("/data/southeast-asia-boundary.geojson")
@@ -575,9 +706,23 @@ export default function GridMapViewer({
   //   console.log("Mask:", maskData);
   // }, [seaBoundary, countryBoundary, maskData]);
 
-  if (loading) return <div>Loading map...</div>;
-  if (error) return <div style={{ color: "red" }}>Error: {error}</div>;
-  if (noData) return <div>No map data available.</div>;
+  // if (loading) return <div>Loading map...</div>;
+  // if (error) return <div style={{ color: "red" }}>Error: {error}</div>;
+  // if (noData) return <div>No map data available.</div>;
+
+  if (loading || isGenerating) {
+    return (
+      <div className="d-flex flex-column justify-content-center align-items-center" style={{ height: "450px", border: "1px solid #ddd", borderRadius: "8px", background: "#f8f9fa" }}>
+        <div className="spinner-border text-primary mb-2" role="status"></div>
+        <span className="fw-bold text-primary">
+          {isGenerating ? `Calculating map data for ${startYear} - ${endYear}...` : "Loading maps..."}
+        </span>
+      </div>
+    );
+  }
+  
+  if (error) return <div className="p-3 text-danger border rounded">Error: {error}</div>;
+  if (noData) return <div className="p-3 text-warning border rounded">No map data available for the selected parameters.</div>;
 
   return (
     <div>
@@ -608,55 +753,6 @@ export default function GridMapViewer({
           className={`btn ${mode === "trend" ? "btn-primary shadow-sm" : "btn-light border"}`}
         >
           Trend Map
-        </button>
-      </div>
-
-      {/* legend range control */}
-      <div className="flex gap-2 p-2 items-center">
-        <span className="text-sm">Legend range:</span>
-
-        <input
-          type="number"
-          placeholder="Min"
-          value={legendRange[mode].min ?? ""}
-          onChange={(e) =>
-            setLegendRange((r) => ({
-              ...r,
-              [mode]: {
-                ...r[mode],
-                min: e.target.value === "" ? null : +e.target.value,
-              },
-            }))
-          }
-          className="border px-1 w-24"
-        />
-
-        <input
-          type="number"
-          placeholder="Max"
-          value={legendRange[mode].max ?? ""}
-          onChange={(e) =>
-            setLegendRange((r) => ({
-              ...r,
-              [mode]: {
-                ...r[mode],
-                max: e.target.value === "" ? null : +e.target.value,
-              },
-            }))
-          }
-          className="border px-1 w-24"
-        />
-
-        <button
-          className="text-sm underline"
-          onClick={() =>
-            setLegendRange((r) => ({
-              ...r,
-              [mode]: { min: null, max: null },
-            }))
-          }
-        >
-          Auto
         </button>
       </div>
 
@@ -731,6 +827,56 @@ export default function GridMapViewer({
           />
         )}
       </div>
+
+      {/* legend range control */}
+      <div className="flex gap-2 p-2 items-center">
+        <span className="text-sm">Legend range:</span>
+
+        <input
+          type="number"
+          placeholder="Min"
+          value={legendRange[mode].min ?? ""}
+          onChange={(e) =>
+            setLegendRange((r) => ({
+              ...r,
+              [mode]: {
+                ...r[mode],
+                min: e.target.value === "" ? null : +e.target.value,
+              },
+            }))
+          }
+          className="border px-1 w-24"
+        />
+
+        <input
+          type="number"
+          placeholder="Max"
+          value={legendRange[mode].max ?? ""}
+          onChange={(e) =>
+            setLegendRange((r) => ({
+              ...r,
+              [mode]: {
+                ...r[mode],
+                max: e.target.value === "" ? null : +e.target.value,
+              },
+            }))
+          }
+          className="border px-1 w-24"
+        />
+
+        <button
+          className="text-sm underline"
+          onClick={() =>
+            setLegendRange((r) => ({
+              ...r,
+              [mode]: { min: null, max: null },
+            }))
+          }
+        >
+          Auto
+        </button>
+      </div>
+
     </div>
   );
 }

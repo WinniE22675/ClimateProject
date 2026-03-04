@@ -11,13 +11,14 @@ from services.dataset_service import (
     delete_raw_file, 
     run_async_calculation,
     run_async_processing,
-    check_processing_status )
+    check_processing_status,
+    generate_on_demand_map
+)
 
 # from services.dataset_clip import process_and_clip
 from services.dataset_metadata import get_dataset_metadata_merged
 # from services.dataset_preview import generate_preview_for_processed
 # from services.dataset_merge import prepare_merged_file_for_calculation
-
 
 router = APIRouter()
 
@@ -346,3 +347,41 @@ def delete_dataset(dataset_name: str):
         "deleted": deleted,
         "missing": missing,
     }
+
+class MapGenerateRequest(BaseModel):
+    indexName: str
+    datasetName: str
+    country: str
+    province: Optional[str] = None
+    startYear: int
+    endYear: int
+    supportsTrend: bool
+
+@router.post("/api/maps/generate")
+async def generate_map_endpoint(req: MapGenerateRequest):
+    """
+    Synchronous endpoint to generate specific map (Actual & Trend) on demand.
+    Frontend will wait for this to finish before trying to fetch the files.
+    """
+    try:
+        # Call the service function directly (blocks until finished)
+        result = generate_on_demand_map(
+            dataset_name=req.datasetName,
+            index_name=req.indexName,
+            start_year=req.startYear,
+            end_year=req.endYear,
+            country=req.country,
+            province=req.province,
+            supports_trend=req.supportsTrend
+        )
+        
+        return {
+            "status": "success",
+            "message": f"Maps generated for {req.startYear}-{req.endYear}",
+            "details": result
+        }
+
+    except Exception as e:
+        print(f"Error generating map: {e}")
+        # Return 500 Internal Server Error so Frontend knows it failed
+        raise HTTPException(status_code=500, detail=str(e))

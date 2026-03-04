@@ -14,6 +14,23 @@ export default function ClimateDashboard() {
   const [activeDataset, setActiveDataset] = useState("default");
   const [province, setProvince] = useState("");
 
+  const [inputStartYear, setInputStartYear] = useState("1960");
+  const [inputEndYear, setInputEndYear] = useState("2024");
+
+  const [startYear, setStartYear] = useState("1960");
+  const [endYear, setEndYear] = useState("2024");  
+
+  const handleApplyYearRange = () => {
+    // Validate start > end alert
+    if (parseInt(inputStartYear) > parseInt(inputEndYear)) {
+      alert("Start Year less than or equal End Year.");
+      return;
+    }
+    // update Active for send to sub Component
+    setStartYear(inputStartYear);
+    setEndYear(inputEndYear);
+  };
+
   const countries = [
     "Thailand",
     // "Vietnam",
@@ -210,7 +227,32 @@ export default function ClimateDashboard() {
       {/* <h2 className="text-xl font-bold whitespace-nowrap">Climate Change</h2> */}
       {/* Controls Container bg-light rounded shadow-sm*/}
       <div className="d-flex align-items-end gap-3 p-2">
-        {/* 2. Dataset Selector (รวม Default) */}
+        <div className="flex items-center gap-2">
+          <label className="form-label small fw-bold text-muted mb-0">Start Year:</label>
+          <input
+            type="number"
+            value={startYear}
+            onChange={(e) => setInputStartYear(e.target.value)}
+            className="form-control form-control-sm w-20"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="form-label small fw-bold text-muted mb-0">End Year:</label>
+          <input
+            type="number"
+            value={endYear}
+            onChange={(e) => setInputEndYear(e.target.value)}
+            className="form-control form-control-sm w-20"
+          />
+        </div>
+        <button 
+          className="btn btn-sm btn-primary" 
+          onClick={handleApplyYearRange}
+        >
+          Apply Years
+        </button>
+
+        {/*Dataset Selector*/}
         <div>
           <label className="form-label small fw-bold text-muted ">
             Dataset Source
@@ -345,21 +387,23 @@ export default function ClimateDashboard() {
         <div className="col-12 col-lg-6">
           <IndicesViewer
             indexName={indexName}
-            // setIndexName={setIndexName}
-            // datamode={datamode} //"default"
-            datasetName={activeDataset} //datasetId
+            datasetName={activeDataset}
             country={country}
+            province={province}   
+            startYear={startYear}
+            endYear={endYear}     
           />
         </div>
-        {/*col-12 col-lg-6*/}
         <div className="col-12 col-lg-6">
           <GridMapViewer
             indexName={indexName}
             mode={mode}
             setMode={setMode}
-            // datamode={datamode} //"default"
-            datasetName={activeDataset} //datasetId
+            datasetName={activeDataset}
             country={country}
+            province={province}   
+            startYear={startYear}
+            endYear={endYear}    
           />
         </div>
       </div>

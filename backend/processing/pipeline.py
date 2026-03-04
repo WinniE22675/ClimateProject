@@ -205,7 +205,7 @@ def clear_upload_folder(file_path=r"D:\Students\YearFour\Project\ClimateRiskMap\
 
 #     inferred = pd.infer_freq(time)
 #     if inferred is None:
-#         # บังคับ daily (สำหรับ CMIP6 daily)
+#         # force daily 
 #         ds = ds.assign_coords(
 #             time=pd.date_range(
 #                 start=str(time[0]),
@@ -240,7 +240,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
         clipped_vars = {}
         for var in ds.data_vars:
             da = prep_for_rio(ds[var])
-            clipped_vars[var] = clip_to_shape(da, SEA_SHAPEFILE_PATH)
+            clipped_vars[var] = clip_to_shape(da, shp_thai_boundary) # SEA_SHAPEFILE_PATH
 
         ds_clip = xr.Dataset(clipped_vars)
         print("Clipped to SEA boundary.")
@@ -433,3 +433,92 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
 
 # if __name__ == "__main__":
 #     main_pipeline(file_path="upload/")
+
+def generate_custom_map_pipeline(
+    file_input: str, 
+    output_base_dir: str, 
+    index_name: str, 
+    start_year: int, 
+    end_year: int, 
+    country: str, 
+    province: str, 
+    supports_trend: bool, 
+    baseline=None
+):
+    """
+    Lightweight pipeline:
+    1. Load merged dataset
+    2. Clip to boundary
+    3. Calculate ONLY the requested index
+    4. Export Actual & Trend map for specific year range
+    5. Overlay masking for the specific area
+    """
+    # 1. Load Dataset
+    ds = load_dataset(file_input)
+    print(f"Dataset loaded for on-demand map: {index_name} ({start_year}-{end_year})")
+
+    try:
+        # 2. Clip Dataset to SEA shapefile first to reduce data size before calculation
+        clipped_vars = {}
+        for var in ds.data_vars:
+            da = prep_for_rio(ds[var])
+            clipped_vars[var] = clip_to_shape(da, shp_thai_boundary)
+        ds_clip = xr.Dataset(clipped_vars)
+
+        # 3. Calculate ONLY the specific index requested (saves huge amount of time)
+        print(f"Calculating index: {index_name}")
+        # Note: We pass [index_name] as the selected_indices list
+        indices_annual = calculate_all_indices(ds_clip, "YS", [index_name], baseline)
+
+        if index_name not in indices_annual.data_vars:
+            raise ValueError(f"Failed to calculate index {index_name}")
+
+        index_data = indices_annual[index_name]
+
+        # 4. Export Maps (The export functions handle slicing the data by start_year and end_year)
+        actual_json_path = export_actual_maps_xesmf(
+            index_data=index_data,
+            index_name=index_name,
+            output_base_dir=output_base_dir,
+            start_year=start_year,
+            end_year=end_year,
+            region_name=country,
+            province_name=province
+        )
+
+        trend_json_path = None
+        if supports_trend:
+            trend_json_path = export_trend_map_xesmf(
+                index_data=index_data,
+                index_name=index_name,
+                output_base_dir=output_base_dir,
+                start_year=start_year,
+                end_year=end_year,
+                region_name=country,
+                province_name=province
+            )
+
+        # 5. Overlay Map with Shapefile (Masking)
+        if province:
+            # Mask specifically for the requested province
+            if shp_thai_provinces is not None:
+                # Filter shapefile for this specific province
+                province_shp = shp_thai_provinces[shp_thai_provinces['ADM1_EN'] == province]
+                overlay_with_shapefile(actual_json_path, province_shp)
+                if supports_trend and trend_json_path:
+                    overlay_with_shapefile(trend_json_path, province_shp)
+        else:
+            # Overview mode: Mask with the entire country boundary
+            if shp_thai_boundary is not None:
+                overlay_with_shapefile(actual_json_path, shp_thai_boundary)
+                if supports_trend and trend_json_path:
+                    overlay_with_shapefile(trend_json_path, shp_thai_boundary)
+
+        print(f"On-demand map generation completed for {index_name}")
+
+    except Exception as e:
+        print(f"Custom Pipeline Error: {e}")
+        raise e
+    finally:
+        ds.close()
+        print("Dataset closed.")

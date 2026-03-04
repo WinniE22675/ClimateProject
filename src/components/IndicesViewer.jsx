@@ -85,14 +85,14 @@ function resolveSPIColor(d, indexName) {
 
 
 // , datamode setIndexName,
-export default function IndicesViewer({ indexName, datasetName, country }) {
+export default function IndicesViewer({ indexName, datasetName, country, province, startYear, endYear }) {
   const [allData, setAllData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [allMonthlyData, setAllMonthlyData] = useState([]);
   const [monthlyData, setMonthlyData] = useState([]);
   const [unit, setUnit] = useState("");
-  const [startDate, setStartDate] = useState("1960");
-  const [endDate, setEndDate] = useState("2024");
+  // const [startYear, setStartYear] = useState("1960");
+  // const [endYear, setEndYear] = useState("2024");
   const [windowSize, setWindowSize] = useState(21);
 
   // state: loading / error / no-data
@@ -125,8 +125,8 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
   //       setFilteredData(d.data);
   //       setUnit(d.metadata.unit || "");
   //       if (d.data?.length > 0) {
-  //         setStartDate(String(d.data[0].year));
-  //         setEndDate(String(d.data[d.data.length - 1].year));
+  //         setStartYear(String(d.data[0].year));
+  //         setEndYear(String(d.data[d.data.length - 1].year));
   //       }
   //     });
 
@@ -151,24 +151,20 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
 
     const cacheKey = Date.now();
 
-    const annualPath = province
-    ? `${datasetPath}/indices/annual/${country}/${province}/${baseIndexName}_timeseries.json?v=${cacheKey}`
-    : `${datasetPath}/indices/annual/${country}/${baseIndexName}_timeseries.json?v=${cacheKey}`;
+    // Determine if we are looking at a province or the national overview
+    const area = province ? province : "overview";
+    const baseIndexName = indexName; // Adjust this if your base name logic differs
 
-  const seasonalPath = province
-    ? `${datasetPath}/indices/seasonal/${country}/${province}/${baseIndexName}_seasonal.json?v=${cacheKey}`
-    : `${datasetPath}/indices/seasonal/${country}/${baseIndexName}_seasonal.json?v=${cacheKey}`;
-
+    // New Path Structure: datasetPath / country / area / indexName / indices / [annual|seasonal]
+    const annualPath = `${datasetPath}/${country}/${area}/${indexName}/indices/annual/${baseIndexName}_timeseries.json?v=${cacheKey}`;
+    const seasonalPath = `${datasetPath}/${country}/${area}/${indexName}/indices/seasonal/${baseIndexName}_seasonal.json?v=${cacheKey}`;
+    
     Promise.all([
-      fetch(
-        `${datasetPath}/indices/annual/${baseIndexName}_${country}_timeseries.json?v=${cacheKey}` //basePath
-      ).then((res) => {
+      fetch(annualPath).then((res) => {
         if (!res.ok) throw new Error("Annual fetch failed");
         return res.json();
       }),
-      fetch(
-        `${datasetPath}/indices/monthly/${baseIndexName}_${country}_monthly.json?v=${cacheKey}`
-      ).then((res) => {
+      fetch(seasonalPath).then((res) => {
         if (!res.ok) throw new Error("Monthly fetch failed");
         return res.json();
       }),
@@ -197,7 +193,7 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
       .finally(() => {
         setLoading(false);
       });
-  }, [indexName, baseIndexName, datasetName, country]); //datamode,
+  }, [indexName, baseIndexName, datasetName, country, province, startYear, endYear]); //datamode,
 
   // Help Threshold change
   useEffect(() => {
@@ -220,10 +216,10 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
 
   useEffect(() => {
     const f = allData.filter(
-      (d) => d.year >= parseInt(startDate) && d.year <= parseInt(endDate)
+      (d) => d.year >= parseInt(startYear) && d.year <= parseInt(endYear)
     );
     setFilteredData(f);
-  }, [allData, startDate, endDate]);
+  }, [allData, startYear, endYear]);
 
   const movingAvgData = computeMovingAverage(filteredData, windowSize);
   const mergedData = filteredData.map((d, i) => ({
@@ -234,8 +230,8 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
 
   useEffect(() => {
     if (!allMonthlyData || allMonthlyData.length === 0) return; // check sure no data
-    const start = parseInt(startDate);
-    const end = parseInt(endDate);
+    const start = parseInt(startYear);
+    const end = parseInt(endYear);
     const filtered = allMonthlyData.filter(
       (d) => d.year >= start && d.year <= end
     );
@@ -249,23 +245,23 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
       }
     }
     setMonthlyData(monthlyAgg);
-  }, [allMonthlyData, startDate, endDate]);
+  }, [allMonthlyData, startYear, endYear]);
 
   // useEffect(() => {
   //   if (!allSPIData || allSPIData.length === 0) return;
 
-  //   const start = parseInt(startDate);
-  //   const end = parseInt(endDate);
+  //   const start = parseInt(startYear);
+  //   const end = parseInt(endYear);
 
   //   const filtered = allSPIData.filter((d) => d.year >= start && d.year <= end);
 
   //   setSpiSeries(filtered);
-  // }, [allSPIData, startDate, endDate]);
+  // }, [allSPIData, startYear, endYear]);
   useEffect(() => {
     if (!allSPIData?.length) return;
 
-    const start = new Date(`${startDate}-01-01`);
-    const end = new Date(`${endDate}-12-31`);
+    const start = new Date(`${startYear}-01-01`);
+    const end = new Date(`${endYear}-12-31`);
 
     const filtered = allSPIData.filter((d) => {
       const t = new Date(d.date);
@@ -273,7 +269,7 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
     });
 
     setSpiSeries(filtered);
-  }, [allSPIData, startDate, endDate]);
+  }, [allSPIData, startYear, endYear]);
 
 
   // const formatTooltip = (value) =>
@@ -377,13 +373,13 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
       </div> */}
 
       {/* Select Start/End Year */}
-      <div className="flex flex-wrap gap-2 items-center">
+      {/* <div className="flex flex-wrap gap-2 items-center">
         <div className="flex items-center gap-2">
           <label>Start Year :</label>
           <input
             type="number"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            value={startYear}
+            onChange={(e) => setStartYear(e.target.value)}
             className="border p-1 w-20 rounded"
           />
         </div>
@@ -391,12 +387,12 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
           <label>End Year :</label>
           <input
             type="number"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            value={endYear}
+            onChange={(e) => setEndYear(e.target.value)}
             className="border p-1 w-20 rounded"
           />
         </div>
-      </div>
+      </div> */}
 
       {/* Select average window size */}
       <div className="flex gap-2 items-center">
@@ -562,7 +558,7 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
           <Line
             dataKey="value"
             stroke="#0077cc"
-            name={`${baseIndexName} Seasonal Cycle (${startDate}-${endDate})`}
+            name={`${baseIndexName} Seasonal Cycle (${startYear}-${endYear})`}
             dot
           />
         </LineChart>
