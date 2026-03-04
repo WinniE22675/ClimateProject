@@ -148,6 +148,8 @@ export default function GridMapViewer({
 
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const [allProvincesData, setAllProvincesData] = useState(null);
+
   // const [seaBoundary, setSeaBoundary] = useState(null);
   // const [countryBoundary, setCountryBoundary] = useState(null);
   // const [maskData, setMaskData] = useState(null);
@@ -296,7 +298,7 @@ export default function GridMapViewer({
       };
 
       try {
-        // --- Step 1: Initial Fetch ---
+        // Initial Fetch ---
         const requests = [fetchGracefully(actualGridPath)];
         if (supportsTrend) {
           requests.push(fetchGracefully(trendGridPath));
@@ -306,7 +308,7 @@ export default function GridMapViewer({
         let actualRes = results[0];
         let trendRes = supportsTrend ? results[1] : { status: 200, data: null };
 
-        // --- Step 2: Lazy Generation Check ---
+        // Lazy Generation Check ---
         // If file doesn't exist (404), ask backend to generate it
         if (actualRes.status === 404 || (supportsTrend && trendRes.status === 404)) {
           setIsGenerating(true);
@@ -330,7 +332,7 @@ export default function GridMapViewer({
             throw new Error("Backend failed to generate map data.");
           }
 
-          // --- Step 3: Re-fetch after generation ---
+          // Re-fetch after generation ---
           const newCacheKey = Date.now(); 
           const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${newCacheKey}`;
           const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${newCacheKey}`;
@@ -347,7 +349,7 @@ export default function GridMapViewer({
           }
         }
 
-        // --- Step 4: Update State ---
+        // Update State ---
         if (isMounted) {
           const actualData = actualRes.data;
           const trendData = trendRes.data;
@@ -434,24 +436,7 @@ export default function GridMapViewer({
     //     return res.json();
     //   }),
     // ])
-  //   Promise.all(requests)
-  //     .then(([actualData, trendData]) => {
-  //       if (!actualData?.features?.length && !trendData?.features?.length) {
-  //         setNoData(true);
-  //         return;
-  //       }
 
-  //       setGridData({ actual: actualData, trend: trendData });
-  //       const u = actualData?.metadata?.unit || trendData?.metadata?.unit || "";
-  //       setUnit(u);
-  //     })
-  //     .catch((err) => {
-  //       setError(err.message);
-  //     })
-  //     .finally(() => {
-  //       setLoading(false);
-  //     });
-  // }, [indexName, datasetName]); // , datamode
 
   // useEffect(() => {
   //   fetch("/data/southeast-asia-boundary.geojson")
@@ -460,40 +445,58 @@ export default function GridMapViewer({
   //     .then((data) => setBoundaryData(data));
   // }, []);
 
-  useEffect(() => {
-    fetch(`/data/boundary/${country}.geojson`)
-      .then((res) => res.json())
-      // .then(setSeaBoundary)
-      .then((data) => setBoundaryData(data));
-  }, [country]);
-
-  useEffect(() => {
-    if (!country || country === "SEA") {
-      setMaskData(null);
-      return;
-    }
-
-    fetch(`/data/mask/${country}_mask.geojson`)
-      .then((res) => res.json())
-      .then(setMaskData);
-  }, [country]);
-
   // useEffect(() => {
-  //   if (!country || country === "SEA") {
-  //     setCountryBoundary(null);
-  //     return;
-  //   }
-
   //   fetch(`/data/boundary/${country}.geojson`)
   //     .then((res) => res.json())
-  //     .then(setCountryBoundary);
+  //     // .then(setSeaBoundary)
+  //     .then((data) => setBoundaryData(data));
   // }, [country]);
 
   // useEffect(() => {
-  //   if (mode !== "trend") {
-  //     setShowSig(false);
+  //   if (!country || country === "SEA") {
+  //     setMaskData(null);
+  //     return;
   //   }
-  // }, [mode]);
+
+  //   fetch(`/data/mask/${country}_mask.geojson`)
+  //     .then((res) => res.json())
+  //     .then(setMaskData);
+  // }, [country]);
+
+useEffect(() => {
+    if (country === "Thailand") {
+      fetch(`/data/boundary/Thailand_provinces.geojson`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Province boundary file not found");
+          return res.json();
+        })
+        .then((data) => setAllProvincesData(data))
+        .catch(console.error);
+    } else {
+      setAllProvincesData(null);
+    }
+  }, [country]);
+
+  const displayProvinceBoundary = useMemo(() => {
+    if (!allProvincesData) return null;
+    
+    // ถ้าผู้ใช้เลือก "Whole Country" (province เป็นค่าว่าง) ให้แสดงเส้นทุกจังหวัด
+    if (!province) {
+      return allProvincesData;
+    }
+
+    // ถ้ามีการเลือกจังหวัด ให้ Filter เอาเฉพาะ Feature ของจังหวัดนั้น
+    // ** สำคัญ: เช็คชื่อ Property ในไฟล์ GeoJSON ของคุณให้ตรง (ในที่นี้อิงจาก ADM1_EN ตาม Backend)
+    const filteredFeatures = allProvincesData.features.filter(
+      (f) => f.properties.ADM1_EN === province
+    );
+
+    // ประกอบร่างกลับเป็น GeoJSON Object
+    return {
+      type: "FeatureCollection",
+      features: filteredFeatures,
+    };
+  }, [allProvincesData, province]);
 
   // calculate color scale
   useEffect(() => {
@@ -785,7 +788,12 @@ export default function GridMapViewer({
           {maskData && <BoundaryMaskLayer mask={maskData} />}
 
           {/* Boundary always on top */}
-          {boundaryData && <BoundaryLayer data={boundaryData} />}
+          {boundaryData && <BoundaryLayer data={boundaryData} weight={2.0}/>}
+
+          {/* Province Boundaries */}
+          {displayProvinceBoundary && (
+            <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
+          )}
 
           {/* SEA view */}
           {/* {seaBoundary && !countryBoundary && (

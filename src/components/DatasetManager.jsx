@@ -11,10 +11,10 @@ export default function DatasetManager() {
   const [scope, setScope] = useState({
     startYear: 1960,
     endYear: 2024,
-    minLat: -15,
-    maxLat: 30,
-    minLon: 90,
-    maxLon: 145,
+    minLat: 4, //-15,
+    maxLat: 22, //30,
+    minLon: 95, //90,
+    maxLon: 107 //145,
   });
   const [loading, setLoading] = useState(false);
 

@@ -21,16 +21,24 @@ def overlay_with_shapefile(input_path: str, shapefile: gpd.GeoDataFrame):
         original = json.load(f)
 
     metadata = original.get("metadata", {})
+    features_list = original.get("features", [])
+
+    if not features_list:
+            print(f"No features to overlay in {input_path}")
+            return input_path
 
     # gdf = gpd.read_file(input_path)
     gdf = gpd.GeoDataFrame.from_features(original["features"], crs="EPSG:4326")
 
     clipped = gpd.overlay(gdf, shapefile, how="intersection")
 
+    for col in clipped.select_dtypes(include=['datetime', 'datetimetz']).columns:
+        clipped[col] = clipped[col].astype(str)
+
     features = json.loads(clipped.to_json())["features"]
     
     # os.remove(input_path)
-    clipped.to_file(input_path, driver="GeoJSON")
+    # clipped.to_file(input_path, driver="GeoJSON")
 
     out = {
     "type": "FeatureCollection",

@@ -47,44 +47,6 @@ def cf_grid_2d(lon0_b, lon1_b, d_lon, lat0_b, lat1_b, d_lat):
     )
     return ds
 
-
-# ============================
-#  Export Preview Functions
-# ============================
-
-# def export_preview_timeseries(da: xr.DataArray, out_dir: str):
-#     """Export annual preview timeseries (mean over space)."""
-
-#     years = da.time.dt.year.values
-#     annual = (
-#         da.groupby("time.year")
-#         .mean("time")
-#         .mean(dim=["latitude", "longitude"], skipna=True)
-#     )
-
-#     records = [
-#         {"year": int(y), "value": round(float(v), 4)}
-#         for y, v in zip(annual.year.values, annual.values)
-#         if not np.isnan(v)
-#     ]
-
-#     out = {
-#         "type": "PreviewTimeSeries",
-#         "metadata": {
-#             "start_date": str(da.time.min().values)[:10],
-#             "end_date": str(da.time.max().values)[:10],
-#             "years": [int(years.min()), int(years.max())],
-#         },
-#         "data": records,
-#     }
-
-#     # with open(os.path.join(out_dir, "timeseries.json"), "w") as f:
-#     #     json.dump(out, f, indent=2)
-#     out_path = os.path.join(out_dir, "timeseries.json")
-#     with open(out_path, "w") as f:
-#         json.dump(out, f, indent=2)
-
-#     return out_path  
 def export_preview_timeseries(
     data: xr.DataArray,
     output_base_dir: str,
@@ -94,26 +56,6 @@ def export_preview_timeseries(
     """Export annual preview timeseries (mean over space)."""
 
     years = data.time.dt.year.values
-
-    # annual = (
-    #     da.groupby("time.year")
-    #     .mean("time")
-    #     .mean(dim=["latitude", "longitude"], skipna=True)
-    # )
-    # spatial_dims = {"latitude", "longitude"}
-    # has_spatial = spatial_dims.issubset(set(data.dims))
-
-    # if has_spatial:
-    #     da_spatial_mean = data.mean(dim=["latitude", "longitude"], skipna=True)
-    # else:
-    #     # already reduced (e.g. nearest-neighbor fallback)
-    #     da_spatial_mean = data
-
-    # annual = (
-    #     da_spatial_mean
-    #     .groupby("time.year")
-    #     .mean(skipna=True)
-    # )
 
     if data.ndim == 1:
         annual = data.groupby("time.year").mean("time")
@@ -159,39 +101,6 @@ def export_preview_timeseries(
         json.dump(out, f, indent=2)
 
     return out_path
-
-# def export_preview_monthly(da: xr.DataArray, out_dir: str):
-#     """Export preview monthly (space-averaged)."""
-
-#     area_mean = da.mean(dim=["latitude", "longitude"], skipna=True)
-
-#     monthly = area_mean.resample(time="MS").mean()
-
-#     records = []
-#     for t, v in zip(monthly["time"].values, monthly.values):
-#         ts = pd.Period(str(t))
-#         records.append({
-#             "year": int(ts.year),
-#             "month": int(ts.month),
-#             "value": round(float(v), 4),
-#         })
-
-#     out = {
-#         "type": "PreviewMonthly",
-#         "metadata": {
-#             "start_date": str(da.time.min().values)[:10],
-#             "end_date": str(da.time.max().values)[:10],
-#         },
-#         "data": records,
-#     }
-
-#     # with open(os.path.join(out_dir, "monthly.json"), "w") as f:
-#     #     json.dump(out, f, indent=2)
-#     out_path = os.path.join(out_dir, "monthly.json")
-#     with open(out_path, "w") as f:
-#         json.dump(out, f, indent=2)
-
-#     return out_path 
 
 def export_preview_monthly(
     data: xr.DataArray,
@@ -262,67 +171,6 @@ def export_preview_monthly(
         json.dump(out, f, indent=2)
 
     return out_path
-
-
-# def export_preview_map(da: xr.DataArray, out_dir: str):
-#     """Export average map (GeoJSON grid) over a the dataset's time range."""
-    
-#     actual = da.sortby("latitude", "longitude")
-#     avg_map = actual.mean("time", skipna=True)
-
-#     lat = avg_map.latitude.values
-#     lon = avg_map.longitude.values
-#     d_lat = abs(lat[1] - lat[0])
-#     d_lon = abs(lon[1] - lon[0])
-
-#     grid = cf_grid_2d(
-#         lon.min() - d_lon / 2,
-#         lon.max() + d_lon / 2,
-#         d_lon,
-#         lat.min() - d_lat / 2,
-#         lat.max() + d_lat / 2,
-#         d_lat,
-#     )
-
-#     features = []
-#     for i in range(len(lat)):
-#         for j in range(len(lon)):
-#             val = (
-#                 avg_map.sel(latitude=lat[i], longitude=lon[j], method="nearest")
-#                 .values.item()
-#             )
-#             if np.isnan(val):
-#                 continue
-
-#             poly = Polygon(
-#                 [
-#                     (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
-#                     (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 0]),
-#                     (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 1]),
-#                     (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 1]),
-#                 ]
-#             )
-
-#             features.append(
-#                 {
-#                     "type": "Feature",
-#                     "geometry": poly.__geo_interface__,
-#                     "properties": {"value": round(float(val),4)},
-#                 }
-#             )
-
-#     geojson = {
-#         "type": "FeatureCollection",
-#         "features": features
-#     }
-
-#     # with open(os.path.join(out_dir, "map.geojson"), "w") as f:
-#     #     json.dump(geojson, f, indent=2)
-#     out_path = os.path.join(out_dir, "map.geojson")
-#     with open(out_path, "w") as f:
-#         json.dump(geojson, f, indent=2)
-
-#     return out_path 
 
 def export_preview_map(
     data: xr.DataArray,
@@ -396,36 +244,6 @@ def export_preview_map(
 
     return out_path
 
-
-# ============================
-#  Main Helper Entry
-# ============================
-
-# def export_preview_all(da: xr.DataArray, dataset_id: int, var_name: str):
-#     """
-#     Export all preview products:
-#       - timeseries.json
-#       - monthly.json
-#       - map.geojson
-#     Saved to: output/preview_output/dataset_{id}/{var_name}/
-#     """
-
-#     var_dir = os.path.join(PREVIEW_OUT, f"dataset_{dataset_id}", var_name)
-#     os.makedirs(var_dir, exist_ok=True)
-
-#     ts_path = export_preview_timeseries(da, var_dir)
-#     monthly_path = export_preview_monthly(da, var_dir)
-#     map_path = export_preview_map(da, var_dir)
-
-#     print(f"[Preview Exported] -> {var_dir}")
-
-#     return {
-#         "timeseries_path": ts_path,
-#         "monthly_path": monthly_path,
-#         "map_path": map_path,
-#         "base_url": f"/output/preview_output/dataset_{dataset_id}/{var_name}" # Helper for frontend
-#     }
-
 SEA_COUNTRIES = [
     "Thailand",
     "Vietnam",
@@ -447,39 +265,6 @@ SEA_SHAPEFILE_PATH = "data/sea_boundary_dissolved/sea_boundary_dissolved.geojson
 shp_sea = gpd.read_file(SEA_SHAPEFILE_PATH).to_crs("EPSG:4326")
 
 shp_countries = gpd.read_file(COUNTRY_SHAPEFILE_PATH).to_crs("EPSG:4326")
-
-
-# def export_preview_all(
-#     da: xr.DataArray,
-#     dataset_name: str,
-#     var_name: str,
-#     region_name: str | None = None,
-# ):
-#     """
-#     Export preview products following production structure.
-#     """
-
-#     output_base_dir = f"output/{dataset_name}"
-#     os.makedirs(output_base_dir, exist_ok=True)
-
-#     ts_path = export_preview_timeseries(
-#         da, output_base_dir, var_name, region_name
-#     )
-#     monthly_path = export_preview_monthly(
-#         da, output_base_dir, var_name, region_name
-#     )
-#     map_path = export_preview_map(
-#         da, output_base_dir, var_name
-#     )
-
-#     overlay_with_shapefile(map_path , shp_sea)
-
-#     return {
-#         "timeseries_path": ts_path,
-#         "monthly_path": monthly_path,
-#         "map_path": map_path,
-#         "base_dir": output_base_dir,
-#     }
 
 def export_preview_all(
     ds: xr.Dataset,
@@ -601,44 +386,3 @@ def export_preview_all(
         results[var] = "done"
 
     return results
-    #     for country in SEA_COUNTRIES:
-    #         country_log = {}
-    #         masked_da = mask_by_country(
-    #             da,
-    #             country,
-    #             shp_countries,
-    #             log=country_log
-    #         )
-    #         extraction_log[var][country] = country_log.get(country, {"status": "no_log_data"})
-
-    #         if masked_da is not None and not masked_da.isnull().all():
-    #             export_preview_timeseries(
-    #                 data=masked_da,
-    #                 output_base_dir=output_base_dir,
-    #                 var_name=var,
-    #                 region_name=country,
-    #             )
-
-    #             export_preview_monthly(
-    #                 data=masked_da,
-    #                 output_base_dir=output_base_dir,
-    #                 var_name=var,
-    #                 region_name=country,
-    #             )
-
-    #     with open(f"{output_base_dir}/extraction_log.json", "w") as f:
-    #         json.dump(extraction_log, f, indent=2)
-
-    #     # ------------------
-    #     #  Map (SEA only)
-    #     # ------------------
-    #     map_path = export_preview_map(
-    #         data=da,
-    #         output_base_dir=output_base_dir,
-    #         var_name=var,
-    #     )
-    #     overlay_with_shapefile(map_path, shp_sea)
-
-    #     results[var] = "done"
-
-    # return results

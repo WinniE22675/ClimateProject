@@ -20,15 +20,121 @@ export default function ClimateDashboard() {
   const [startYear, setStartYear] = useState("1960");
   const [endYear, setEndYear] = useState("2024");  
 
+  const [metadata, setMetadata] = useState(null);
+  const [datasetBounds, setDatasetBounds] = useState({ min: null, max: null });
+
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      // Guard clause: Do nothing if no dataset is selected
+      if (!activeDataset) return; 
+
+      try {
+        // Fetch the metadata file from the backend
+        const response = await fetch(`http://localhost:8000/api/${activeDataset}/metadata.json`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch metadata: HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Save raw metadata state in case other components need it
+        setMetadata(data); 
+
+        // Extract years from ISO string format (e.g., "1960-01-01T00:00:00" -> 1960)
+        if (data.time_start && data.time_end) {
+          const minYear = parseInt(data.time_start.substring(0, 4), 10);
+          const maxYear = parseInt(data.time_end.substring(0, 4), 10);
+
+          // 1. Update the logical bounds limit
+          setDatasetBounds({ min: minYear, max: maxYear });
+
+          // 2. Auto-set the draft inputs (UI) to the absolute min/max range
+          setInputStartYear(minYear.toString());
+          setInputEndYear(maxYear.toString());
+
+          // 3. Auto-set the active state to trigger Map and Chart rendering
+          setStartYear(minYear.toString());
+          setEndYear(maxYear.toString());
+        }
+      } catch (error) {
+        console.error("Error fetching dataset metadata:", error);
+        
+        // Reset states if fetch fails (e.g., file not found)
+        setMetadata(null);
+        setDatasetBounds({ min: null, max: null });
+      }
+    };
+
+    fetchMetadata();
+  }, [activeDataset]);
+
+  // const handleApplyYearRange = () => {
+  //   // Validate start > end alert
+  //   if (parseInt(inputStartYear) > parseInt(inputEndYear)) {
+  //     alert("Start Year less than or equal End Year.");
+  //     return;
+  //   }
+  //   // update Active for send to sub Component
+  //   setStartYear(inputStartYear);
+  //   setEndYear(inputEndYear);
+  // };
   const handleApplyYearRange = () => {
-    // Validate start > end alert
-    if (parseInt(inputStartYear) > parseInt(inputEndYear)) {
-      alert("Start Year less than or equal End Year.");
+    let start = parseInt(inputStartYear, 10);
+    let end = parseInt(inputEndYear, 10);
+
+    // 1. Check for empty or invalid input
+    if (isNaN(start) || isNaN(end)) {
+      alert("Please enter valid years.");
       return;
     }
-    // update Active for send to sub Component
-    setStartYear(inputStartYear);
-    setEndYear(inputEndYear);
+
+    // Auto-swap if start > end
+    if (start > end) {
+      const temp = start;
+      start = end;
+      end = temp;
+      alert(`Start year was greater than End year. They have been swapped to ${start} - ${end}.`);
+    }
+
+    // 2. Validate against Dataset Bounds (if metadata is loaded)
+    if (datasetBounds && datasetBounds.min !== null && datasetBounds.max !== null) {
+      let isAdjusted = false;
+
+      // Clamp Start Year
+      if (start < datasetBounds.min) {
+        start = datasetBounds.min;
+        isAdjusted = true;
+      }
+      
+      // Clamp End Year
+      if (end > datasetBounds.max) {
+        end = datasetBounds.max;
+        isAdjusted = true;
+      }
+
+      // Notify user if we auto-adjusted their input
+      if (isAdjusted) {
+        alert(`Years automatically adjusted to fit the dataset range: ${datasetBounds.min} - ${datasetBounds.max}.`);
+      }
+    } else {
+      console.warn("⚠️ Warning: datasetBounds is null. Skipping clamp validation. Please check metadata fetch.");
+    }
+
+    // 4. Trend Map specific validation (Requires at least 3 years to calculate Mann-Kendall)
+    // Optional: Add this if your map viewer has a 'mode' state accessible here
+    // if (mode === "trend" && (end - start < 2)) {
+    //   alert("Trend map requires at least a 3-year range.");
+    //   return; // Or auto-expand the range
+    // }
+
+    // Update the UI inputs so the user sees the corrected values
+    setInputStartYear(start.toString());
+    setInputEndYear(end.toString());
+
+    // Update Active for send to sub Component (GridMapViewer, IndicesViewer)
+    setStartYear(start.toString());
+    setEndYear(end.toString());
   };
 
   const countries = [
@@ -227,30 +333,6 @@ export default function ClimateDashboard() {
       {/* <h2 className="text-xl font-bold whitespace-nowrap">Climate Change</h2> */}
       {/* Controls Container bg-light rounded shadow-sm*/}
       <div className="d-flex align-items-end gap-3 p-2">
-        <div className="flex items-center gap-2">
-          <label className="form-label small fw-bold text-muted mb-0">Start Year:</label>
-          <input
-            type="number"
-            value={startYear}
-            onChange={(e) => setInputStartYear(e.target.value)}
-            className="form-control form-control-sm w-20"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="form-label small fw-bold text-muted mb-0">End Year:</label>
-          <input
-            type="number"
-            value={endYear}
-            onChange={(e) => setInputEndYear(e.target.value)}
-            className="form-control form-control-sm w-20"
-          />
-        </div>
-        <button 
-          className="btn btn-sm btn-primary" 
-          onClick={handleApplyYearRange}
-        >
-          Apply Years
-        </button>
 
         {/*Dataset Selector*/}
         <div>
@@ -361,6 +443,52 @@ export default function ClimateDashboard() {
           ))}
         </select>
       </div>
+
+      {/* <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex items-center gap-2">
+          <label>Start Year :</label>
+          <input
+            type="number"
+            value={startYear}
+            onChange={(e) => setStartYear(e.target.value)}
+            className="border p-1 w-20 rounded"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label>End Year :</label>
+          <input
+            type="number"
+            value={endYear}
+            onChange={(e) => setEndYear(e.target.value)}
+            className="border p-1 w-20 rounded"
+          />
+        </div>
+      </div> */}
+
+      <div className="flex flex-wrap gap-2 items-center">
+          <label>Start Year:</label>
+          <input
+            type="number"
+            value={inputStartYear}
+            onChange={(e) => setInputStartYear(e.target.value)}
+            className="border p-1 w-20 rounded"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label>End Year:</label>
+          <input
+            type="number"
+            value={inputEndYear}
+            onChange={(e) => setInputEndYear(e.target.value)}
+            className="border p-1 w-20 rounded"
+          />
+        </div>
+        <button 
+          className="btn btn-sm btn-primary" 
+          onClick={handleApplyYearRange}
+        >
+          Apply Years
+        </button>
 
       {/* Dataset Source Selector */}
       {/* <div className="mb-3">

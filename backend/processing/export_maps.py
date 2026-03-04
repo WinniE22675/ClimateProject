@@ -69,21 +69,53 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
         lat.max() + d_lat / 2,
         d_lat,
     )
-    # print("ww")
+    # # print("ww")
+    # features = []
+    # for i in range(len(lat)):
+    #     # print(i)
+    #     for j in range(len(lon)):
+    #         # print(j)
+    #         val = (
+    #             avg_map.sel(latitude=lat[i], longitude=lon[j], method="nearest")
+    #             .values.item()
+    #         )
+    #         if np.isnan(val):
+    #             continue
+
+    #         # print(val)
+
+    #         poly = Polygon(
+    #             [
+    #                 (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
+    #                 (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 0]),
+    #                 (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 1]),
+    #                 (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 1]),
+    #             ]
+    #         )
+
+    #         # print(poly)
+
+    #         features.append(
+    #             {
+    #                 "type": "Feature",
+    #                 "geometry": poly.__geo_interface__,
+    #                 "properties": {"value": round(float(val),2)},
+    #             }
+    #         )
+
+    avg_map_values = avg_map.values 
+    
     features = []
     for i in range(len(lat)):
-        # print(i)
         for j in range(len(lon)):
-            # print(j)
-            val = (
-                avg_map.sel(latitude=lat[i], longitude=lon[j], method="nearest")
-                .values.item()
-            )
+            
+            # [FIXED] ดึงค่าจาก Numpy Array ตรงๆ ด้วย index i, j (เร็วปรี้ด!)
+            val = avg_map_values[i, j]
+            
             if np.isnan(val):
                 continue
 
-            # print(val)
-
+            # สร้าง Polygon ตามเดิม
             poly = Polygon(
                 [
                     (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
@@ -92,8 +124,6 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
                     (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 1]),
                 ]
             )
-
-            # print(poly)
 
             features.append(
                 {
@@ -172,43 +202,86 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
         d_lat,
     )
 
-    slope_map = np.full((len(lats), len(lons)), np.nan)
-    p_map = np.full_like(slope_map, np.nan)
+    # slope_map = np.full((len(lats), len(lons)), np.nan)
+    # p_map = np.full_like(slope_map, np.nan)
 
-    for i, lat in enumerate(lats):
-        for j, lon in enumerate(lons):
-            series = trend[:, i, j].values
-            if np.sum(~np.isnan(series)) >= len(series) * 0.7:
-                try:
-                    result = mk.original_test(series)
-                    slope_map[i, j] = result.slope * 10  # per decade
-                    p_map[i, j] = result.p
-                except Exception:
-                    pass
+    # for i, lat in enumerate(lats):
+    #     for j, lon in enumerate(lons):
+    #         series = trend[:, i, j].values
+    #         if np.sum(~np.isnan(series)) >= len(series) * 0.7:
+    #             try:
+    #                 result = mk.original_test(series)
+    #                 slope_map[i, j] = result.slope * 10  # per decade
+    #                 p_map[i, j] = result.p
+    #             except Exception:
+    #                 pass
+
+    # features = []
+    # for i in range(len(lats)):
+    #     for j in range(len(lons)):
+    #         slope = slope_map[i, j]
+    #         pval = p_map[i, j]
+    #         if not np.isnan(slope):
+    #             poly = Polygon(
+    #                 [
+    #                     (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
+    #                     (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 0]),
+    #                     (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 1]),
+    #                     (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 1]),
+    #                 ]
+    #             )
+
+    #             features.append(
+    #                 {
+    #                     "type": "Feature",
+    #                     "geometry": poly.__geo_interface__,
+    #                     "properties": {"slope": round(float(slope),2), "p": round(float(pval),2)},
+    #                 }
+    #             )
+    # [OPTIMIZATION 1]: Extract entire 3D data array to Numpy array ONCE.
+    # Shape is typically (time, lat, lon)
+    trend_values = trend.values 
 
     features = []
-    for i in range(len(lats)):
-        for j in range(len(lons)):
-            slope = slope_map[i, j]
-            pval = p_map[i, j]
-            if not np.isnan(slope):
-                poly = Polygon(
-                    [
-                        (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
-                        (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 0]),
-                        (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 1]),
-                        (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 1]),
-                    ]
-                )
+    
+    # [OPTIMIZATION 2]: Combine MK calculation and Polygon creation into a SINGLE double-loop.
+    for i, lat in enumerate(lats):
+        for j, lon in enumerate(lons):
+            
+            # Fast numpy indexing to get the 1D time series for this specific pixel
+            series = trend_values[:, i, j] 
+            
+            # Check if there is enough valid data (at least 70% non-NaN)
+            if np.sum(~np.isnan(series)) >= len(series) * 0.7:
+                try:
+                    # Run Mann-Kendall test
+                    result = mk.original_test(series)
+                    slope = result.slope * 10  # per decade
+                    pval = result.p
+                    
+                    # If calculation succeeds, immediately create the Polygon
+                    poly = Polygon(
+                        [
+                            (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
+                            (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 0]),
+                            (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 1]),
+                            (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 1]),
+                        ]
+                    )
 
-                features.append(
-                    {
-                        "type": "Feature",
-                        "geometry": poly.__geo_interface__,
-                        "properties": {"slope": round(float(slope),2), "p": round(float(pval),2)},
-                    }
-                )
-
+                    features.append(
+                        {
+                            "type": "Feature",
+                            "geometry": poly.__geo_interface__,
+                            "properties": {
+                                "slope": round(float(slope), 2), 
+                                "p": round(float(pval), 2)
+                            },
+                        }
+                    )
+                except Exception:
+                    # Skip if MK test fails (e.g., constant data values)
+                    pass
     out = {
         "type": "FeatureCollection",
         "metadata": {

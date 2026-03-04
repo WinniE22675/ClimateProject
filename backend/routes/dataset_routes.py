@@ -357,7 +357,7 @@ class MapGenerateRequest(BaseModel):
     endYear: int
     supportsTrend: bool
 
-@router.post("/api/maps/generate")
+@router.post("/maps/generate")
 async def generate_map_endpoint(req: MapGenerateRequest):
     """
     Synchronous endpoint to generate specific map (Actual & Trend) on demand.

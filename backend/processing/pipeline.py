@@ -240,7 +240,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
         clipped_vars = {}
         for var in ds.data_vars:
             da = prep_for_rio(ds[var])
-            clipped_vars[var] = clip_to_shape(da, shp_thai_boundary) # SEA_SHAPEFILE_PATH
+            clipped_vars[var] = clip_to_shape(da, THAILAND_BOUNDARY_SHAPEFILE_PATH) # SEA_SHAPEFILE_PATH
 
         ds_clip = xr.Dataset(clipped_vars)
         print("Clipped to SEA boundary.")
@@ -310,28 +310,66 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 overlay_with_shapefile(actual_json_path_overview, shp_thai_boundary)
                 overlay_with_shapefile(trend_json_path_overview, shp_thai_boundary)
 
+            if shp_thai_boundary is not None:
+                weighted_da_overview = calc_weighted_mean(
+                    da=indices_annual[var], 
+                    region_name="Thailand", 
+                    gdf_region=shp_thai_boundary,
+                    target_col="shapeName" # Use column name from your geoBoundaries file
+                )
+
+                if weighted_da_overview is not None and not weighted_da_overview.isnull().all():
+                    export_yearly_timeseries(
+                        index_data=weighted_da_overview, 
+                        index_name=var, 
+                        output_base_dir=output_base_dir, 
+                        region_name="Thailand", 
+                        province_name=None # Will save to 'overview' folder
+                    )
+                else:
+                    print(f"Skipping Thailand Overview timeseries for {var}")
+
             for province in THAILAND_PROVINCES_LIST:
-                actual_json_path = export_actual_maps_xesmf(
-                    index_data=indices_annual[var], 
-                    index_name=var, 
-                    output_base_dir=output_base_dir,
-                    region_name="Thailand",
-                    province_name=None 
-                )
-            
-                trend_json_path = export_trend_map_xesmf(
-                    index_data=indices_annual[var], 
-                    index_name=var, 
-                    output_base_dir=output_base_dir,
-                    region_name="Thailand",
-                    province_name=None
-                )
-                
-                # Overlay Map 
-                if shp_thai_provinces is not None:
-                    overlay_with_shapefile(actual_json_path, shp_thai_provinces)
-                    overlay_with_shapefile(trend_json_path, shp_thai_provinces)
-                
+                print(f"Start {province}")
+
+                province_shp = shp_thai_provinces[shp_thai_provinces['ADM1_EN'] == province]
+
+                try:
+                    da_province = indices_annual[var].rio.clip(
+                        province_shp.geometry.values, 
+                        province_shp.crs, 
+                        drop=True,
+                        all_touched=True,)
+                    print(f"Clip {province}")
+
+                except Exception as e:
+                    print(f"Skipping maps for {province} (No data in boundary or clipping error): {e}")
+                    da_province = None
+
+                if da_province is not None:
+                    print(f"Export Actual Map : {province}")
+                    actual_json_path = export_actual_maps_xesmf(
+                        index_data=da_province, 
+                        index_name=var, 
+                        output_base_dir=output_base_dir,
+                        region_name="Thailand",
+                        province_name=province
+                    )
+                    print(f"Export Trend Map : {province}")
+                    trend_json_path = export_trend_map_xesmf(
+                        index_data=da_province, 
+                        index_name=var, 
+                        output_base_dir=output_base_dir,
+                        region_name="Thailand",
+                        province_name=province
+                    )
+                    
+                    # Overlay Map 
+                    if shp_thai_provinces is not None:
+                        overlay_with_shapefile(actual_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
+                        overlay_with_shapefile(trend_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
+
+                print(f"Calculate Weight Provinces: {var}")
                 weighted_da = calc_weighted_mean(
                     da=indices_annual[var], 
                     region_name=province, 
@@ -339,6 +377,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     target_col="ADM1_EN" # Change to "ADM1_TH" if you want Thai names
                 )
 
+                print(f"Export Timeseries: {var}")
                 if weighted_da is not None and not weighted_da.isnull().all():
                     # Export using the province flag to route to the correct folder
                     export_yearly_timeseries(
@@ -367,6 +406,25 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     export_seasonal_cycle(weighted_da, var, output_base_dir, region_name=country)
             ''' 
 
+            if shp_thai_boundary is not None:
+                weighted_da_overview = calc_weighted_mean(
+                    da=indices_monthly[var], 
+                    region_name="Thailand", 
+                    gdf_region=shp_thai_boundary,
+                    target_col="shapeName" # Use column name from your geoBoundaries file
+                )
+
+                if weighted_da_overview is not None and not weighted_da_overview.isnull().all():
+                    export_seasonal_cycle(
+                        index_data=weighted_da_overview, 
+                        index_name=var, 
+                        output_base_dir=output_base_dir, 
+                        region_name="Thailand", 
+                        province_name=None # Will save to 'overview' folder
+                    )
+                else:
+                    print(f"Skipping Thailand Overview seasonal for {var}")
+
             for province in THAILAND_PROVINCES_LIST:
                 weighted_da = calc_weighted_mean(
                     da=indices_monthly[var], 
@@ -386,6 +444,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     )
                 else:
                     print(f"Skipping {province} for {var} (No data coverage or error)")
+    
     
     except Exception as e:
         print(f"Pipeline Error: {e}")
@@ -462,7 +521,7 @@ def generate_custom_map_pipeline(
         clipped_vars = {}
         for var in ds.data_vars:
             da = prep_for_rio(ds[var])
-            clipped_vars[var] = clip_to_shape(da, shp_thai_boundary)
+            clipped_vars[var] = clip_to_shape(da, THAILAND_BOUNDARY_SHAPEFILE_PATH)
         ds_clip = xr.Dataset(clipped_vars)
 
         # 3. Calculate ONLY the specific index requested (saves huge amount of time)
@@ -475,21 +534,32 @@ def generate_custom_map_pipeline(
 
         index_data = indices_annual[index_name]
 
-        # 4. Export Maps (The export functions handle slicing the data by start_year and end_year)
-        actual_json_path = export_actual_maps_xesmf(
-            index_data=index_data,
-            index_name=index_name,
-            output_base_dir=output_base_dir,
-            start_year=start_year,
-            end_year=end_year,
-            region_name=country,
-            province_name=province
-        )
+        da_target = index_data
+        target_shp = shp_thai_boundary # Default to country boundary
 
-        trend_json_path = None
-        if supports_trend:
-            trend_json_path = export_trend_map_xesmf(
-                index_data=index_data,
+        if province and province.strip(): # Check if province is provided and not empty
+            if shp_thai_provinces is not None:
+                province_shp = shp_thai_provinces[shp_thai_provinces['ADM1_EN'] == province]
+                target_shp = province_shp # Update target shape for overlay later
+                
+                print(f"Clipping data to province: {province}")
+                try:
+                    # Clip the calculated index to the specific province boundary
+                    da_target = index_data.rio.clip(
+                        province_shp.geometry.values, 
+                        province_shp.crs, 
+                        drop=True,
+                        all_touched=True
+                    )
+                except Exception as e:
+                    print(f"Skipping maps for {province} (No data in boundary or clipping error): {e}")
+                    da_target = None
+
+        if da_target is not None:
+
+        # 4. Export Maps (The export functions handle slicing the data by start_year and end_year)
+            actual_json_path = export_actual_maps_xesmf(
+                index_data=da_target,
                 index_name=index_name,
                 output_base_dir=output_base_dir,
                 start_year=start_year,
@@ -498,23 +568,28 @@ def generate_custom_map_pipeline(
                 province_name=province
             )
 
-        # 5. Overlay Map with Shapefile (Masking)
-        if province:
-            # Mask specifically for the requested province
-            if shp_thai_provinces is not None:
-                # Filter shapefile for this specific province
-                province_shp = shp_thai_provinces[shp_thai_provinces['ADM1_EN'] == province]
-                overlay_with_shapefile(actual_json_path, province_shp)
-                if supports_trend and trend_json_path:
-                    overlay_with_shapefile(trend_json_path, province_shp)
-        else:
-            # Overview mode: Mask with the entire country boundary
-            if shp_thai_boundary is not None:
-                overlay_with_shapefile(actual_json_path, shp_thai_boundary)
-                if supports_trend and trend_json_path:
-                    overlay_with_shapefile(trend_json_path, shp_thai_boundary)
+            trend_json_path = None
+            if supports_trend:
+                trend_json_path = export_trend_map_xesmf(
+                    index_data=da_target,
+                    index_name=index_name,
+                    output_base_dir=output_base_dir,
+                    start_year=start_year,
+                    end_year=end_year,
+                    region_name=country,
+                    province_name=province
+                )
 
-        print(f"On-demand map generation completed for {index_name}")
+        # 5. Overlay Map with Shapefile (Masking)
+        if target_shp is not None:
+            print("Applying boundary overlay...")
+            overlay_with_shapefile(actual_json_path, target_shp)
+            if supports_trend and trend_json_path:
+                overlay_with_shapefile(trend_json_path, target_shp)
+
+            print(f"On-demand map generation completed for {index_name} in {province if province else country}")
+        else:
+            raise ValueError(f"No valid data remaining after clipping for {province}")
 
     except Exception as e:
         print(f"Custom Pipeline Error: {e}")
