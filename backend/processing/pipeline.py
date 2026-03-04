@@ -143,6 +143,14 @@ SEA_SHAPEFILE_PATH = "data/sea_boundary_dissolved/sea_boundary_dissolved.geojson
 COUNTRY_SHAPEFILE_PATH = "data/sea_boundary/southeast-asia-boundary.shp"
 shp_countries = gpd.read_file(COUNTRY_SHAPEFILE_PATH).to_crs("EPSG:4326")
 
+THAILAND_SHAPEFILE_PATH = "data/tha_admbnda_adm1_rtsd_20190221.shp"
+shp_thai_provinces = gpd.read_file(THAILAND_SHAPEFILE_PATH).to_crs("EPSG:4326")
+
+THAILAND_PROVINCES_LIST = shp_thai_provinces['ADM1_EN'].dropna().unique()
+
+THAILAND_BOUNDARY_SHAPEFILE_PATH = r"data/geoBoundaries-THA-ADM0.geojson"
+shp_thai_boundary = gpd.read_file(THAILAND_BOUNDARY_SHAPEFILE_PATH).to_crs("EPSG:4326")
+
 SEA_COUNTRIES = [
     "Thailand", 
     "Vietnam", 
@@ -245,23 +253,21 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
             indices_monthly = calculate_all_indices(ds_clip, "MS", selected_indices, baseline)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"Calculation error: {str(e)}")
-        
-        # print("Calculated annual:", list(indices_annual.data_vars))
-        # print("Calculated monthly:", list(indices_monthly.data_vars))
 
-        try:
-            shp_sea = gpd.read_file(SEA_SHAPEFILE_PATH).to_crs("EPSG:4326")
-        except Exception as e:
-            print(f"Warning: Could not load SEA shapefile: {e}")
-            shp_sea = None
+        # try:
+        #     shp_sea = gpd.read_file(SEA_SHAPEFILE_PATH).to_crs("EPSG:4326")
+        # except Exception as e:
+        #     print(f"Warning: Could not load SEA shapefile: {e}")
+        #     shp_sea = None
 
         for var in indices_annual.data_vars:
             print(f"Exporting Annual: {var}")
             
+            # SEA
+            """
             # Maps 
             # send output_base_dir to export_maps and will auto create folder 'actual'/'trend' 
             actual_json_path = export_actual_maps_xesmf(indices_annual[var], var, output_base_dir)
-            print("finish export map")
             trend_json_path = export_trend_map_xesmf(indices_annual[var], var, output_base_dir)
             
             # Overlay Map 
@@ -276,24 +282,110 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
             # 2. Country-specific Average
             for country in SEA_COUNTRIES:
                 # Mask only counrty
-                weighted_da = calc_weighted_mean(indices_annual[var], country, shp_countries) # COUNTRY_SHAPEFILE_PATH
+                weighted_da = calc_weighted_mean(indices_annual[var], country, shp_countries, target_col="ADMIN") # COUNTRY_SHAPEFILE_PATH
                 
                 if weighted_da is not None and not weighted_da.isnull().all():
                     export_yearly_timeseries(weighted_da, var, output_base_dir, region_name=country)
                 else:
                     print(f"Skipping {country} for {var} (No data coverage)")
+            """
+
+            actual_json_path_overview = export_actual_maps_xesmf(
+                index_data=indices_annual[var], 
+                index_name=var, 
+                output_base_dir=output_base_dir,
+                region_name="Thailand",
+                province_name=None 
+            )
+            
+            trend_json_path_overview = export_trend_map_xesmf(
+                index_data=indices_annual[var], 
+                index_name=var, 
+                output_base_dir=output_base_dir,
+                region_name="Thailand",
+                province_name=None
+            )
+
+            if shp_thai_provinces is not None:
+                overlay_with_shapefile(actual_json_path_overview, shp_thai_boundary)
+                overlay_with_shapefile(trend_json_path_overview, shp_thai_boundary)
+
+            for province in THAILAND_PROVINCES_LIST:
+                actual_json_path = export_actual_maps_xesmf(
+                    index_data=indices_annual[var], 
+                    index_name=var, 
+                    output_base_dir=output_base_dir,
+                    region_name="Thailand",
+                    province_name=None 
+                )
+            
+                trend_json_path = export_trend_map_xesmf(
+                    index_data=indices_annual[var], 
+                    index_name=var, 
+                    output_base_dir=output_base_dir,
+                    region_name="Thailand",
+                    province_name=None
+                )
+                
+                # Overlay Map 
+                if shp_thai_provinces is not None:
+                    overlay_with_shapefile(actual_json_path, shp_thai_provinces)
+                    overlay_with_shapefile(trend_json_path, shp_thai_provinces)
+                
+                weighted_da = calc_weighted_mean(
+                    da=indices_annual[var], 
+                    region_name=province, 
+                    gdf_region=shp_thai_provinces,
+                    target_col="ADM1_EN" # Change to "ADM1_TH" if you want Thai names
+                )
+
+                if weighted_da is not None and not weighted_da.isnull().all():
+                    # Export using the province flag to route to the correct folder
+                    export_yearly_timeseries(
+                        index_data=weighted_da, 
+                        index_name=var, 
+                        output_base_dir=output_base_dir, 
+                        region_name="Thailand", 
+                        province_name=province
+                    )
+                else:
+                    print(f"Skipping {province} for {var} (No data coverage or error)")
 
         # --- Monthly Export ---
         for var in indices_monthly.data_vars:
             print(f"Exporting monthly: {var}")
+
+            # SEA
+            '''           
             # SEA Avg
             export_seasonal_cycle(indices_monthly[var], var, output_base_dir, region_name="SEA")
             
             # Country Avg
             for country in SEA_COUNTRIES:
-                weighted_da = calc_weighted_mean(indices_monthly[var], country, shp_countries) # COUNTRY_SHAPEFILE_PATH
+                weighted_da = calc_weighted_mean(indices_monthly[var], country, shp_countries, target_col="ADMIN") # COUNTRY_SHAPEFILE_PATH
                 if weighted_da is not None and not weighted_da.isnull().all():
                     export_seasonal_cycle(weighted_da, var, output_base_dir, region_name=country)
+            ''' 
+
+            for province in THAILAND_PROVINCES_LIST:
+                weighted_da = calc_weighted_mean(
+                    da=indices_monthly[var], 
+                    region_name=province, 
+                    gdf_region=shp_thai_provinces,
+                    target_col="ADM1_EN" # Change to "ADM1_TH" if you want Thai names
+                )
+
+                if weighted_da is not None and not weighted_da.isnull().all():
+                    # Export using the province flag to route to the correct folder
+                    export_seasonal_cycle(
+                        index_data=weighted_da, 
+                        index_name=var, 
+                        output_base_dir=output_base_dir, 
+                        region_name="Thailand", 
+                        province_name=province
+                    )
+                else:
+                    print(f"Skipping {province} for {var} (No data coverage or error)")
     
     except Exception as e:
         print(f"Pipeline Error: {e}")

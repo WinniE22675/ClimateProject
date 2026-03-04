@@ -9,7 +9,7 @@ import xarray as xr
 # os.makedirs(OUT_INDICES, exist_ok=True)
 
 
-def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_base_dir: str, region_name: str = ""):
+def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_base_dir: str, region_name: str = "Thailand", province_name: str = None):
     """Export annual timeseries (mean over space, grouped by year)."""
     years = index_data.time.dt.year.values
 
@@ -49,22 +49,34 @@ def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_b
         },
         "data": records,
     }
+        
+    area_name = province_name if province_name else "overview"
 
-    # ensure folder exists
-    out_dir = os.path.join(output_base_dir, "indices", "annual") # OUT_INDICES
+    # New structure: base_dir / country / area / index / indices / annual
+    out_dir = os.path.join(output_base_dir, region_name, area_name, index_name, "indices", "annual")
     os.makedirs(out_dir, exist_ok=True)
 
-    # with open(os.path.join(out_dir, f"{index_name}_timeseries.json"), "w") as f:
-    #     json.dump(out, f, indent=2)
+    filename = f"{index_name}_timeseries.json"
+    out_path = os.path.join(out_dir, filename)
 
-    suffix = f"_{region_name}" if region_name else ""
-    filename = f"{index_name}{suffix}_timeseries.json" # ex: PRCPTOT_Thailand_timeseries.json
-
-    with open(os.path.join(out_dir, filename), "w") as f:
+    # Assuming 'out' dictionary is prepared before this block in your actual code
+    with open(out_path, "w") as f:
         json.dump(out, f, indent=2)
 
+    # ensure folder exists
+    # out_dir = os.path.join(output_base_dir, "indices", "annual") # OUT_INDICES
+    # os.makedirs(out_dir, exist_ok=True)
 
-def export_seasonal_cycle(index_data: xr.DataArray, index_name: str, output_base_dir: str, region_name: str = ""):
+    # suffix = f"_{region_name}" if region_name else ""
+    # filename = f"{index_name}{suffix}_timeseries.json" # ex: PRCPTOT_Thailand_timeseries.json
+
+    # filename = f"{index_name}_timeseries.json"
+
+    # with open(os.path.join(out_dir, filename), "w") as f:
+    #     json.dump(out, f, indent=2)
+
+
+def export_seasonal_cycle(index_data: xr.DataArray, index_name: str, output_base_dir: str, region_name: str = "Thailand", province_name: str = None):
     """Export monthly climatology (mean over space)."""
     years = index_data.time.dt.year.values
 
@@ -102,15 +114,29 @@ def export_seasonal_cycle(index_data: xr.DataArray, index_name: str, output_base
         "data": records,
     }
 
-    # ensure folder exists
-    out_dir = os.path.join(output_base_dir, "indices", "monthly") # OUT_INDICES
+    area_name = province_name if province_name else "overview"
+    
+    # New structure: base_dir / country / area / index / indices / seasonal
+    out_dir = os.path.join(output_base_dir, region_name, area_name, index_name, "indices", "seasonal")
     os.makedirs(out_dir, exist_ok=True)
 
-    # with open(os.path.join(out_dir, f"{index_name}_monthly.json"), "w") as f:
+    filename = f"{index_name}_seasonal.json"
+    out_path = os.path.join(out_dir, filename)
+
+    # Assuming 'out' dictionary is prepared before this block in your actual code
+    with open(out_path, "w") as f:
+        json.dump(out, f, indent=2)
+
+    # ensure folder exists
+    # out_dir = os.path.join(output_base_dir, "indices", "seasonal") # OUT_INDICES
+    # os.makedirs(out_dir, exist_ok=True)
+
+    # with open(os.path.join(out_dir, f"{index_name}_seasonal.json"), "w") as f:
     #     json.dump(out, f, indent=2)
 
-    suffix = f"_{region_name}" if region_name else ""
-    filename = f"{index_name}{suffix}_monthly.json"
+    # suffix = f"_{region_name}" if region_name else ""
+    # filename = f"{index_name}{suffix}_seasonal.json"
+    # filename = f"{index_name}_seasonal.json"
 
-    with open(os.path.join(out_dir, filename), "w") as f:
-        json.dump(out, f, indent=2)
+    # with open(os.path.join(out_dir, filename), "w") as f:
+    #     json.dump(out, f, indent=2)

@@ -1,74 +1,3 @@
-// import { useState } from "react";
-// import DatasetUploader from "../components/DatasetUploader";
-// import IndicesViewer from "../components/IndicesViewer";
-// import GridMapViewer from "../components/GridMapViewer";
-
-// export default function ClimateDashboard() {
-//   const [indexName, setIndexName] = useState("PRCPTOT");
-//   const [mode, setMode] = useState("actual"); // trend / actual
-//   const [dataMode, setDataMode] = useState("default"); // default | upload
-
-//   const handleUploadSuccess = (data) => {
-//     console.log("Result from backend:", data);
-//     // keep state
-//   };
-
-//   return (
-//     <div className="container-fluid">
-//       <h2 className="text-xl font-bold whitespace-nowrap">Climate Change</h2>
-
-//       {/* --- dataset mode selector --- */}
-//       <div className="mb-3">
-//         <button
-//           className={`btn btn-sm me-2 ${
-//             dataMode === "default" ? "btn-primary" : "btn-outline-primary"
-//           }`}
-//           onClick={() => setDataMode("default")}
-//         >
-//           Use Default Data
-//         </button>
-//         <button
-//           className={`btn btn-sm ${
-//             dataMode === "upload" ? "btn-primary" : "btn-outline-primary"
-//           }`}
-//           onClick={() => setDataMode("upload")}
-//         >
-//           Upload New Data
-//         </button>
-//         {/* <button
-//           className="btn btn-sm btn-primary"
-//           onClick={() => (window.location.href = "/upload")}
-//         >
-//           Upload New Data
-//         </button> */}
-//       </div>
-
-//       {/* show uploader only when "Upload New Data" */}
-//       {dataMode === "upload" && (
-//         <DatasetUploader onUploadSuccess={handleUploadSuccess} />
-//       )}
-
-//       <div className="row">
-//         <div className="col-12 col-lg-6">
-//           <IndicesViewer
-//             indexName={indexName}
-//             setIndexName={setIndexName}
-//             datamode={dataMode}
-//           />
-//         </div>
-//         <div className="col-12 col-lg-6">
-//           <GridMapViewer
-//             indexName={indexName}
-//             mode={mode}
-//             setMode={setMode}
-//             datamode={dataMode}
-//           />
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import IndicesViewer from "../components/IndicesViewer";
@@ -83,21 +12,101 @@ export default function ClimateDashboard() {
   // const [datasetId, setDatasetId] = useState("default"); // default, 1, 2, 3, 4
   const [datasetList, setDatasetList] = useState([]);
   const [activeDataset, setActiveDataset] = useState("default");
-
+  const [province, setProvince] = useState("");
 
   const countries = [
     "Thailand",
-    "Vietnam",
-    "Laos",
-    "Cambodia",
-    "Myanmar",
-    "Malaysia",
-    "Philippines",
-    "Indonesia",
-    "Singapore",
-    "Brunei",
-    "Timor-Leste",
-    "SEA",
+    // "Vietnam",
+    // "Laos",
+    // "Cambodia",
+    // "Myanmar",
+    // "Malaysia",
+    // "Philippines",
+    // "Indonesia",
+    // "Singapore",
+    // "Brunei",
+    // "Timor-Leste",
+    // "SEA",
+  ];
+
+  const provinces = [
+    "Amnat Charoen",
+    "Ang Thong",
+    "Bangkok",
+    "Bueng Kan",
+    "Buri Ram",
+    "Chachoengsao",
+    "Chai Nat",
+    "Chaiyaphum",
+    "Chanthaburi",
+    "Chiang Mai",
+    "Chiang Rai",
+    "Chon Buri",
+    "Chumphon",
+    "Kalasin",
+    "Kamphaeng Phet",
+    "Kanchanaburi",
+    "Khon Kaen",
+    "Krabi",
+    "Lampang",
+    "Lamphun",
+    "Loei",
+    "Lop Buri",
+    "Mae Hong Son",
+    "Maha Sarakham",
+    "Mukdahan",
+    "Nakhon Nayok",
+    "Nakhon Pathom",
+    "Nakhon Phanom",
+    "Nakhon Ratchasima",
+    "Nakhon Sawan",
+    "Nakhon Si Thammarat",
+    "Nan",
+    "Narathiwat",
+    "Nong Bua Lam Phu",
+    "Nong Khai",
+    "Nonthaburi",
+    "Pathum Thani",
+    "Pattani",
+    "Phangnga",
+    "Phatthalung",
+    "Phayao",
+    "Phetchabun",
+    "Phetchaburi",
+    "Phichit",
+    "Phitsanulok",
+    "Phra Nakhon Si Ayutthaya",
+    "Phrae",
+    "Phuket",
+    "Prachin Buri",
+    "Prachuap Khiri Khan",
+    "Ranong",
+    "Ratchaburi",
+    "Rayong",
+    "Roi Et",
+    "Sa Kaeo",
+    "Sakon Nakhon",
+    "Samut Prakan",
+    "Samut Sakhon",
+    "Samut Songkhram",
+    "Saraburi",
+    "Satun",
+    "Si Sa Ket",
+    "Sing Buri",
+    "Songkhla",
+    "Sukhothai",
+    "Suphan Buri",
+    "Surat Thani",
+    "Surin",
+    "Tak",
+    "Trang",
+    "Trat",
+    "Ubon Ratchathani",
+    "Udon Thani",
+    "Uthai Thani",
+    "Uttaradit",
+    "Yala",
+    "Yasothon",
   ];
 
   const ALL_INDICES = [
@@ -242,7 +251,10 @@ export default function ClimateDashboard() {
           <select
             className="form-select form-select-sm"
             value={country}
-            onChange={(e) => setCountry(e.target.value)}
+            onChange={(e) => {
+              setCountry(e.target.value)
+              setProvince("");
+            }}
           >
             {countries.map((c) => (
               <option key={c} value={c}>
@@ -251,6 +263,25 @@ export default function ClimateDashboard() {
             ))}
           </select>
         </div>
+
+        {country === "Thailand" && (
+          <div>
+            <label className="form-label small fw-bold text-muted">Province</label>
+            <select
+              className="form-select form-select-sm"
+              value={province}
+              onChange={(e) => setProvince(e.target.value)}
+            >
+              <option value="">Whole Country</option> {/* Default option */}
+              {provinces.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="">
           <Link to="/manipulate" className="btn btn-sm btn-primary">
             <button className="btn btn-sm btn-primary">Upload New Data</button>

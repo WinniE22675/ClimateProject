@@ -256,38 +256,13 @@ export default function GridMapViewer({
       "pr",
       "tmax",
       "tmin",
-      // "SPI3",
-      // "SPI6",
-      // "SPI9",
-      // "SPI12",
-      // "Rx1day",
-      // "Rx5day",
-      // "SDII",
-      // "R10mm",
-      // "R20mm",
-      // "CDD",
-      // "CWD",
-      // "R95p",
-      // "R99p",
-      // "R95pTOT",
-      // "R99pTOT",
-      // "FD",
-      // "SU",
-      // "ID",
-      // "TR",
-      // "TXx",
-      // "TNx",
-      // "TXn",
-      // "TNn",
-      // "TN10p",
-      // "TX10p",
-      // "TN90p",
-      // "TX90p",
-      // "WSDI",
-      // "CSDI",
     ];
 
     const supportsTrend = !NO_TREND_INDICES.includes(indexName);
+
+    const actualGridPath = province
+    ? `${datasetPath}/maps_grid/actual/${country}/${province}/${indexName}_actual_grid.geojson?v=${cacheKey}`
+    : `${datasetPath}/maps_grid/actual/${country}/${indexName}_actual_grid.geojson?v=${cacheKey}`;
 
     const requests = [
       fetch(
@@ -299,6 +274,11 @@ export default function GridMapViewer({
     ];
 
     if (supportsTrend) {
+
+      const trendGridPath = province
+      ? `${datasetPath}/maps_grid/trend/${country}/${province}/${indexName}_trend_grid.geojson?v=${cacheKey}`
+      : `${datasetPath}/maps_grid/trend/${country}/${indexName}_trend_grid.geojson?v=${cacheKey}`;
+      
       requests.push(
         fetch(
           `${datasetPath}/maps_grid/trend/${indexName}_trend_grid.geojson?v=${cacheKey}`

@@ -151,6 +151,14 @@ export default function IndicesViewer({ indexName, datasetName, country }) {
 
     const cacheKey = Date.now();
 
+    const annualPath = province
+    ? `${datasetPath}/indices/annual/${country}/${province}/${baseIndexName}_timeseries.json?v=${cacheKey}`
+    : `${datasetPath}/indices/annual/${country}/${baseIndexName}_timeseries.json?v=${cacheKey}`;
+
+  const seasonalPath = province
+    ? `${datasetPath}/indices/seasonal/${country}/${province}/${baseIndexName}_seasonal.json?v=${cacheKey}`
+    : `${datasetPath}/indices/seasonal/${country}/${baseIndexName}_seasonal.json?v=${cacheKey}`;
+
     Promise.all([
       fetch(
         `${datasetPath}/indices/annual/${baseIndexName}_${country}_timeseries.json?v=${cacheKey}` //basePath

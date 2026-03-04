@@ -91,27 +91,27 @@ def get_spatial_weights(da: xr.DataArray, country_geom: Polygon):
                 
     return xr.DataArray(weights, coords=[lat, lon], dims=["latitude", "longitude"])
 
-def calc_weighted_mean(da: xr.DataArray, country_name: str, gdf_countries: gpd.GeoDataFrame):
+def calc_weighted_mean(da: xr.DataArray, region_name: str, gdf_region: gpd.GeoDataFrame, target_col: str):
     """
-    Calculate the weighted mean of a DataArray for a specific country.
+    Calculate the area-weighted mean of a DataArray for a specific region.
     Formula: Σ(Value * Area) / Σ(Area)
     """
     try:
-        # 1. Resolve country geometry
-        # Find column dynamically
-        target_col = next((c for c in ["ADMIN", "NAME", "NAME_EN"] if c in gdf_countries.columns), None)
-        if not target_col:
-            raise ValueError("No valid country name column found in shapefile.")
+        # 1. Strict column checking
+        if target_col not in gdf_region.columns:
+            raise ValueError(f"Target column '{target_col}' not found in shapefile columns: {list(gdf_region.columns)}")
 
-        country_gdf = gdf_countries[gdf_countries[target_col] == country_name]
-        if country_gdf.empty:
+        region_gdf = gdf_region[gdf_region[target_col] == region_name]
+        
+        if region_gdf.empty:
+            print(f"Region '{region_name}' not found in column '{target_col}'.")
             return None
             
-        country_geom = country_gdf.geometry.iloc[0]
+        region_geom = region_gdf.geometry.iloc[0]
 
         # 2. Get weights (Area of intersection)
         # We only need to calculate weights once for the spatial layout
-        weights = get_spatial_weights(da, country_geom)
+        weights = get_spatial_weights(da, region_geom)
         
         # 3. Apply formula: (Value * Area) / Total_Area
         # xarray handles broadcasting (Time x Lat x Lon) * (Lat x Lon) automatically
@@ -125,5 +125,5 @@ def calc_weighted_mean(da: xr.DataArray, country_name: str, gdf_countries: gpd.G
         return result
 
     except Exception as e:
-        print(f"Error processing {country_name}: {e}")
+        print(f"Error processing region '{region_name}': {e}")
         return None

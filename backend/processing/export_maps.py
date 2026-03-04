@@ -41,9 +41,17 @@ def cf_grid_2d(lon0_b, lon1_b, d_lon, lat0_b, lat1_b, d_lat):
 
 
 # ========== 1. Export Actual Map ==========
-def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str):
+def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand", province_name: str = None):
     """Export average map (GeoJSON grid) over a the dataset's time range."""
-    # print("w")
+
+    if start_year is None:
+        start_year = int(index_data.time.dt.year.min())
+    if end_year is None:
+        end_year = int(index_data.time.dt.year.max())
+    
+    # Filter data by selected year range before processing
+    index_data = index_data.sel(time=slice(str(start_year), str(end_year)))
+
     actual = index_data.sortby("latitude", "longitude")
     avg_map = actual.mean("time", skipna=True)
 
@@ -110,20 +118,45 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
         "features": features,
     }
 
-    out_dir = os.path.join(output_base_dir, "maps_grid", "actual") # OUT_MAPS
+    area_name = province_name if province_name else "overview"
+    
+    # structure: base_dir / country / area / index / maps_grid / actual
+    out_dir = os.path.join(output_base_dir, region_name, area_name, index_name, "maps_grid", "actual")
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, f"{index_name}_actual_grid.geojson")
+    
+    # filename with dynamic year range
+    filename = f"{start_year}_{end_year}_actual_grid.geojson"
+    out_path = os.path.join(out_dir, filename)
 
     with open(out_path, "w") as f:
-        json.dump(out, f, indent=2)
+        json.dump(out, f, indent=2) 
+        
     print(f"  Saved actual map to {out_path}")
-
     return out_path
+
+    # out_dir = os.path.join(output_base_dir, "maps_grid", "actual") # OUT_MAPS
+    # os.makedirs(out_dir, exist_ok=True)
+    # out_path = os.path.join(out_dir, f"{index_name}_actual_grid.geojson")
+
+    # with open(out_path, "w") as f:
+    #     json.dump(out, f, indent=2)
+    # print(f"  Saved actual map to {out_path}")
+
+    # return out_path
 
 
 # ========== 2. Export Trend Map ==========
-def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str):
+def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand", province_name: str = None):
     """Export trend map using Mann-Kendall test (GeoJSON grid)."""
+
+    if start_year is None:
+        start_year = int(index_data.time.dt.year.min())
+    if end_year is None:
+        end_year = int(index_data.time.dt.year.max())
+    
+    # Filter data by selected year range before processing
+    index_data = index_data.sel(time=slice(str(start_year), str(end_year)))
+
     trend = index_data.sortby("latitude", "longitude")
     lats = trend.latitude.values
     lons = trend.longitude.values
@@ -192,12 +225,29 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
         "features": features,
     }
 
-    out_dir = os.path.join(output_base_dir, "maps_grid", "trend") # OUT_MAPS
+    # Determine area directory
+    area_name = province_name if province_name else "overview"
+    
+    # structure: base_dir / country / area / index / maps_grid / trend
+    out_dir = os.path.join(output_base_dir, region_name, area_name, index_name, "maps_grid", "trend")
     os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, f"{index_name}_trend_grid.geojson")
+    
+    # filename with dynamic year range
+    filename = f"{start_year}_{end_year}_trend_grid.geojson"
+    out_path = os.path.join(out_dir, filename)
 
     with open(out_path, "w") as f:
-        json.dump(out, f, indent=2)
+        json.dump(out, f, indent=2) 
+        
     print(f"  Saved trend map to {out_path}")
-
     return out_path
+
+    # out_dir = os.path.join(output_base_dir, "maps_grid", "trend") # OUT_MAPS
+    # os.makedirs(out_dir, exist_ok=True)
+    # out_path = os.path.join(out_dir, f"{index_name}_trend_grid.geojson")
+
+    # with open(out_path, "w") as f:
+    #     json.dump(out, f, indent=2)
+    # print(f"  Saved trend map to {out_path}")
+
+    # return out_path
