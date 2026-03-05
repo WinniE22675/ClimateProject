@@ -109,13 +109,11 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
     for i in range(len(lat)):
         for j in range(len(lon)):
             
-            # [FIXED] ดึงค่าจาก Numpy Array ตรงๆ ด้วย index i, j (เร็วปรี้ด!)
             val = avg_map_values[i, j]
             
             if np.isnan(val):
                 continue
 
-            # สร้าง Polygon ตามเดิม
             poly = Polygon(
                 [
                     (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
@@ -129,7 +127,7 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
                 {
                     "type": "Feature",
                     "geometry": poly.__geo_interface__,
-                    "properties": {"value": round(float(val),2)},
+                    "properties": {"value": round(float(val),4)},
                 }
             )
     # print("www")
@@ -274,8 +272,8 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
                             "type": "Feature",
                             "geometry": poly.__geo_interface__,
                             "properties": {
-                                "slope": round(float(slope), 2), 
-                                "p": round(float(pval), 2)
+                                "slope": round(float(slope), 4), 
+                                "p": round(float(pval), 4)
                             },
                         }
                     )

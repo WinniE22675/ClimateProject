@@ -290,8 +290,14 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     print(f"Skipping {country} for {var} (No data coverage)")
             """
 
+            # indices_annual = indices_annual[var].rio.write_crs("EPSG:4326")
+            # indices_annual[var]
+            current_da = prep_for_rio(indices_annual[var]).load()
+
+            is_spi_event = var.startswith("SPI") and any(evt in var for evt in ["_Drought_", "_Flood_"])
+
             actual_json_path_overview = export_actual_maps_xesmf(
-                index_data=indices_annual[var], 
+                index_data=current_da, # indices_annual[var], 
                 index_name=var, 
                 output_base_dir=output_base_dir,
                 region_name="Thailand",
@@ -299,7 +305,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
             )
             
             trend_json_path_overview = export_trend_map_xesmf(
-                index_data=indices_annual[var], 
+                index_data=current_da, #indices_annual[var], 
                 index_name=var, 
                 output_base_dir=output_base_dir,
                 region_name="Thailand",
@@ -309,25 +315,26 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
             if shp_thai_provinces is not None:
                 overlay_with_shapefile(actual_json_path_overview, shp_thai_boundary)
                 overlay_with_shapefile(trend_json_path_overview, shp_thai_boundary)
-
-            if shp_thai_boundary is not None:
-                weighted_da_overview = calc_weighted_mean(
-                    da=indices_annual[var], 
-                    region_name="Thailand", 
-                    gdf_region=shp_thai_boundary,
-                    target_col="shapeName" # Use column name from your geoBoundaries file
-                )
-
-                if weighted_da_overview is not None and not weighted_da_overview.isnull().all():
-                    export_yearly_timeseries(
-                        index_data=weighted_da_overview, 
-                        index_name=var, 
-                        output_base_dir=output_base_dir, 
+            if not is_spi_event:
+                print(f"Start Timeseries Thailand")
+                if shp_thai_boundary is not None:
+                    weighted_da_overview = calc_weighted_mean(
+                        da=current_da, # indices_annual[var], 
                         region_name="Thailand", 
-                        province_name=None # Will save to 'overview' folder
+                        gdf_region=shp_thai_boundary,
+                        target_col="shapeName" # Use column name from your geoBoundaries file
                     )
-                else:
-                    print(f"Skipping Thailand Overview timeseries for {var}")
+
+                    if weighted_da_overview is not None and not weighted_da_overview.isnull().all():
+                        export_yearly_timeseries(
+                            index_data=weighted_da_overview, 
+                            index_name=var, 
+                            output_base_dir=output_base_dir, 
+                            region_name="Thailand", 
+                            province_name=None # Will save to 'overview' folder
+                        )
+                    else:
+                        print(f"Skipping Thailand Overview timeseries for {var}")
 
             for province in THAILAND_PROVINCES_LIST:
                 print(f"Start {province}")
@@ -335,19 +342,19 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 province_shp = shp_thai_provinces[shp_thai_provinces['ADM1_EN'] == province]
 
                 try:
-                    da_province = indices_annual[var].rio.clip(
+                    da_province = current_da.rio.clip( # indices_annual[var].rio.clip(
                         province_shp.geometry.values, 
                         province_shp.crs, 
                         drop=True,
                         all_touched=True,)
-                    print(f"Clip {province}")
+                    # print(f"Clip {province}")
 
                 except Exception as e:
                     print(f"Skipping maps for {province} (No data in boundary or clipping error): {e}")
                     da_province = None
 
                 if da_province is not None:
-                    print(f"Export Actual Map : {province}")
+                    # print(f"Export Actual Map : {province}")
                     actual_json_path = export_actual_maps_xesmf(
                         index_data=da_province, 
                         index_name=var, 
@@ -355,7 +362,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                         region_name="Thailand",
                         province_name=province
                     )
-                    print(f"Export Trend Map : {province}")
+                    # print(f"Export Trend Map : {province}")
                     trend_json_path = export_trend_map_xesmf(
                         index_data=da_province, 
                         index_name=var, 
@@ -369,30 +376,35 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                         overlay_with_shapefile(actual_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
                         overlay_with_shapefile(trend_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
 
-                print(f"Calculate Weight Provinces: {var}")
-                weighted_da = calc_weighted_mean(
-                    da=indices_annual[var], 
-                    region_name=province, 
-                    gdf_region=shp_thai_provinces,
-                    target_col="ADM1_EN" # Change to "ADM1_TH" if you want Thai names
-                )
-
-                print(f"Export Timeseries: {var}")
-                if weighted_da is not None and not weighted_da.isnull().all():
-                    # Export using the province flag to route to the correct folder
-                    export_yearly_timeseries(
-                        index_data=weighted_da, 
-                        index_name=var, 
-                        output_base_dir=output_base_dir, 
-                        region_name="Thailand", 
-                        province_name=province
+                if not is_spi_event:
+                    # print(f"Calculate Weight Provinces: {var}")
+                    weighted_da = calc_weighted_mean(
+                        da=current_da, #indices_annual[var], 
+                        region_name=province, 
+                        gdf_region=shp_thai_provinces,
+                        target_col="ADM1_EN" # Change to "ADM1_TH" if you want Thai names
                     )
-                else:
-                    print(f"Skipping {province} for {var} (No data coverage or error)")
+
+                    # print(f"Export Timeseries: {var}")
+                    if weighted_da is not None and not weighted_da.isnull().all():
+                        # Export using the province flag to route to the correct folder
+                        export_yearly_timeseries(
+                            index_data=weighted_da, 
+                            index_name=var, 
+                            output_base_dir=output_base_dir, 
+                            region_name="Thailand", 
+                            province_name=province
+                        )
+                    else:
+                        print(f"Skipping {province} for {var} (No data coverage or error)")
 
         # --- Monthly Export ---
         for var in indices_monthly.data_vars:
             print(f"Exporting monthly: {var}")
+
+            # indices_monthly = indices_monthly[var].rio.write_crs("EPSG:4326")
+            # indices_monthly[var]
+            current_da = prep_for_rio(indices_monthly[var]).load()
 
             # SEA
             '''           
@@ -406,9 +418,14 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     export_seasonal_cycle(weighted_da, var, output_base_dir, region_name=country)
             ''' 
 
+            is_spi_event = var.startswith("SPI") and any(evt in var for evt in ["_Drought_", "_Flood_"])
+            if is_spi_event:
+                print(f"Skipped Seasonal Cycle for {var}")
+                continue
+
             if shp_thai_boundary is not None:
                 weighted_da_overview = calc_weighted_mean(
-                    da=indices_monthly[var], 
+                    da=current_da, #indices_monthly[var], 
                     region_name="Thailand", 
                     gdf_region=shp_thai_boundary,
                     target_col="shapeName" # Use column name from your geoBoundaries file
@@ -426,9 +443,8 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     print(f"Skipping Thailand Overview seasonal for {var}")
 
             for province in THAILAND_PROVINCES_LIST:
-                print(f"Start {province}")
                 weighted_da = calc_weighted_mean(
-                    da=indices_monthly[var], 
+                    da=current_da, #indices_monthly[var], 
                     region_name=province, 
                     gdf_region=shp_thai_provinces,
                     target_col="ADM1_EN" # Change to "ADM1_TH" if you want Thai names
@@ -533,7 +549,8 @@ def generate_custom_map_pipeline(
         if index_name not in indices_annual.data_vars:
             raise ValueError(f"Failed to calculate index {index_name}")
 
-        index_data = indices_annual[index_name]
+        # index_data = indices_annual[index_name]
+        index_data = prep_for_rio(indices_annual[index_name]).load()
 
         da_target = index_data
         target_shp = shp_thai_boundary # Default to country boundary
