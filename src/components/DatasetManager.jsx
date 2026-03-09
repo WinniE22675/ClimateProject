@@ -128,7 +128,7 @@ export default function DatasetManager() {
               value={datasetName}
               onChange={(e) => setDatasetName(e.target.value)}
               className="form-control form-control-sm"
-              placeholder="e.g. SEA_ERA5_1960_2020"
+              placeholder="e.g. ERA5_Thailand_1960_2020"
             />
           </div>
           <div className="col-12 col-md-7">

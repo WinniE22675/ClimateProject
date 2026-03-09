@@ -163,7 +163,7 @@ export default function DatasetPreview({ metadata, selectedFile, onSelectFile })
     <div className="card shadow-sm border-0 h-100">
       
       {/* Header ของ Preview */}
-      <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <div className="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center" style={{ minHeight: "60px" }}>
         <h5 className="mb-0 fw-bold text-dark">Dataset Preview</h5>
         
         {metaList.length > 1 && (
@@ -181,7 +181,7 @@ export default function DatasetPreview({ metadata, selectedFile, onSelectFile })
         )}
       </div>
 
-      <div className="card-body p-4" style={{ fontSize: "0.9rem" }}>
+      <div className="card-body p-3" style={{ fontSize: "0.9rem" }}>
         
         {/* VARIABLES */}
         <h6 className="fw-bold text-primary mb-3">Variables</h6>

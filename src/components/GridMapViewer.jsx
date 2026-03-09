@@ -209,7 +209,7 @@ export default function GridMapViewer({
 
   const COUNTRY_VIEW = {
     Thailand: {
-      center: [15.0, 101.0],
+      center: [13.5, 101.0],
       zoom: 5,
     },
     Vietnam: {

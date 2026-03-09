@@ -223,6 +223,7 @@ def calc_event_maps(spi: xr.DataArray, threshold=-1.0, event_type="drought"):
         vectorize=True,
         dask="parallelized",
         output_dtypes=[float],
+        dask_gufunc_kwargs={"output_sizes": {"metric": 4}}
     )
 
     results = results.assign_coords(metric=["freq", "duration", "peak", "severity"])
@@ -365,12 +366,15 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
 
             # Step 4.2: Calculate Event Maps using the SAME spi_data
             # Define event configurations
+            '''
             event_configs = [("Drought", -1.0), ("Flood", 1.0)]
             metrics = ["Frequency", "Duration", "Peak", "Severity"]
 
             for event_type, threshold in event_configs:
                 # Calculate maps once per event type
-                maps = calc_event_maps(spi_data, threshold=threshold, event_type=event_type.lower())
+                spi_data_rechunked = spi_data.chunk({"time": -1})
+
+                maps = calc_event_maps(spi_data_rechunked, threshold=threshold, event_type=event_type.lower())
 
                 for metric in metrics:
                     # Construct key: e.g., "SPI3_Drought_Frequency"
@@ -378,6 +382,7 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
                     
                     if selected_indices is None or base_name in selected_indices:
                         results[full_key] = maps[metric]
+            '''
 
         except Exception as e:
             print(f"Error calculating SPI{window} group: {e}")

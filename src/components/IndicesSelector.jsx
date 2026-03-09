@@ -115,7 +115,7 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
   // }
   return (
     <div className="card shadow-sm border-0 h-100">
-      <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+      <div className="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center" style={{ minHeight: "60px" }}>
         <h5 className="mb-0 fw-bold text-dark">Select Indices</h5>
         <button onClick={selectAll} className="btn btn-sm btn-outline-primary shadow-sm">
           {Object.values(availableIndices).flat().every((i) => selected.includes(i)) && selected.length > 0
@@ -124,10 +124,10 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
         </button>
       </div>
 
-      <div className="card-body p-4 d-flex flex-column">
+      <div className="card-body p-3 d-flex flex-column">
         
         {/* Baseline Input */}
-        <div className="bg-light border rounded p-3 mb-4 shadow-sm">
+        <div className="bg-light border rounded p-3 mb-3 shadow-sm">
           <label className="form-label fw-bold small text-muted mb-2">Baseline Period (for percentile-based indices)</label>
           <div className="input-group input-group-sm">
             <span className="input-group-text bg-white">Start Year</span>
@@ -151,7 +151,7 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
         </div>
 
         {/* Indices Checkboxes (Scrollable) */}
-        <div className="overflow-auto pe-2 flex-grow-1" style={{ maxHeight: "450px" }}>
+        <div className="overflow-auto pe-2 flex-grow-1" style={{ maxHeight: "280px" }}>
           {Object.keys(availableIndices).map((variable) => (
             <div key={variable} className="mb-4">
               
@@ -166,7 +166,7 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
 
               <div className="row g-2 px-1">
                 {availableIndices[variable].map((ind) => (
-                  <div key={ind} className="col-6 col-md-4">
+                  <div key={ind} className="col-6 col-md-3">
                     <div className="form-check border rounded p-2 ps-4 bg-white shadow-sm" style={{ cursor: "pointer" }}>
                       <input
                         className="form-check-input"

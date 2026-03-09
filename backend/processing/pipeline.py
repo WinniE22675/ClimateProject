@@ -259,7 +259,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
         # except Exception as e:
         #     print(f"Warning: Could not load SEA shapefile: {e}")
         #     shp_sea = None
-
+       
         for var in indices_annual.data_vars:
             print(f"Exporting Annual: {var}")
             
@@ -315,6 +315,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
             if shp_thai_provinces is not None:
                 overlay_with_shapefile(actual_json_path_overview, shp_thai_boundary)
                 overlay_with_shapefile(trend_json_path_overview, shp_thai_boundary)
+
             if not is_spi_event:
                 print(f"Start Timeseries Thailand")
                 if shp_thai_boundary is not None:
@@ -335,6 +336,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                         )
                     else:
                         print(f"Skipping Thailand Overview timeseries for {var}")
+
 
             for province in THAILAND_PROVINCES_LIST:
                 print(f"Start {province}")
@@ -398,6 +400,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     else:
                         print(f"Skipping {province} for {var} (No data coverage or error)")
 
+
         # --- Monthly Export ---
         for var in indices_monthly.data_vars:
             print(f"Exporting monthly: {var}")
@@ -407,7 +410,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
             current_da = prep_for_rio(indices_monthly[var]).load()
 
             # SEA
-            '''           
+            '''
             # SEA Avg
             export_seasonal_cycle(indices_monthly[var], var, output_base_dir, region_name="SEA")
             
@@ -416,7 +419,8 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 weighted_da = calc_weighted_mean(indices_monthly[var], country, shp_countries, target_col="ADMIN") # COUNTRY_SHAPEFILE_PATH
                 if weighted_da is not None and not weighted_da.isnull().all():
                     export_seasonal_cycle(weighted_da, var, output_base_dir, region_name=country)
-            ''' 
+            '''
+
 
             is_spi_event = var.startswith("SPI") and any(evt in var for evt in ["_Drought_", "_Flood_"])
             if is_spi_event:

@@ -281,6 +281,38 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
   //items-center >> align vertical center
 
   //strokeDasharray="3 3" >> 3px line 3px space
+const getPerfectTicks = (data) => {
+    if (!data || data.length === 0) return [];
+
+    const minYear = Math.min(...data.map(d => Number(d.year)));
+    const maxYear = Math.max(...data.map(d => Number(d.year)));
+    const range = maxYear - minYear;
+
+    // 1. ถ้าระยะเวลาสั้นกว่า 10 ปี โชว์แกนทุกๆ 1 ปีไปเลย
+    if (range <= 10) {
+      const ticks = [];
+      for (let i = minYear; i <= maxYear; i++) ticks.push(i);
+      return ticks;
+    }
+
+    // 2. กำหนดจำนวนป้าย (Ticks) ที่ต้องการแสดง 
+    // ยิ่งช่วงปีเยอะ ยิ่งเพิ่มป้าย (เลข 9 เหมาะกับช่วง 64 ปี เพราะ 64/(9-1) = 8 พอดี)
+    let numTicks = 9; 
+    if (range <= 20) numTicks = 5;
+    else if (range <= 40) numTicks = 7;
+
+    // 3. คำนวณระยะห่างเป๊ะๆ (อาจเป็นจุดทศนิยม เช่น ห่างกัน 8.2 ปี)
+    const ticks = [];
+    const step = range / (numTicks - 1); 
+
+    for (let i = 0; i < numTicks; i++) {
+      ticks.push(minYear + (step * i));
+    }
+
+    return ticks; // จะได้ Array เช่น [1960, 1968, 1976, 1984, 1992, 2000, 2008, 2016, 2024]
+  };
+
+  const perfectTicks = getPerfectTicks(mergedData);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div style={{ color: "red" }}>Error: {error}</div>;
@@ -463,9 +495,26 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
         </ResponsiveContainer>
       ) : (
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={mergedData}>
+          <LineChart data={mergedData} margin={{ right: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="year" interval="preserveStartEnd" allowDecimals={false} />
+            <XAxis dataKey="year" interval="preserveStartEnd" minTickGap={0} allowDecimals={false} />
+            {/* <XAxis 
+              dataKey="year" 
+              type="number" 
+              domain={['dataMin', 'dataMax']} 
+              ticks={perfectTicks} 
+              interval={0} 
+              tickFormatter={(tick) => Math.round(tick).toString()}
+              allowDecimals={false} 
+            /> */}
+            {/* <XAxis 
+              dataKey="year" 
+              type="number"               
+              domain={['dataMin', 'dataMax']} 
+              tickCount={20}               
+              allowDecimals={false}     
+              padding={{ left: 20, right: 20 }}
+            /> */}
             <YAxis
               width={70}
               label={{ value: unit, angle: -90, position: "insideLeft" }}
@@ -514,7 +563,7 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
 
       {/* Monthly Graph 100%*/}
       <ResponsiveContainer width="100%" height={240}>
-        <LineChart data={monthlyData}>
+        <LineChart data={monthlyData} margin={{ right: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="month"
