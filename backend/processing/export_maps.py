@@ -127,7 +127,7 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
                 {
                     "type": "Feature",
                     "geometry": poly.__geo_interface__,
-                    "properties": {"value": round(float(val),4)},
+                    "properties": {"value": round(float(val),2)},
                 }
             )
     # print("www")
@@ -236,13 +236,13 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
     #                     "properties": {"slope": round(float(slope),2), "p": round(float(pval),2)},
     #                 }
     #             )
-    # [OPTIMIZATION 1]: Extract entire 3D data array to Numpy array ONCE.
+    
     # Shape is typically (time, lat, lon)
     trend_values = trend.values 
 
     features = []
     
-    # [OPTIMIZATION 2]: Combine MK calculation and Polygon creation into a SINGLE double-loop.
+    # Combine MK calculation and Polygon creation into a SINGLE double-loop.
     for i, lat in enumerate(lats):
         for j, lon in enumerate(lons):
             
@@ -272,13 +272,14 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
                             "type": "Feature",
                             "geometry": poly.__geo_interface__,
                             "properties": {
-                                "slope": round(float(slope), 4), 
-                                "p": round(float(pval), 4)
+                                "slope": round(float(slope), 2), 
+                                "p": round(float(pval), 2)
                             },
                         }
                     )
-                except Exception:
+                except Exception as e:
                     # Skip if MK test fails (e.g., constant data values)
+                    print(f"MK Test Error at [{i},{j}]: {e}")
                     pass
     out = {
         "type": "FeatureCollection",
