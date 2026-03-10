@@ -340,8 +340,20 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
         try:
             if name in BASELINE_REQUIRED_INDICES:
                 results[name] = func(ds, freq=freq, baseline=baseline)
+                # index_result = func(ds, freq=freq, baseline=baseline)
             else:
                 results[name] = func(ds, freq=freq)
+                # index_result = func(ds, freq=freq)
+
+            # units = index_result.attrs.get("units", "")
+            # if units in ["K", "kelvin"]:
+            #     original_attrs = index_result.attrs.copy()
+            #     index_result = index_result - 273.15
+            #     index_result.attrs = original_attrs
+            #     index_result.attrs["units"] = "degC"
+
+            # results[name] = index_result
+
         except KeyError:
             raise ValueError(f"Index {name} requires missing variables")
         except Exception as e:

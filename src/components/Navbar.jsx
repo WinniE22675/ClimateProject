@@ -21,7 +21,7 @@ export default function Navbar() {
       <div className="container-fluid px-4">
         {/* Brand / Logo */}
         <div className="text-xl font-bold text-blue-600">
-          <h2>Climate Risk Map</h2>
+          <h2>CDTI Climate Data Services</h2>
         </div>
 
         {/* Menu Items */}

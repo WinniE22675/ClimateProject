@@ -109,6 +109,7 @@ function BoundaryMaskLayer({ mask }) {
       style: {
         fillColor: "#dddddd", // background color
         fillOpacity: 1, // IMPORTANT: must be 1
+        stroke: false,
         weight: 0,
         interactive: false,
       },
@@ -121,7 +122,7 @@ function BoundaryMaskLayer({ mask }) {
 }
 
 
-function BoundaryLayer({ data }) {
+function BoundaryLayer({ data , weight = 0.5 }) {
   const map = useMap();
   useEffect(() => {
     if (!data) return;
@@ -134,6 +135,7 @@ function BoundaryLayer({ data }) {
       pane: "boundary",
       style: {
         interactive: false,
+        weight: weight,
         color: "black",
         weight: 0.5,
         fillOpacity: 0,
@@ -142,7 +144,7 @@ function BoundaryLayer({ data }) {
     return () => {
       map.removeLayer(layer); // each data change
     };
-  }, [map, data]);
+  }, [map, data, weight]);
   return null;
 }
 
@@ -211,8 +213,8 @@ export default function GridMapViewer({
 
   const COUNTRY_VIEW = {
     Thailand: {
-      center: [13.5, 101.0],
-      zoom: 5,
+      center: [13.25, 101.0],
+      zoom: 5.25,
     },
     Vietnam: {
       center: [16.0, 107.5],
@@ -311,6 +313,8 @@ export default function GridMapViewer({
       // Dynamically select folder based on mapStyle state
       const mapFolder = mapStyle === "shapefile" ? "maps_shp" : "maps_grid";
       const fileSuffix = mapStyle === "shapefile" ? "shp" : "grid";
+      // const mapFolder = mapStyle === "shapefile" ? "maps_grid" : "maps_grid";
+      // const fileSuffix = mapStyle === "shapefile" ? "grid" : "grid";
 
       // Construct file paths based on the domain-centric structure
       // const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${cacheKey}`;
@@ -498,6 +502,12 @@ export default function GridMapViewer({
   //     .then(setMaskData);
   // }, [country]);
 
+  // useEffect(() => {
+  //   fetch(`/data/mask/Thailand_mask.geojson`)
+  //     .then((res) => res.json())
+  //     .then(setMaskData);
+  // }, []);
+
 useEffect(() => {
     if (country === "Thailand") {
       fetch(`/data/boundary/Thailand_provinces.geojson`)
@@ -571,10 +581,16 @@ useEffect(() => {
         // setScales((s) => ({ ...s, actual: scale }));
         // setBinsAll((b) => ({ ...b, actual: thresholds }));
         const thresholds = d3.ticks(minVal, maxVal, nBins);
+
+        // const customBlueRange = d3.schemeBlues[11].slice(-nBins);
+        // const customBlueRange = d3.quantize((t) => d3.interpolateBlues(t * 0.8 + 0.2), nBins);
+        
         const scale = d3
           .scaleThreshold()
           .domain(thresholds.slice(1, -1))
           .range(d3.schemeYlOrRd[nBins]);
+          // .range(customBlueRange);
+          // .range(d3.schemeBlues[nBins]); //d3.schemeBlues d3.schemeYlOrRd
 
         setScales((s) => ({ ...s, actual: scale }));
         setBinsAll((b) => ({ ...b, actual: thresholds }));
@@ -620,6 +636,7 @@ useEffect(() => {
         scales[modeKey] && val != null && !isNaN(val) // from color scale func. if have scale fill color, but if have not is gray color
           ? scales[modeKey](val)
           : "#dddddd",
+      stroke: false,
       weight: 0,
       color: "none",
       fillOpacity: 0.8,
@@ -836,7 +853,9 @@ useEffect(() => {
         <MapContainer
           center={mapView.center}
           zoom={mapView.zoom}
-          style={{ height: "450px", width: "100%", zIndex: 0 }}
+          zoomSnap={0.25}  // Enable fractional zoom snapping to 0.25 increments
+          zoomDelta={0.25} // Set zoom step for +/- buttons to 0.25
+          style={{ height: "450px", width: "100%", zIndex: 0 }} //450px
         >
           {/* <MapViewUpdater center={mapView.center} zoom={mapView.zoom} /> */}
           <MapBoundsController 
@@ -859,6 +878,7 @@ useEffect(() => {
           {/* Map Data Layers */}
           {mode === "trend" && gridData.trend && (
             <GeoJSON
+              key={`trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
               data={gridData.trend}
               style={style("trend")}
               onEachFeature={onEachFeature("trend")}
@@ -867,6 +887,7 @@ useEffect(() => {
           )}
           {mode === "actual" && gridData.actual && (
             <GeoJSON
+              key={`actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
               data={gridData.actual}
               style={style("actual")}
               onEachFeature={onEachFeature("actual")}
@@ -880,11 +901,11 @@ useEffect(() => {
       </div>
 
       {/* 4. Legend & Controls Footer */}
-      <div className="card-footer bg-white border-top pt-2 pb-4 px-0">
+      <div className="card-footer bg-white border-top pt-2 pb-3 px-0">
         
         {/* Color Bar */}
         {scales[mode] && binsAll[mode]?.length > 0 && (
-          <div className="mb-1">
+          <div className="mb-2">
             <Legend
               bins={binsAll[mode]}
               scale={scales[mode]}
@@ -893,6 +914,7 @@ useEffect(() => {
             />
           </div>
         )}
+        <div className="d-flex justify-content-between align-items-center px-3">
 
         {/* Legend Range Controls */}
         <div className="d-flex justify-content-center align-items-center gap-2">
@@ -947,7 +969,7 @@ useEffect(() => {
           </button>
         </div>
         <div 
-          className="position-absolute d-flex gap-1" 
+          className="d-flex justify-content-end gap-1" 
           style={{ bottom: "10px", right: "15px" }}
         >
           <button
@@ -960,12 +982,12 @@ useEffect(() => {
           <button
             className={`btn btn-sm ${mapStyle === "shapefile" ? "btn-secondary" : "btn-outline-secondary"}`}
             onClick={() => setMapStyle("shapefile")}
-            title="Show as Province Average"
+            title="Show as Shapefile Area Average"
           >
-            Province
+            Shapefile
           </button>
         </div>
-
+        </div>
       </div>
     </div>
   );

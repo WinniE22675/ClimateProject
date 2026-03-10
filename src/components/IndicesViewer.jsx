@@ -427,6 +427,7 @@ const getPerfectTicks = (data) => {
       </div> */}
 
       {/* Select average window size */}
+      {!isSPI && (
       <div className="flex gap-2 items-center p-2">
         <label>Year Average Window:</label>
         <input
@@ -436,9 +437,10 @@ const getPerfectTicks = (data) => {
           className="border p-1 w-20 rounded"
         />
       </div>
+      )}
 
       {isSPI && (
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center p-2">
           <label>SPI Threshold:</label>
           <input
             type="number"
@@ -456,7 +458,7 @@ const getPerfectTicks = (data) => {
           <BarChart data={spiSeries}>
             {/* <CartesianGrid strokeDasharray="3 3" /> */}
 
-            <XAxis dataKey="date" interval="preserveStartEnd" tick={{ fontSize: 11 }} />
+            <XAxis dataKey="date" interval="preserveStartEnd" minTickGap={0} tick={{ fontSize: 11 }} />
 
             <YAxis
               width={70}

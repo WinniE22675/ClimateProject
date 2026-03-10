@@ -296,7 +296,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
 
             is_spi_event = var.startswith("SPI") and any(evt in var for evt in ["_Drought_", "_Flood_"])
             
-            '''
+            # '''
             actual_json_path_overview = export_actual_maps_xesmf(
                 index_data=current_da, # indices_annual[var], 
                 index_name=var, 
@@ -317,37 +317,11 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
             if shp_thai_provinces is not None:
                 overlay_with_shapefile(actual_json_path_overview, shp_thai_boundary)
                 overlay_with_shapefile(trend_json_path_overview, shp_thai_boundary)
-            '''
+            # '''
 
             provincial_ts_dict = {}
-            '''
-            # ==========================================
-            # ---> NEW: Shapefile Mode Maps <---
-            # Export maps where each province has a single averaged value
-            # ==========================================
-            if shp_thai_provinces is not None:
-                # Actual Map for Shapefile Mode
-                actual_shp_path = export_actual_map_shapefile(
-                    index_data=current_da,
-                    index_name=var,
-                    output_base_dir=output_base_dir,
-                    region_name="Thailand",
-                    gdf_provinces=shp_thai_provinces,
-                    target_col="ADM1_EN"
-                )
-                
-                # Trend Map for Shapefile Mode
-                trend_shp_path = export_trend_map_shapefile(
-                    index_data=current_da,
-                    index_name=var,
-                    output_base_dir=output_base_dir,
-                    region_name="Thailand",
-                    gdf_provinces=shp_thai_provinces,
-                    target_col="ADM1_EN"
-                )
-            # ==========================================
-            '''
-            '''
+            
+            # '''
             if not is_spi_event:
                 print(f"Start Timeseries Thailand")
                 if shp_thai_boundary is not None:
@@ -368,10 +342,10 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                         )
                     else:
                         print(f"Skipping Thailand Overview timeseries for {var}")
-            '''
+            # '''
             
 
-            
+            # '''
             for province in THAILAND_PROVINCES_LIST:
                 print(f"Start {province}")
 
@@ -388,7 +362,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 except Exception as e:
                     print(f"Skipping maps for {province} (No data in boundary or clipping error): {e}")
                     da_province = None
-                '''
+                # """
                 if da_province is not None:
                     # print(f"Export Actual Map : {province}")
                     
@@ -413,7 +387,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     if shp_thai_provinces is not None:
                         overlay_with_shapefile(actual_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
                         overlay_with_shapefile(trend_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
-                '''
+                # """
                 
                 if not is_spi_event:
                     # print(f"Calculate Weight Provinces: {var}")
@@ -428,7 +402,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     if weighted_da is not None and not weighted_da.isnull().all():
 
                         provincial_ts_dict[province] = weighted_da
-                        '''
+                        # """
 
                         # Export using the province flag to route to the correct folder
                         export_yearly_timeseries(
@@ -438,10 +412,11 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                             region_name="Thailand", 
                             province_name=province
                         )
-                        '''
+                        # """
                     else:
                         print(f"Skipping {province} for {var} (No data coverage or error)")
-
+            # '''
+            # '''
             # ==========================================
             # ---> NEW: Shapefile Mode Maps <---
             # Pass the dictionary of clipped time-series to export maps.
@@ -468,9 +443,9 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     region_name="Thailand"
                 )
             # ==========================================
-                
+            # '''
         # --- Monthly Export ---
-        '''
+        # '''
         for var in indices_monthly.data_vars:
             print(f"Exporting monthly: {var}")
 
@@ -536,25 +511,10 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     print(f"Skipping {province} for {var} (No data coverage or error)")
         
     
-        '''
+        # '''
     except Exception as e:
         print(f"Pipeline Error: {e}")
         raise e
-        # for var in indices_annual.data_vars:
-        #     print("Exporting:", var)
-        #     export_yearly_timeseries(indices_annual[var], var)
-        #     export_actual_maps_xesmf(indices_annual[var], var)
-        #     export_trend_map_xesmf(indices_annual[var], var)
-
-        #     # === Overlay ===
-        #     actual_path = fr"output/maps_grid/actual/{var}_actual_grid.geojson"
-        #     trend_path = fr"output/maps_grid/trend/{var}_trend_grid.geojson"
-
-        #     overlay_with_shapefile(actual_path, shp_country)
-        #     overlay_with_shapefile(trend_path, shp_country)
-
-        # for var in indices_monthly.data_vars:
-        #     export_monthly_series(indices_monthly[var], var)
 
     finally:
         ds.close() 
