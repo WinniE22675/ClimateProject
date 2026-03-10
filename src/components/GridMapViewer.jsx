@@ -175,6 +175,8 @@ export default function GridMapViewer({
 
   const [allProvincesData, setAllProvincesData] = useState(null);
 
+  const [mapStyle, setMapStyle] = useState("grid"); // "grid" or "shapefile"
+
   // const [seaBoundary, setSeaBoundary] = useState(null);
   // const [countryBoundary, setCountryBoundary] = useState(null);
   // const [maskData, setMaskData] = useState(null);
@@ -306,9 +308,15 @@ export default function GridMapViewer({
       const area = province ? province : "overview";
       const cacheKey = Date.now();
 
+      // Dynamically select folder based on mapStyle state
+      const mapFolder = mapStyle === "shapefile" ? "maps_shp" : "maps_grid";
+      const fileSuffix = mapStyle === "shapefile" ? "shp" : "grid";
+
       // Construct file paths based on the domain-centric structure
-      const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${cacheKey}`;
-      const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${cacheKey}`;
+      // const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${cacheKey}`;
+      // const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${cacheKey}`;
+      const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}_actual_${fileSuffix}.geojson?v=${cacheKey}`;
+      const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}_trend_${fileSuffix}.geojson?v=${cacheKey}`;
 
       // Helper function to handle fetch and return 404 gracefully instead of breaking
       const fetchGracefully = async (url) => {
@@ -359,8 +367,10 @@ export default function GridMapViewer({
 
           // Re-fetch after generation ---
           const newCacheKey = Date.now(); 
-          const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${newCacheKey}`;
-          const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${newCacheKey}`;
+          // const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${newCacheKey}`;
+          // const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${newCacheKey}`;
+          const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}_actual_${fileSuffix}.geojson?v=${newCacheKey}`;
+          const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}_trend_${fileSuffix}.geojson?v=${newCacheKey}`;
 
           const retryRequests = [fetchGracefully(retryActualPath)];
           if (supportsTrend) retryRequests.push(fetchGracefully(retryTrendPath));
@@ -408,7 +418,7 @@ export default function GridMapViewer({
     }
 
     return () => { isMounted = false; };
-  }, [indexName, datasetName, country, province, startYear, endYear]);
+  }, [indexName, datasetName, country, province, startYear, endYear , mapStyle]);
 
   // Define which dataset to render based on the current mode
   const currentMapData = mode === "trend" ? gridData.trend : gridData.actual;
@@ -680,13 +690,15 @@ useEffect(() => {
     //   console.log("clicked", modeKey);
     // });
     let html = "";
+    const namePrefix = feature.properties.name ? `<strong>${feature.properties.name}</strong><br/>` : "";
+
     if (modeKey === "actual") {
       const val = feature.properties.value;
-      html = `Value: ${val != null ? val.toFixed(2) : "N/A"} ${unit}`;
+      html = `${namePrefix} Value: ${val != null ? val.toFixed(2) : "N/A"} ${unit}`;
     } else if (modeKey === "trend") {
       const slope = feature.properties.slope;
       const pval = feature.properties.p;
-      html = `Slope: ${slope != null ? slope.toFixed(2) : "N/A"}<br/>p-value: ${
+      html = `${namePrefix} Slope: ${slope != null ? slope.toFixed(2) : "N/A"}<br/>p-value: ${
         pval != null ? pval.toFixed(2) : "N/A"
       }`;
     }
@@ -932,6 +944,25 @@ useEffect(() => {
             }
           >
             Auto Fix
+          </button>
+        </div>
+        <div 
+          className="position-absolute d-flex gap-1" 
+          style={{ bottom: "10px", right: "15px" }}
+        >
+          <button
+            className={`btn btn-sm ${mapStyle === "grid" ? "btn-secondary" : "btn-outline-secondary"}`}
+            onClick={() => setMapStyle("grid")}
+            title="Show as Grid"
+          >
+            Grid
+          </button>
+          <button
+            className={`btn btn-sm ${mapStyle === "shapefile" ? "btn-secondary" : "btn-outline-secondary"}`}
+            onClick={() => setMapStyle("shapefile")}
+            title="Show as Province Average"
+          >
+            Province
           </button>
         </div>
 

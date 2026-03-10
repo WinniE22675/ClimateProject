@@ -11,7 +11,7 @@ export default function ClimateDashboard() {
   const [country, setCountry] = useState("Thailand"); //"SEA"
   // const [datasetId, setDatasetId] = useState("default"); // default, 1, 2, 3, 4
   const [datasetList, setDatasetList] = useState([]);
-  const [activeDataset, setActiveDataset] = useState("default");
+  const [activeDataset, setActiveDataset] = useState("ERA5_Thailand_pr_1960_2024"); //default
   const [province, setProvince] = useState("");
 
   const [inputStartYear, setInputStartYear] = useState("1960");
@@ -362,7 +362,7 @@ export default function ClimateDashboard() {
             value={activeDataset}
             onChange={(e) => setActiveDataset(e.target.value)}
           >
-            <option value="default">Default Dataset</option>
+            {/* <option value="default">Default Dataset</option> */}
             {datasetList.length === 0 && (
               <option disabled>No uploaded dataset</option>
             )}
