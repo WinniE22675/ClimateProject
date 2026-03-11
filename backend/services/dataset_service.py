@@ -112,12 +112,16 @@ def run_async_calculation(dataset_name: str, selected_indices: list, baseline=No
     No merge or clip is performed here.
     """
 
+    # Update baseline and basic info BEFORE generation starts
+    metadata_updates = {}
     if baseline:
         # Convert Pydantic model (BaselinePeriod) to dict safely
         baseline_dict = baseline.dict() if hasattr(baseline, 'dict') else baseline
-        update_metadata_json(dataset_name, {"baseline": baseline_dict})
+        metadata_updates["baseline"] = baseline_dict
     else:
-        update_metadata_json(dataset_name, {"baseline": None})
+        metadata_updates["baseline"] = None
+        
+    update_metadata_json(dataset_name, metadata_updates)
 
     # Path must match process_selection output
     merged_path = os.path.join(
@@ -136,6 +140,8 @@ def run_async_calculation(dataset_name: str, selected_indices: list, baseline=No
         baseline=baseline
     )
 
+    update_metadata_json(dataset_name, {"available_indices": selected_indices})
+
     return {
         "status": "success",
         "dataset": f"{dataset_name}_merged.nc"
@@ -153,9 +159,8 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
     try:
         print(f"[Dataset {dataset_name}] Async Task Started...")
         
-        # 1. Update Status -> Processing
+        # 1. Update Status
         # save_metadata_json(slot_id, {"status": "processing", "message": "Clipping and Merging..."})
-        # ---- STEP 1: Clipping ----
         save_metadata_json(
             dataset_name,
             {
@@ -165,9 +170,7 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
             }
         )
 
-        # 2. Process & Clip (ใช้ process_and_clip หรือ core_process_file ตามที่คุณมี)
-        # แนะนำให้ process_and_clip ทำหน้าที่ Clip ลง folder processed เหมือนเดิมก่อน
-        # เพื่อความปลอดภัยของไฟล์ย่อย
+        # 2. Process & Clip 
         process_and_clip(slot_id, dataset_name, scope)
 
         print(f"[Dataset {dataset_name}] Clipping")
@@ -181,7 +184,7 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
             }
         )
         
-        # 3. Merge (ใช้ Logic จาก prepare_merged_file_for_calculation)
+        # 3. Merge (use Logic from prepare_merged_file_for_calculation)
         merged_filename = prepare_merged_file_for_calculation(dataset_name)
 
         print(f"[Dataset {dataset_name}] Merge Dataset")
@@ -191,8 +194,6 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         
         # if not files:
         #     raise Exception("No processed files to merge.")
-
-        # ---- STEP 3: Finalizing ----
         save_metadata_json(
             dataset_name,
             {
@@ -218,7 +219,6 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
             **merged_metadata
         }
 
-    
         save_metadata_json(dataset_name, final_meta)
             
         print(f"[Dataset {dataset_name}] Async Task Completed.")

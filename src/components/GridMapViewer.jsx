@@ -137,7 +137,6 @@ function BoundaryLayer({ data , weight = 0.5 }) {
         interactive: false,
         weight: weight,
         color: "black",
-        weight: 0.5,
         fillOpacity: 0,
       },
     }).addTo(map);
@@ -178,6 +177,40 @@ export default function GridMapViewer({
   const [allProvincesData, setAllProvincesData] = useState(null);
 
   const [mapStyle, setMapStyle] = useState("grid"); // "grid" or "shapefile"
+  const [colorSchemes, setColorSchemes] = useState({
+    actual: "YlOrRd",
+    trend: "RdBu",
+  });
+
+  useEffect(() => {
+    if (!indexName) return;
+
+    // Define a list of precipitation-related indices 
+    // (Adjust these array items to match your actual backend indices)
+    const rainIndices = [
+      "pr",
+      "prcptot",
+      "rx1day",
+      "rx5day",
+      "sdii",
+      "r10mm",
+      "r20mm",
+      "cdd",
+      "cwd",
+      "r95p",
+      "r99p",
+      "r95ptot",
+      "r99ptot"
+    ];
+    
+    // Check if the current index is related to rain/precipitation
+    const isRain = rainIndices.includes(indexName.toLowerCase());
+
+    setColorSchemes({
+      actual: isRain ? "Blues" : "YlOrRd",
+      trend: "RdBu",
+    });
+  }, [indexName]);
 
   // const [seaBoundary, setSeaBoundary] = useState(null);
   // const [countryBoundary, setCountryBoundary] = useState(null);
@@ -585,10 +618,28 @@ useEffect(() => {
         // const customBlueRange = d3.schemeBlues[11].slice(-nBins);
         // const customBlueRange = d3.quantize((t) => d3.interpolateBlues(t * 0.8 + 0.2), nBins);
         
+        // const selectedScheme = d3[`scheme${colorSchemes.actual}`] 
+        //   ? d3[`scheme${colorSchemes.actual}`][nBins] 
+        //   : d3.schemeYlOrRd[nBins];
+
+        // Intercept "Blues" selection to apply custom darker starting shade
+        const schemeName = colorSchemes.actual;
+        let selectedScheme;
+        if (schemeName === "Blues") {
+          // Use interpolateBlues but skip the lightest 20% (t * 0.8 + 0.2)
+          selectedScheme = d3.quantize((t) => d3.interpolateBlues(t * 0.8 + 0.2), nBins);
+        } else {
+          // Fallback to standard D3 schemes
+          selectedScheme = d3[`scheme${schemeName}`] 
+            ? d3[`scheme${schemeName}`][nBins] 
+            : d3.schemeYlOrRd[nBins];
+        }
+        
         const scale = d3
           .scaleThreshold()
           .domain(thresholds.slice(1, -1))
-          .range(d3.schemeYlOrRd[nBins]);
+          .range(selectedScheme);
+          // .range(d3.schemeYlOrRd[nBins]);
           // .range(customBlueRange);
           // .range(d3.schemeBlues[nBins]); //d3.schemeBlues d3.schemeYlOrRd
 
@@ -613,18 +664,32 @@ useEffect(() => {
         if (absMax === 0) return;
 
         const thresholds = d3.ticks(-absMax, absMax, nBins);
-        const colors = [...d3.schemeRdBu[nBins]]; //.reverse()
+
+        // const colors = [...d3.schemeRdBu[nBins]]; //.reverse()
+        const rawSchemeName = colorSchemes.trend;
+        const isReversed = rawSchemeName.startsWith("-");
+        const cleanSchemeName = isReversed ? rawSchemeName.substring(1) : rawSchemeName;
+
+        const selectedScheme = d3[`scheme${colorSchemes.trend}`]
+          ? [...d3[`scheme${colorSchemes.trend}`][nBins]]
+          : [...d3.schemeRdBu[nBins]];
+
+        // Reverse the array if the prefix '-' is present (e.g., for Temperature Trend)
+        if (isReversed) {
+          selectedScheme.reverse();
+        }
 
         const scale = d3
           .scaleThreshold()
           .domain(thresholds.slice(1, -1))
-          .range(colors);
+          .range(selectedScheme);
+          // .range(colors);
 
         setScales((s) => ({ ...s, trend: scale }));
         setBinsAll((b) => ({ ...b, trend: thresholds }));
       }
     });
-  }, [gridData, indexName, legendRange]);
+  }, [gridData, indexName, legendRange, colorSchemes]);
 
   // style grid cell
   const style = (modeKey) => (feature) => {
@@ -916,8 +981,45 @@ useEffect(() => {
         )}
         <div className="d-flex justify-content-between align-items-center px-3">
 
+        <div className="d-flex align-items-center gap-3">
+
+            {/* 1. Color Palette Selector */}
+            <div className="d-flex align-items-center gap-2">
+              <span className="small fw-bold text-muted">Color:</span>
+              <select
+                className="form-select form-select-sm"
+                style={{ width: "140px" }}
+                value={colorSchemes[mode]}
+                onChange={(e) =>
+                  setColorSchemes((prev) => ({ ...prev, [mode]: e.target.value }))
+                }
+              >
+                {mode === "actual" ? (
+                  <>
+                    <optgroup label="Temperature">
+                      <option value="YlOrRd">Yellow-Orange-Red</option>
+                      <option value="OrRd">Orange-Red</option>
+                      <option value="Reds">Reds</option>
+                    </optgroup>
+                    <optgroup label="Precipitation">
+                      <option value="Blues">Blues</option>
+                      <option value="YlGnBu">Yellow-Green-Blue</option>
+                      <option value="GnBu">Green-Blue</option>
+                    </optgroup>
+                  </>
+                ) : (
+                  <>
+                      {/* Note: -RdBu means we will reverse it in the logic */}
+                      <option value="RdBu">Red-Blue</option>
+                      <option value="-RdBu">Blue-Red</option>
+                      <option value="BrBG">Brown-Green</option>
+                  </>
+                )}
+              </select>
+            </div>
+
         {/* Legend Range Controls */}
-        <div className="d-flex justify-content-center align-items-center gap-2">
+        <div className="d-flex justify-content-center align-items-center gap-1">
           <span className="small fw-bold text-muted me-2">Legend Range:</span>
 
           <input
@@ -934,7 +1036,7 @@ useEffect(() => {
               }))
             }
             className="form-control form-control-sm text-center"
-            style={{ width: "80px" }}
+            style={{ width: "65px" }}
           />
           
           <span className="text-muted">-</span>
@@ -953,7 +1055,7 @@ useEffect(() => {
               }))
             }
             className="form-control form-control-sm text-center"
-            style={{ width: "80px" }}
+            style={{ width: "65px" }}
           />
 
           <button
@@ -968,6 +1070,7 @@ useEffect(() => {
             Auto Fix
           </button>
         </div>
+        </div>
         <div 
           className="d-flex justify-content-end gap-1" 
           style={{ bottom: "10px", right: "15px" }}
@@ -976,6 +1079,7 @@ useEffect(() => {
             className={`btn btn-sm ${mapStyle === "grid" ? "btn-secondary" : "btn-outline-secondary"}`}
             onClick={() => setMapStyle("grid")}
             title="Show as Grid"
+            disabled={!!province}
           >
             Grid
           </button>
@@ -983,6 +1087,7 @@ useEffect(() => {
             className={`btn btn-sm ${mapStyle === "shapefile" ? "btn-secondary" : "btn-outline-secondary"}`}
             onClick={() => setMapStyle("shapefile")}
             title="Show as Shapefile Area Average"
+            disabled={!!province}
           >
             Shapefile
           </button>

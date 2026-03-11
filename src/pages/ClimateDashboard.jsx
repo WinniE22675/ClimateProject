@@ -4,158 +4,8 @@ import IndicesViewer from "../components/IndicesViewer";
 import GridMapViewer from "../components/GridMapViewer";
 
 export default function ClimateDashboard() {
-  const [indexName, setIndexName] = useState("PRCPTOT");
-  const [mode, setMode] = useState("actual"); // trend / actual
-  // const [datamode, setDataMode] = useState("default"); // default | upload
 
-  const [country, setCountry] = useState("Thailand"); //"SEA"
-  // const [datasetId, setDatasetId] = useState("default"); // default, 1, 2, 3, 4
-  const [datasetList, setDatasetList] = useState([]);
-  const [activeDataset, setActiveDataset] = useState("ERA5"); //default
-  const [province, setProvince] = useState("");
-
-  const [inputStartYear, setInputStartYear] = useState("1960");
-  const [inputEndYear, setInputEndYear] = useState("2024");
-
-  const [startYear, setStartYear] = useState("1960");
-  const [endYear, setEndYear] = useState("2024");  
-
-  const [metadata, setMetadata] = useState(null);
-  const [datasetBounds, setDatasetBounds] = useState({ min: null, max: null });
-
-  // const [inputCountry, setInputCountry] = useState("Thailand");
-  // const [inputProvince, setInputProvince] = useState("");
-
-  useEffect(() => {
-    const fetchMetadata = async () => {
-      // Guard clause: Do nothing if no dataset is selected
-      if (!activeDataset) return; 
-
-      try {
-        // Fetch the metadata file from the backend
-        const response = await fetch(`http://localhost:8000/output/${activeDataset}/metadata.json`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch metadata: HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        // Save raw metadata state in case other components need it
-        setMetadata(data); 
-
-        // Extract years from ISO string format (e.g., "1960-01-01T00:00:00" -> 1960)
-        if (data.time_start && data.time_end) {
-          const minYear = parseInt(data.time_start.substring(0, 4), 10);
-          const maxYear = parseInt(data.time_end.substring(0, 4), 10);
-
-          // 1. Update the logical bounds limit
-          setDatasetBounds({ min: minYear, max: maxYear });
-
-          // 2. Auto-set the draft inputs (UI) to the absolute min/max range
-          setInputStartYear(minYear.toString());
-          setInputEndYear(maxYear.toString());
-
-          // 3. Auto-set the active state to trigger Map and Chart rendering
-          setStartYear(minYear.toString());
-          setEndYear(maxYear.toString());
-        }
-      } catch (error) {
-        console.error("Error fetching dataset metadata:", error);
-        
-        // Reset states if fetch fails (e.g., file not found)
-        setMetadata(null);
-        setDatasetBounds({ min: null, max: null });
-      }
-    };
-
-    fetchMetadata();
-  }, [activeDataset]);
-
-  // const handleApplyYearRange = () => {
-  //   // Validate start > end alert
-  //   if (parseInt(inputStartYear) > parseInt(inputEndYear)) {
-  //     alert("Start Year less than or equal End Year.");
-  //     return;
-  //   }
-  //   // update Active for send to sub Component
-  //   setStartYear(inputStartYear);
-  //   setEndYear(inputEndYear);
-  // };
-  const handleApplyYearRange = () => {
-    let start = parseInt(inputStartYear, 10);
-    let end = parseInt(inputEndYear, 10);
-
-    // 1. Check for empty or invalid input
-    if (isNaN(start) || isNaN(end)) {
-      alert("Please enter valid years.");
-      return;
-    }
-
-    // Auto-swap if start > end
-    if (start > end) {
-      // const temp = start;
-      // start = end;
-      // end = temp;
-      // alert(`Start year was greater than End year. They have been swapped to ${start} - ${end}.`);
-      alert("Start year cannot be greater than End year. Please correct it.");
-      return; // Stop right here!
-    }
-
-    // 2. Validate against Dataset Bounds (if metadata is loaded)
-    // if (datasetBounds && datasetBounds.min !== null && datasetBounds.max !== null) {
-    //   if (start < datasetBounds.min || end > datasetBounds.max) {
-    //     alert(`Years out of range! The dataset only covers ${datasetBounds.min} to ${datasetBounds.max}. Please select within this range.`);
-        
-    //     // Optional: Revert input boxes back to the valid active states
-    //     setInputStartYear(startYear);
-    //     setInputEndYear(endYear);
-        
-    //     return; // Stop right here! No API call.
-    //   }
-    // }
-
-    if (datasetBounds && datasetBounds.min !== null && datasetBounds.max !== null) {
-      let isAdjusted = false;
-
-      // Clamp Start Year
-      if (start < datasetBounds.min) {
-        start = datasetBounds.min;
-        isAdjusted = true;
-      }
-      
-      // Clamp End Year
-      if (end > datasetBounds.max) {
-        end = datasetBounds.max;
-        isAdjusted = true;
-      }
-
-      // Notify user if we auto-adjusted their input
-      if (isAdjusted) {
-        alert(`Years automatically adjusted to fit the dataset range: ${datasetBounds.min} - ${datasetBounds.max}.`);
-      }
-    } else {
-      console.warn("Warning: datasetBounds is null. Skipping clamp validation. Please check metadata fetch.");
-    }
-
-    // 4. Trend Map specific validation (Requires at least 3 years to calculate Mann-Kendall)
-    // Optional: Add this if your map viewer has a 'mode' state accessible here
-    // if (mode === "trend" && (end - start < 2)) {
-    //   alert("Trend map requires at least a 3-year range.");
-    //   return; // Or auto-expand the range
-    // }
-
-    // Update the UI inputs so the user sees the corrected values
-    // setInputStartYear(start.toString());
-    // setInputEndYear(end.toString());
-
-    // Update Active for send to sub Component (GridMapViewer, IndicesViewer)
-    setStartYear(start.toString());
-    setEndYear(end.toString());
-    // setCountry(inputCountry);    
-    // setProvince(inputProvince);
-  };
-
+  
   const countries = [
     "Thailand",
     // "Vietnam",
@@ -324,6 +174,181 @@ export default function ClimateDashboard() {
     "SPI12_Flood_Severity",
   ];
 
+  const [indexName, setIndexName] = useState("PRCPTOT");
+  const [mode, setMode] = useState("actual"); // trend / actual
+  // const [datamode, setDataMode] = useState("default"); // default | upload
+
+  const [country, setCountry] = useState("Thailand"); //"SEA"
+  // const [datasetId, setDatasetId] = useState("default"); // default, 1, 2, 3, 4
+  const [datasetList, setDatasetList] = useState([]);
+  const [activeDataset, setActiveDataset] = useState("ERA5"); //default
+  const [province, setProvince] = useState("");
+
+  const [inputStartYear, setInputStartYear] = useState("1960");
+  const [inputEndYear, setInputEndYear] = useState("2024");
+
+  const [startYear, setStartYear] = useState("1960");
+  const [endYear, setEndYear] = useState("2024");  
+
+  const [metadata, setMetadata] = useState(null);
+  const [datasetBounds, setDatasetBounds] = useState({ min: null, max: null });
+
+  const [availableIndices, setAvailableIndices] = useState(ALL_INDICES);
+
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      // Guard clause: Do nothing if no dataset is selected
+      if (!activeDataset) return; 
+
+      try {
+        // Fetch the metadata file from the backend
+        const response = await fetch(`http://localhost:8000/output/${activeDataset}/metadata.json?v=${new Date().getTime()}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch metadata: HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        console.log("Fetched Metadata Data:", data); 
+        console.log("Has available_indices?", !!data.available_indices);
+        
+        // Save raw metadata state in case other components need it
+        setMetadata(data); 
+
+        // Extract available indices from metadata
+        // Note: Change 'data.available_indices' to match the actual key from your backend JSON
+        if (data.available_indices && Array.isArray(data.available_indices) && data.available_indices.length > 0) {
+          setAvailableIndices(data.available_indices);
+          
+          // Auto-adjust indexName if the current one is NOT in the new dataset
+          setIndexName((currentIndex) => {
+            if (!data.available_indices.includes(currentIndex)) {
+              return data.available_indices[0]; // Select the first available
+            }
+            return currentIndex; // Keep the same if it exists
+          });
+        } else {
+          // Fallback if backend doesn't provide the list
+          setAvailableIndices(ALL_INDICES);
+        }
+
+        // Extract years from ISO string format (e.g., "1960-01-01T00:00:00" -> 1960)
+        if (data.time_start && data.time_end) {
+          const minYear = parseInt(data.time_start.substring(0, 4), 10);
+          const maxYear = parseInt(data.time_end.substring(0, 4), 10);
+
+          // 1. Update the logical bounds limit
+          setDatasetBounds({ min: minYear, max: maxYear });
+
+          // 2. Auto-set the draft inputs (UI) to the absolute min/max range
+          setInputStartYear(minYear.toString());
+          setInputEndYear(maxYear.toString());
+
+          // 3. Auto-set the active state to trigger Map and Chart rendering
+          setStartYear(minYear.toString());
+          setEndYear(maxYear.toString());
+        }
+      } catch (error) {
+        console.error("Error fetching dataset metadata:", error);
+        
+        // Reset states if fetch fails (e.g., file not found)
+        setMetadata(null);
+        setDatasetBounds({ min: null, max: null });
+      }
+    };
+
+    fetchMetadata();
+  }, [activeDataset]);
+
+  useEffect(() => {
+    console.log("Current Available Indices State:", availableIndices);
+  }, [availableIndices]);
+
+  // const handleApplyYearRange = () => {
+  //   // Validate start > end alert
+  //   if (parseInt(inputStartYear) > parseInt(inputEndYear)) {
+  //     alert("Start Year less than or equal End Year.");
+  //     return;
+  //   }
+  //   // update Active for send to sub Component
+  //   setStartYear(inputStartYear);
+  //   setEndYear(inputEndYear);
+  // };
+  const handleApplyYearRange = () => {
+    let start = parseInt(inputStartYear, 10);
+    let end = parseInt(inputEndYear, 10);
+
+    // 1. Check for empty or invalid input
+    if (isNaN(start) || isNaN(end)) {
+      alert("Please enter valid years.");
+      return;
+    }
+
+    // Auto-swap if start > end
+    if (start > end) {
+      // const temp = start;
+      // start = end;
+      // end = temp;
+      // alert(`Start year was greater than End year. They have been swapped to ${start} - ${end}.`);
+      alert("Start year cannot be greater than End year. Please correct it.");
+      return; // Stop right here!
+    }
+
+    // 2. Validate against Dataset Bounds (if metadata is loaded)
+    // if (datasetBounds && datasetBounds.min !== null && datasetBounds.max !== null) {
+    //   if (start < datasetBounds.min || end > datasetBounds.max) {
+    //     alert(`Years out of range! The dataset only covers ${datasetBounds.min} to ${datasetBounds.max}. Please select within this range.`);
+        
+    //     // Optional: Revert input boxes back to the valid active states
+    //     setInputStartYear(startYear);
+    //     setInputEndYear(endYear);
+        
+    //     return; // Stop right here! No API call.
+    //   }
+    // }
+
+    if (datasetBounds && datasetBounds.min !== null && datasetBounds.max !== null) {
+      let isAdjusted = false;
+
+      // Clamp Start Year
+      if (start < datasetBounds.min) {
+        start = datasetBounds.min;
+        isAdjusted = true;
+      }
+      
+      // Clamp End Year
+      if (end > datasetBounds.max) {
+        end = datasetBounds.max;
+        isAdjusted = true;
+      }
+
+      // Notify user if we auto-adjusted their input
+      if (isAdjusted) {
+        alert(`Years automatically adjusted to fit the dataset range: ${datasetBounds.min} - ${datasetBounds.max}.`);
+      }
+    } else {
+      console.warn("Warning: datasetBounds is null. Skipping clamp validation. Please check metadata fetch.");
+    }
+
+    // 4. Trend Map specific validation (Requires at least 3 years to calculate Mann-Kendall)
+    // Optional: Add this if your map viewer has a 'mode' state accessible here
+    // if (mode === "trend" && (end - start < 2)) {
+    //   alert("Trend map requires at least a 3-year range.");
+    //   return; // Or auto-expand the range
+    // }
+
+    // Update the UI inputs so the user sees the corrected values
+    // setInputStartYear(start.toString());
+    // setInputEndYear(end.toString());
+
+    // Update Active for send to sub Component (GridMapViewer, IndicesViewer)
+    setStartYear(start.toString());
+    setEndYear(end.toString());
+    // setCountry(inputCountry);    
+    // setProvince(inputProvince);
+  };
+
   useEffect(() => {
     fetchDatasetList();
   }, []);
@@ -420,7 +445,8 @@ export default function ClimateDashboard() {
             value={indexName}
             onChange={(e) => setIndexName(e.target.value)}
           >
-            {ALL_INDICES.map((idx) => (
+            {/* ALL_INDICES.map((idx) => ( */}
+            {availableIndices.map((idx) => (
               <option key={idx} value={idx}>
                 {idx}
               </option>
