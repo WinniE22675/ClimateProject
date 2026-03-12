@@ -77,7 +77,7 @@ def ensure_temperature_unit(da: xr.DataArray) -> xr.DataArray:
     Ensure temperature variables are in Celsius (°C).
     Supported input units:
       - "c", "°c", "celsius", "degc"
-      - "k", "kelvin" (convert to °C)
+      - "k", "kelvin" (convert to C)
     """
     units = da.attrs.get("units", "").lower().strip()
     original_attrs = da.attrs.copy()
@@ -85,10 +85,10 @@ def ensure_temperature_unit(da: xr.DataArray) -> xr.DataArray:
     if units in ["c", "°c", "celsius", "degc"]:
         return da
 
-    elif units in ["k", "kelvin"]:
+    elif units in ["k", "kelvin", "degk"]:
         da_converted = da - 273.15
         da_converted.attrs = original_attrs
-        da_converted.attrs["units"] = "°C"
+        da_converted.attrs["units"] = "C"
         return da_converted
 
     else:

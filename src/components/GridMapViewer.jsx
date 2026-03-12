@@ -147,6 +147,47 @@ function BoundaryLayer({ data , weight = 0.5 }) {
   return null;
 }
 
+function CountryContextLayer({ data, selectedProvince }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!data || !data.features) return;
+
+    // Create a specific pane to control z-index
+    if (!map.getPane("contextPane")) {
+      map.createPane("contextPane");
+      // zIndex 350 keeps it above base map (200) but below grid data (400)
+      map.getPane("contextPane").style.zIndex = 350; 
+      map.getPane("contextPane").style.pointerEvents = "none";
+    }
+
+    const layer = L.geoJSON(data, {
+      pane: "contextPane",
+      style: (feature) => {
+        // Check if the current feature matches the selected province
+        const isSelected = feature.properties.ADM1_EN === selectedProvince;
+        
+        // If a province is selected AND this feature is NOT the selected one, dim it
+        const shouldDim = selectedProvince && !isSelected;
+
+        return {
+          color: isSelected ? "#000000" : "#888888", // Highlight selected border
+          weight: isSelected ? 2.0 : 0.5,            // Thicker border for selected
+          fillColor: "#e8e8e8",                      // Light gray for background
+          fillOpacity: shouldDim ? 0.7 : 0,          // Show gray only for non-selected
+          interactive: false,
+        };
+      },
+    }).addTo(map);
+
+    return () => {
+      map.removeLayer(layer);
+    };
+  }, [map, data, selectedProvince]);
+
+  return null;
+}
+
 export default function GridMapViewer({
   indexName,
   mode,
@@ -555,26 +596,26 @@ useEffect(() => {
     }
   }, [country]);
 
-  const displayProvinceBoundary = useMemo(() => {
-    if (!allProvincesData) return null;
+  // const displayProvinceBoundary = useMemo(() => {
+  //   if (!allProvincesData) return null;
     
-    // ถ้าผู้ใช้เลือก "Whole Country" (province เป็นค่าว่าง) ให้แสดงเส้นทุกจังหวัด
-    if (!province) {
-      return allProvincesData;
-    }
+  //   // if select "Whole Country" (province is space ("")) will show province line 
+  //   if (!province) {
+  //     return allProvincesData;
+  //   }
 
-    // ถ้ามีการเลือกจังหวัด ให้ Filter เอาเฉพาะ Feature ของจังหวัดนั้น
-    // ** สำคัญ: เช็คชื่อ Property ในไฟล์ GeoJSON ของคุณให้ตรง (ในที่นี้อิงจาก ADM1_EN ตาม Backend)
-    const filteredFeatures = allProvincesData.features.filter(
-      (f) => f.properties.ADM1_EN === province
-    );
+  //   // if select province will Filter select only Feature of that province
+  //   // Note: check Property name in GeoJSON files 
+  //   const filteredFeatures = allProvincesData.features.filter(
+  //     (f) => f.properties.ADM1_EN === province
+  //   );
 
-    // ประกอบร่างกลับเป็น GeoJSON Object
-    return {
-      type: "FeatureCollection",
-      features: filteredFeatures,
-    };
-  }, [allProvincesData, province]);
+  //   // Reassemble back into GeoJSON Object
+  //   return {
+  //     type: "FeatureCollection",
+  //     features: filteredFeatures,
+  //   };
+  // }, [allProvincesData, province]);
 
   // calculate color scale
   useEffect(() => {
@@ -670,8 +711,11 @@ useEffect(() => {
         const isReversed = rawSchemeName.startsWith("-");
         const cleanSchemeName = isReversed ? rawSchemeName.substring(1) : rawSchemeName;
 
-        const selectedScheme = d3[`scheme${colorSchemes.trend}`]
-          ? [...d3[`scheme${colorSchemes.trend}`][nBins]]
+        // const selectedScheme = d3[`scheme${colorSchemes.trend}`]
+        //   ? [...d3[`scheme${colorSchemes.trend}`][nBins]]
+        //   : [...d3.schemeRdBu[nBins]];
+        const selectedScheme = d3[`scheme${cleanSchemeName.trend}`]
+          ? [...d3[`scheme${cleanSchemeName.trend}`][nBins]]
           : [...d3.schemeRdBu[nBins]];
 
         // Reverse the array if the prefix '-' is present (e.g., for Temperature Trend)
@@ -925,7 +969,7 @@ useEffect(() => {
           {/* <MapViewUpdater center={mapView.center} zoom={mapView.zoom} /> */}
           <MapBoundsController 
             province={province} 
-            geojsonData={displayProvinceBoundary} 
+            geojsonData={allProvincesData} //displayProvinceBoundary 
             fallbackView={mapView} 
           />
 
@@ -936,8 +980,15 @@ useEffect(() => {
           {boundaryData && <BoundaryLayer data={boundaryData} weight={2.0} />}
 
           {/* Province Boundaries */}
-          {displayProvinceBoundary && (
+          {/* {displayProvinceBoundary && (
             <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
+          )} */}
+
+          {allProvincesData && (
+            <CountryContextLayer 
+              data={allProvincesData} 
+              selectedProvince={province} 
+            />
           )}
 
           {/* Map Data Layers */}

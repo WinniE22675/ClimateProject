@@ -27,7 +27,7 @@ export default function Legend({ bins, scale, mode, unit }) {
     const span = Math.abs(bins[bins.length - 1] - bins[0]);
     if (span < 0.05) return v.toFixed(3);
     if (span < 1) return v.toFixed(2);
-    if (span < 10) return v.toFixed(1);
+    // if (span < 10) return v.toFixed(1);
     return Math.round(v).toString();
   };
 

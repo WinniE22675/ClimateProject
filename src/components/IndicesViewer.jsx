@@ -153,11 +153,11 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
 
     // Determine if we are looking at a province or the national overview
     const area = province ? province : "overview";
-    const baseIndexName = indexName; // Adjust this if your base name logic differs
+    // const baseIndexName = indexName; // Adjust this if your base name logic differs
 
     // New Path Structure: datasetPath / country / area / indexName / indices / [annual|seasonal]
-    const annualPath = `${datasetPath}/${country}/${area}/${indexName}/indices/annual/${baseIndexName}_timeseries.json?v=${cacheKey}`;
-    const seasonalPath = `${datasetPath}/${country}/${area}/${indexName}/indices/seasonal/${baseIndexName}_seasonal.json?v=${cacheKey}`;
+    const annualPath = `${datasetPath}/${country}/${area}/${baseIndexName}/indices/annual/${baseIndexName}_timeseries.json?v=${cacheKey}`;
+    const seasonalPath = `${datasetPath}/${country}/${area}/${baseIndexName}/indices/seasonal/${baseIndexName}_seasonal.json?v=${cacheKey}`;
     
     Promise.all([
       fetch(annualPath).then((res) => {

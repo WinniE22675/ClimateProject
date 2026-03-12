@@ -305,6 +305,26 @@ BASELINE_REQUIRED_INDICES = {
 
 SPI_WINDOWS = [3, 6, 9, 12] 
 
+import xarray as xr
+
+def convert_temperature_unit(da: xr.DataArray) -> xr.DataArray:
+    """
+    Convert Kelvin to Celsius if the unit is Kelvin.
+    Leave other units (like 'days', '%', 'mm', 'C') unchanged.
+    """
+    units = da.attrs.get("units", "").lower().strip()
+    original_attrs = da.attrs.copy()
+
+    # If the unit is Kelvin, perform the conversion
+    if units in ["k", "kelvin", "degk"]:
+        da_converted = da - 273.15
+        da_converted.attrs = original_attrs
+        da_converted.attrs["units"] = "C"
+        return da_converted
+
+    # For all other units ('c', 'days', '%', 'mm'), return as-is safely
+    return da
+
 def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, baseline=None) -> xr.Dataset:
     print(f"Calculating Indices")
 
@@ -339,20 +359,16 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
         print(f"Calculating {name} ...")
         try:
             if name in BASELINE_REQUIRED_INDICES:
-                results[name] = func(ds, freq=freq, baseline=baseline)
-                # index_result = func(ds, freq=freq, baseline=baseline)
+                # results[name] = func(ds, freq=freq, baseline=baseline)
+                index_result = func(ds, freq=freq, baseline=baseline)
             else:
-                results[name] = func(ds, freq=freq)
-                # index_result = func(ds, freq=freq)
+                # results[name] = func(ds, freq=freq)
+                index_result = func(ds, freq=freq)
 
-            # units = index_result.attrs.get("units", "")
-            # if units in ["K", "kelvin"]:
-            #     original_attrs = index_result.attrs.copy()
-            #     index_result = index_result - 273.15
-            #     index_result.attrs = original_attrs
-            #     index_result.attrs["units"] = "degC"
+            index_result = convert_temperature_unit(index_result)
 
-            # results[name] = index_result
+            # Store the final result
+            results[name] = index_result
 
         except KeyError:
             raise ValueError(f"Index {name} requires missing variables")
@@ -378,22 +394,22 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
 
             # Step 4.2: Calculate Event Maps using the SAME spi_data
             # Define event configurations
-            
-            event_configs = [("Drought", -1.0), ("Flood", 1.0)]
-            metrics = ["Frequency", "Duration", "Peak", "Severity"]
+            if freq == "YS":
+                event_configs = [("Drought", -1.0), ("Flood", 1.0)]
+                metrics = ["Frequency", "Duration", "Peak", "Severity"]
 
-            for event_type, threshold in event_configs:
-                # Calculate maps once per event type
-                spi_data_rechunked = spi_data.chunk({"time": -1})
+                for event_type, threshold in event_configs:
+                    # Calculate maps once per event type
+                    spi_data_rechunked = spi_data.chunk({"time": -1})
 
-                maps = calc_event_maps(spi_data_rechunked, threshold=threshold, event_type=event_type.lower())
+                    maps = calc_event_maps(spi_data_rechunked, threshold=threshold, event_type=event_type.lower())
 
-                for metric in metrics:
-                    # Construct key: e.g., "SPI3_Drought_Frequency"
-                    full_key = f"{base_name}_{event_type}_{metric}"
-                    
-                    if selected_indices is None or base_name in selected_indices:
-                        results[full_key] = maps[metric]
+                    for metric in metrics:
+                        # Construct key: e.g., "SPI3_Drought_Frequency"
+                        full_key = f"{base_name}_{event_type}_{metric}"
+                        
+                        if selected_indices is None or base_name in selected_indices:
+                            results[full_key] = maps[metric]
             
 
         except Exception as e:

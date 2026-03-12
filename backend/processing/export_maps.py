@@ -50,6 +50,18 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
         start_year = int(index_data.time.dt.year.min())
     if end_year is None:
         end_year = int(index_data.time.dt.year.max())
+
+    # Determine decimal places based on index characteristics
+    if "SPI" in index_name:
+        # Frequency and Duration are counts/months, 2 decimals are enough for spatial averages
+        if "Frequency" in index_name or "Duration" in index_name:
+            decimals = 2 
+        else:
+            # Base SPI, Peak, and Severity require higher precision
+            decimals = 4 
+    else:
+        # Default for PR and Temp indices
+        decimals = 2
     
     # Filter data by selected year range before processing
     index_data = index_data.sel(time=slice(str(start_year), str(end_year)))
@@ -129,7 +141,7 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
                 {
                     "type": "Feature",
                     "geometry": poly.__geo_interface__,
-                    "properties": {"value": round(float(val),2)},
+                    "properties": {"value": round(float(val), decimals)},
                 }
             )
     # print("www")
@@ -183,6 +195,18 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
         start_year = int(index_data.time.dt.year.min())
     if end_year is None:
         end_year = int(index_data.time.dt.year.max())
+
+    # Determine decimal places based on index characteristics
+    if "SPI" in index_name:
+        # Frequency and Duration are counts/months, 2 decimals are enough for spatial averages
+        if "Frequency" in index_name or "Duration" in index_name:
+            decimals = 2 
+        else:
+            # Base SPI, Peak, and Severity require higher precision
+            decimals = 4 
+    else:
+        # Default for PR and Temp indices
+        decimals = 2
     
     # Filter data by selected year range before processing
     index_data = index_data.sel(time=slice(str(start_year), str(end_year)))
@@ -274,7 +298,7 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
                             "type": "Feature",
                             "geometry": poly.__geo_interface__,
                             "properties": {
-                                "slope": round(float(slope), 2), 
+                                "slope": round(float(slope), decimals), 
                                 "p": round(float(pval), 2)
                             },
                         }
@@ -473,6 +497,18 @@ def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, outpu
     start_year = int(first_da.time.dt.year.min())
     end_year = int(first_da.time.dt.year.max())
     units = getattr(first_da, "units", "")
+    
+    # Determine decimal places based on index characteristics
+    if "SPI" in index_name:
+        # Frequency and Duration are counts/months, 2 decimals are enough for spatial averages
+        if "Frequency" in index_name or "Duration" in index_name:
+            decimals = 2 
+        else:
+            # Base SPI, Peak, and Severity require higher precision
+            decimals = 4 
+    else:
+        # Default for PR and Temp indices
+        decimals = 2
 
     features = []
     
@@ -492,7 +528,7 @@ def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, outpu
                     "geometry": row.geometry.__geo_interface__,
                     "properties": {
                         "name": prov_name,
-                        "value": round(val, 2)
+                        "value": round(val, decimals)
                     }
                 })
 
@@ -532,6 +568,18 @@ def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output
     end_year = int(first_da.time.dt.year.max())
     units = getattr(first_da, "units", "")
 
+    # Determine decimal places based on index characteristics
+    if "SPI" in index_name:
+        # Frequency and Duration are counts/months, 2 decimals are enough for spatial averages
+        if "Frequency" in index_name or "Duration" in index_name:
+            decimals = 2 
+        else:
+            # Base SPI, Peak, and Severity require higher precision
+            decimals = 4 
+    else:
+        # Default for PR and Temp indices
+        decimals = 2
+
     features = []
     
     for idx, row in gdf_provinces.iterrows():
@@ -556,7 +604,7 @@ def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output
                         "geometry": row.geometry.__geo_interface__,
                         "properties": {
                             "name": prov_name,
-                            "slope": round(float(slope), 2),
+                            "slope": round(float(slope), decimals),
                             "p": round(float(pval), 2)
                         }
                     })

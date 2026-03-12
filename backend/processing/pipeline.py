@@ -389,21 +389,21 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                         overlay_with_shapefile(trend_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
                 # """
                 
-                if not is_spi_event:
-                    # print(f"Calculate Weight Provinces: {var}")
-                    weighted_da = calc_weighted_mean(
-                        da=current_da, #indices_annual[var], 
-                        region_name=province, 
-                        gdf_region=shp_thai_provinces,
-                        target_col="ADM1_EN" # Change to "ADM1_TH" if you want Thai names
-                    )
+                
+                # print(f"Calculate Weight Provinces: {var}")
+                weighted_da = calc_weighted_mean(
+                    da=current_da, #indices_annual[var], 
+                    region_name=province, 
+                    gdf_region=shp_thai_provinces,
+                    target_col="ADM1_EN" # Change to "ADM1_TH" if you want Thai names
+                )
 
-                    # print(f"Export Timeseries: {var}")
-                    if weighted_da is not None and not weighted_da.isnull().all():
+                # print(f"Export Timeseries: {var}")
+                if weighted_da is not None and not weighted_da.isnull().all():
 
-                        provincial_ts_dict[province] = weighted_da
-                        # """
-
+                    provincial_ts_dict[province] = weighted_da
+                    # """
+                    if not is_spi_event:
                         # Export using the province flag to route to the correct folder
                         export_yearly_timeseries(
                             index_data=weighted_da, 
@@ -412,9 +412,9 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                             region_name="Thailand", 
                             province_name=province
                         )
-                        # """
-                    else:
-                        print(f"Skipping {province} for {var} (No data coverage or error)")
+                    # """
+                else:
+                    print(f"Skipping {province} for {var} (No data coverage or error)")
             # '''
             # '''
             # ==========================================
@@ -464,7 +464,6 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 if weighted_da is not None and not weighted_da.isnull().all():
                     export_seasonal_cycle(weighted_da, var, output_base_dir, region_name=country)
             """
-
 
             is_spi_event = var.startswith("SPI") and any(evt in var for evt in ["_Drought_", "_Flood_"])
             if is_spi_event:

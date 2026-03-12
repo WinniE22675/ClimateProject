@@ -16,7 +16,6 @@ def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_b
     if index_data.ndim == 1:
         annual = index_data.groupby("time.year").mean("time")
 
-    # ---- CASE 2: raster (SEA or large region) ----
     else:
         spatial_dims = [d for d in index_data.dims if d not in ["time"]]
         annual = (
@@ -24,15 +23,26 @@ def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_b
             .mean("time")
             .mean(dim=spatial_dims, skipna=True)
         )
-    # annual mean (area + time aggregated)
     # annual = (
     #     index_data.groupby("time.year")
     #     .mean("time")
     #     .mean(dim=["latitude", "longitude"], skipna=True)
     # )
 
+    # Determine decimal places based on index characteristics
+    if "SPI" in index_name:
+        # Frequency and Duration are counts/months, 2 decimals are enough for spatial averages
+        if "Frequency" in index_name or "Duration" in index_name:
+            decimals = 2 
+        else:
+            # Base SPI, Peak, and Severity require higher precision
+            decimals = 4 
+    else:
+        # Default for PR and Temp indices
+        decimals = 2
+
     records = [
-        {"year": int(y), "value": round(float(v),2)}
+        {"year": int(y), "value": round(float(v), decimals)}
         for y, v in zip(annual.year.values, annual.values)
         if not np.isnan(v)
     ]
@@ -92,13 +102,25 @@ def export_seasonal_cycle(index_data: xr.DataArray, index_name: str, output_base
         spatial_dims = [d for d in index_data.dims if d not in ["time"]]
         monthly = index_data.mean(dim=spatial_dims, skipna=True)
 
+    # Determine decimal places based on index characteristics
+    if "SPI" in index_name:
+        # Frequency and Duration are counts/months, 2 decimals are enough for spatial averages
+        if "Frequency" in index_name or "Duration" in index_name:
+            decimals = 2 
+        else:
+            # Base SPI, Peak, and Severity require higher precision
+            decimals = 4 
+    else:
+        # Default for PR and Temp indices
+        decimals = 2
+
     records = []
     for t, v in zip(monthly["time"].values, monthly.values):
         ts = pd.to_datetime(str(t))
         records.append({
             "year": int(ts.year),
             "month": int(ts.month),
-            "value": round(float(v),2),
+            "value": round(float(v), decimals),
         })
 
     out = {
