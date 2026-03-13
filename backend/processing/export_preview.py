@@ -13,8 +13,8 @@ from processing.clipping import prep_for_rio, calc_weighted_mean
 # ============================
 #  Base Output Folder
 # ============================
-PREVIEW_OUT = "output/preview_output"
-os.makedirs(PREVIEW_OUT, exist_ok=True)
+# PREVIEW_OUT = "output/preview_output"
+# os.makedirs(PREVIEW_OUT, exist_ok=True)
 
 # ============================
 #  CF Grid Helper (from original)

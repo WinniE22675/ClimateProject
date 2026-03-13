@@ -390,7 +390,7 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
             spi_data = spi(ds=ds, window=window, freq="MS")
             
             if selected_indices is None or base_name in selected_indices:
-                 results[base_name] = spi_data
+                results[base_name] = spi_data
 
             # Step 4.2: Calculate Event Maps using the SAME spi_data
             # Define event configurations
@@ -410,7 +410,6 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
                         
                         if selected_indices is None or base_name in selected_indices:
                             results[full_key] = maps[metric]
-            
 
         except Exception as e:
             print(f"Error calculating SPI{window} group: {e}")

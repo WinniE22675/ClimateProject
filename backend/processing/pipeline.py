@@ -1,131 +1,3 @@
-# import os
-# import xarray as xr
-# import geopandas as gpd
-# from processing.preprocessing import load_dataset
-# from processing.clipping import prep_for_rio, clip_to_shape
-# from processing.indices import calculate_all_indices
-# from processing.export_maps import export_trend_map_xesmf, export_actual_maps_xesmf
-# from processing.export_timeseries import export_yearly_timeseries, export_monthly_series
-
-# # ---- Load shapefile Thailand ----
-# geojson_path = r"data/geoBoundaries-THA-ADM0.geojson"
-# shp_country = gpd.read_file(geojson_path).to_crs("EPSG:4326")
-
-# def overlay_with_shapefile(input_path: str, shapefile: gpd.GeoDataFrame):
-#     """
-#     overlay between GeoJSON with shapefile
-#     """
-#     if not os.path.exists(input_path):
-#         print(f"File not found: {input_path}")
-#         return
-
-#     try:
-#         gdf = gpd.read_file(input_path)
-#         gdf = gdf.to_crs("EPSG:4326")
-#         clipped = gpd.overlay(gdf, shapefile, how="intersection")
-#         clipped.to_file(input_path, driver="GeoJSON")
-#         print(f"Overlay applied to {input_path}")
-#     except Exception as e:
-#         print(f"Failed overlay for {input_path}: {e}")
-
-# def generate_all(file_input, shapefile_path):
-#     """
-#     Main pipeline:
-#     1. Load dataset
-#     2. Preprocess 
-#     3. Clip to Thailand
-#     4. Calculate indices
-#     5. Export results
-#     """
-
-#     # 1. Load
-#     # already one file with multiple variables
-#     ds = load_dataset(file_input)
-
-#     print("Dataset")
-
-#     # 2. Clip
-#     clipped_vars = {}
-#     for var in ds.data_vars:
-#         da = prep_for_rio(ds[var])
-#         clipped_vars[var] = clip_to_shape(da, shapefile_path)
-
-#     ds_clip = xr.Dataset(clipped_vars)
-
-#     print("Clip")
-
-#     # 3. Indices
-#     indices_annual = calculate_all_indices(ds_clip, "YS")
-#     indices_monthly = calculate_all_indices(ds_clip, "MS")
-
-#     print(indices_annual.data_vars)
-#     print(indices_monthly.data_vars)
-
-#     print("Indices")
-
-#     for var in indices_annual.data_vars:
-#         print("Exporting:", var)
-#         export_yearly_timeseries(indices_annual[var], var)
-#         export_actual_maps_xesmf(indices_annual[var], var)
-#         export_trend_map_xesmf(indices_annual[var], var)
-
-#         # === Overlay ===
-#         actual_path = fr"output/maps_grid/actual/{var}_actual_grid.geojson"
-#         trend_path = fr"output/maps_grid/trend/{var}_trend_grid.geojson"
-
-#         overlay_with_shapefile(actual_path, shp_country)
-#         overlay_with_shapefile(trend_path, shp_country)
-
-#     for var in indices_monthly.data_vars:
-#         export_monthly_series(indices_monthly[var], var)
-
-#     return
-# # {
-# #   "indices": {
-# #     "annual": "/output/indices/annual/",
-# #     "monthly": "/output/indices/monthly/"
-# #   },
-# #   "maps": {
-# #     "actual": "/output/maps/actual/",
-# #     "trend": "/output/maps/trend/"
-# #   }
-# # }
-
-
-
-# def clear_upload_folder(file_path=r"D:\Students\YearFour\Project\ClimateRiskMap\ClimReact\my-app\backend\upload"):
-
-#     if os.path.isdir(file_path):  
-#         for f in os.listdir(file_path):
-#             file_to_remove = os.path.join(file_path, f)
-#             if os.path.isfile(file_to_remove):  
-#                 try:
-#                     os.remove(file_to_remove)
-#                     print(f"Removed: {file_to_remove}")
-#                 except Exception as e:
-#                     print(f"Error removing {file_to_remove}: {e}")
-
-
-# def main_pipeline(file_path):
-#     shapefile_path = "data/tha_admbnda_adm1_rtsd_20190221.shp"
-#     # file_path = "upload/"
-    
-#     print("Start Calculate")
-
-#     result = generate_all(file_path, shapefile_path)
-
-#     # print(indices_annual, indices_monthly)
-
-#     clear_upload_folder(file_path)
-
-#     print("Clear path")
-
-#     return result
-
-# if __name__ == "__main__":
-#     main_pipeline(file_path="upload/")
-
-
 import os
 import xarray as xr
 import geopandas as gpd
@@ -165,40 +37,6 @@ SEA_COUNTRIES = [
     "Timor-Leste"
 ]
 
-# ---- Load shapefile Thailand ----
-# geojson_path = r"data/geoBoundaries-THA-ADM0.geojson"
-# shp_country = gpd.read_file(geojson_path).to_crs("EPSG:4326")
-
-# def overlay_with_shapefile(input_path: str, shapefile: gpd.GeoDataFrame):
-#     """
-#     overlay between GeoJSON with shapefile
-#     """
-#     if not os.path.exists(input_path):
-#         print(f"File not found: {input_path}")
-#         return
-
-#     try:
-#         gdf = gpd.read_file(input_path)
-#         gdf = gdf.to_crs("EPSG:4326")
-#         clipped = gpd.overlay(gdf, shapefile, how="intersection")
-#         clipped.to_file(input_path, driver="GeoJSON")
-#         print(f"Overlay applied to {input_path}")
-#     except Exception as e:
-#         print(f"Failed overlay for {input_path}: {e}")
-def clear_upload_folder(file_path=r"D:\Students\YearFour\Project\ClimateRiskMap\ClimReact\my-app\backend\uploads\merged"):
-# def clear_upload_folder(file_path=r"D:\WinnieWork\SubProject\Project\ClimateProject\ClimReact\my-app\backend\uploads\merged"):
-
-    if os.path.isdir(file_path):  
-        for f in os.listdir(file_path):
-            file_to_remove = os.path.join(file_path, f)
-            if os.path.isfile(file_to_remove):  
-                try:
-                    os.remove(file_to_remove)
-                    print(f"Removed: {file_to_remove}")
-                except Exception as e:
-                    print(f"Error removing {file_to_remove}: {e}")
-
-
 # import pandas as pd
 # def prepare_for_xclim(ds: xr.Dataset) -> xr.Dataset:
 #     time = ds.time.to_index()
@@ -215,7 +53,6 @@ def clear_upload_folder(file_path=r"D:\Students\YearFour\Project\ClimateRiskMap\
 #         )
 
 #     return ds
-
 
 def generate_all(file_input, selected_indices, dataset_name, baseline=None):
     """
@@ -249,8 +86,30 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
         # 3. Indices
         print("Calculate Indices.")
         try:
+            # indices_annual = calculate_all_indices(ds_clip, "YS", selected_indices, baseline)
+            # indices_monthly = calculate_all_indices(ds_clip, "MS", selected_indices, baseline)
+
+            # 1. Calculate EVERYTHING in the annual pass (SPI will use 'MS' internally)
             indices_annual = calculate_all_indices(ds_clip, "YS", selected_indices, baseline)
-            indices_monthly = calculate_all_indices(ds_clip, "MS", selected_indices, baseline)
+            
+            # 2. Filter out all SPI-related variables to PREVENT duplicate calculation in the monthly pass
+            if selected_indices is not None:
+                # User specified indices: keep only non-SPI
+                monthly_selected = [idx for idx in selected_indices if not str(idx).startswith("SPI")]
+            else:
+                # Calculate all: get all non-SPI keys from the annual dataset
+                monthly_selected = [str(var) for var in indices_annual.data_vars if not str(var).startswith("SPI")]
+
+            # 3. Calculate Monthly ONLY for Non-SPI variables
+            indices_monthly = calculate_all_indices(ds_clip, "MS", monthly_selected, baseline)
+            
+            # 4. Inject the pre-calculated SPI variables from annual back into monthly
+            # This ensures the "--- Monthly Export ---" loop below has the SPI data it needs
+            for var in indices_annual.data_vars:
+                if str(var).startswith("SPI"):
+                    # This is just a memory pointer, doesn't duplicate RAM
+                    indices_monthly[var] = indices_annual[var]
+                    
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"Calculation error: {str(e)}")
 
@@ -290,13 +149,12 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     print(f"Skipping {country} for {var} (No data coverage)")
             """
 
-            # indices_annual = indices_annual[var].rio.write_crs("EPSG:4326")
-            # indices_annual[var]
             current_da = prep_for_rio(indices_annual[var]).load()
 
             is_spi_event = var.startswith("SPI") and any(evt in var for evt in ["_Drought_", "_Flood_"])
             
             # '''
+            # Actual and Trend Maps Overview
             actual_json_path_overview = export_actual_maps_xesmf(
                 index_data=current_da, # indices_annual[var], 
                 index_name=var, 
@@ -304,7 +162,6 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 region_name="Thailand",
                 province_name=None 
             )
-            
             
             trend_json_path_overview = export_trend_map_xesmf(
                 index_data=current_da, #indices_annual[var], 
@@ -322,6 +179,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
             provincial_ts_dict = {}
             
             # '''
+            # Annual Timeseries Overview
             if not is_spi_event:
                 print(f"Start Timeseries Thailand")
                 if shp_thai_boundary is not None:
@@ -343,7 +201,6 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     else:
                         print(f"Skipping Thailand Overview timeseries for {var}")
             # '''
-            
 
             # '''
             for province in THAILAND_PROVINCES_LIST:
@@ -417,11 +274,8 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     print(f"Skipping {province} for {var} (No data coverage or error)")
             # '''
             # '''
-            # ==========================================
-            # ---> NEW: Shapefile Mode Maps <---
-            # Pass the dictionary of clipped time-series to export maps.
-            # The export functions will calculate Actual and Trend inside.
-            # ==========================================
+
+            #  Shapefile Mode Maps Overview
             if shp_thai_provinces is not None and provincial_ts_dict:
                 # Actual Map for Shapefile Mode
                 actual_shp_path = export_actual_map_shapefile(
@@ -470,6 +324,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 print(f"Skipped Seasonal Cycle for {var}")
                 continue
 
+            # Seasonal Cycle Overview
             if shp_thai_boundary is not None:
                 weighted_da_overview = calc_weighted_mean(
                     da=current_da, #indices_monthly[var], 
@@ -488,6 +343,28 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     )
                 else:
                     print(f"Skipping Thailand Overview seasonal for {var}")
+            
+            if is_spi_event:
+                # Actual and Trend Maps Overview
+                actual_json_path_overview = export_actual_maps_xesmf(
+                    index_data=current_da, # indices_annual[var], 
+                    index_name=var, 
+                    output_base_dir=output_base_dir,
+                    region_name="Thailand",
+                    province_name=None 
+                )
+                
+                trend_json_path_overview = export_trend_map_xesmf(
+                    index_data=current_da, #indices_annual[var], 
+                    index_name=var, 
+                    output_base_dir=output_base_dir,
+                    region_name="Thailand",
+                    province_name=None
+                )
+
+                if shp_thai_provinces is not None:
+                    overlay_with_shapefile(actual_json_path_overview, shp_thai_boundary)
+                    overlay_with_shapefile(trend_json_path_overview, shp_thai_boundary)
 
             for province in THAILAND_PROVINCES_LIST:
                 weighted_da = calc_weighted_mean(
@@ -518,30 +395,6 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
     finally:
         ds.close() 
         print("Dataset closed.")
-        # clear_upload_folder() # ย้ายมาลบตรงนี้ หลังจากปิดไฟล์แล้ว
-
-
-
-
-
-# def main_pipeline(file_path):
-#     shapefile_path = "data/tha_admbnda_adm1_rtsd_20190221.shp"
-#     # file_path = "upload/"
-    
-#     print("Start Calculate")
-
-#     result = generate_all(file_path, shapefile_path)
-
-#     # print(indices_annual, indices_monthly)
-
-#     clear_upload_folder(file_path)
-
-#     print("Clear path")
-
-#     return result
-
-# if __name__ == "__main__":
-#     main_pipeline(file_path="upload/")
 
 def generate_custom_map_pipeline(
     file_input: str, 
@@ -562,12 +415,34 @@ def generate_custom_map_pipeline(
     4. Export Actual & Trend map for specific year range
     5. Overlay masking for the specific area
     """
+    
+    # 0. Check existing files 
+    area_name = province if province and province.strip() else "overview"
+
+    # Define paths to check if files already exist
+    grid_file = os.path.join(output_base_dir, country, area_name, index_name, "maps_grid", "actual", f"{start_year}_{end_year}_actual_grid.geojson")
+    # shp_file = os.path.join(output_base_dir, country, area_name, index_name, "maps_shp", "actual", f"{start_year}_{end_year}_actual_shp.geojson")
+
+    if not province: # <-- if it is Overview
+        shp_file = os.path.join(output_base_dir, country, "overview", index_name, "maps_shp", "actual", f"{start_year}_{end_year}_actual_shp.geojson")
+        need_shp = not os.path.exists(shp_file)
+    else:
+        need_shp = False # <-- if select province don't do Shapefile mode map
+
+    need_grid = not os.path.exists(grid_file)
+    # need_shp = not os.path.exists(shp_file)
+
+    # If both files already exist, exit early to save CPU time
+    if not need_grid and not need_shp:
+        print(f"Maps already exist for {index_name} ({start_year}-{end_year}). Skipping computation.")
+        return
+
     # 1. Load Dataset
     ds = load_dataset(file_input)
     print(f"Dataset loaded for on-demand map: {index_name} ({start_year}-{end_year})")
 
     try:
-        # 2. Clip Dataset to SEA shapefile first to reduce data size before calculation
+        # 2. Clip Dataset to boundary 
         clipped_vars = {}
         for var in ds.data_vars:
             da = prep_for_rio(ds[var])
@@ -608,21 +483,15 @@ def generate_custom_map_pipeline(
 
         if da_target is not None:
 
-        # 4. Export Maps (The export functions handle slicing the data by start_year and end_year)
-            actual_json_path = export_actual_maps_xesmf(
-                index_data=da_target,
-                index_name=index_name,
-                output_base_dir=output_base_dir,
-                start_year=start_year,
-                end_year=end_year,
-                region_name=country,
-                province_name=province
-            )
-
-            trend_json_path = None
-            if supports_trend:
-                trend_json_path = export_trend_map_xesmf(
-                    index_data=da_target,
+            da_target_sliced = da_target.sel(time=slice(str(start_year), str(end_year)))
+            # ====================================================
+            # 4.1 Export Grid Maps (Only if missing)
+            # ====================================================
+            if need_grid:
+                print("Generating Grid Maps...")
+                # 4. Export Maps (The export functions handle slicing the data by start_year and end_year)
+                actual_json_path = export_actual_maps_xesmf(
+                    index_data=da_target_sliced,
                     index_name=index_name,
                     output_base_dir=output_base_dir,
                     start_year=start_year,
@@ -631,12 +500,60 @@ def generate_custom_map_pipeline(
                     province_name=province
                 )
 
-        # 5. Overlay Map with Shapefile (Masking)
-        if target_shp is not None:
-            print("Applying boundary overlay...")
-            overlay_with_shapefile(actual_json_path, target_shp)
-            if supports_trend and trend_json_path:
-                overlay_with_shapefile(trend_json_path, target_shp)
+                trend_json_path = None
+                if supports_trend:
+                    trend_json_path = export_trend_map_xesmf(
+                        index_data=da_target_sliced,
+                        index_name=index_name,
+                        output_base_dir=output_base_dir,
+                        start_year=start_year,
+                        end_year=end_year,
+                        region_name=country,
+                        province_name=province
+                    )
+
+                # 5. Overlay Map with Shapefile (Masking)
+                if target_shp is not None:
+                    print("Applying boundary overlay...")
+                    overlay_with_shapefile(actual_json_path, target_shp)
+                    if supports_trend and trend_json_path:
+                        overlay_with_shapefile(trend_json_path, target_shp)
+
+            if need_shp:
+                print("Generating Shapefile Maps...")
+                provincial_ts_dict = {}
+
+                # Calculate weight for ALL provinces (Whole Country mode)
+                for prov in THAILAND_PROVINCES_LIST:
+                    weighted_da = calc_weighted_mean(da_target_sliced, prov, shp_thai_provinces, "ADM1_EN")
+                    if weighted_da is not None:
+                        provincial_ts_dict[prov] = weighted_da
+
+                if provincial_ts_dict:
+                    # Export actual shapefile map
+                    export_actual_map_shapefile(
+                        provincial_ts_dict=provincial_ts_dict,
+                        index_name=index_name,
+                        output_base_dir=output_base_dir,
+                        gdf_provinces=shp_thai_provinces,
+                        target_col="ADM1_EN",
+                        region_name=country,
+                        start_year=start_year, # Requires function modification (see note below)
+                        end_year=end_year      # Requires function modification (see note below)
+                    )
+                    
+                    if supports_trend:
+                        # Export trend shapefile map
+                        export_trend_map_shapefile(
+                            provincial_ts_dict=provincial_ts_dict,
+                            index_name=index_name,
+                            output_base_dir=output_base_dir,
+                            gdf_provinces=shp_thai_provinces,
+                            target_col="ADM1_EN",
+                            region_name=country,
+                            start_year=start_year, 
+                            end_year=end_year      
+                        )
 
             print(f"On-demand map generation completed for {index_name} in {province if province else country}")
         else:
