@@ -67,27 +67,36 @@ import MapViewUpdater from "./MapViewUpdater";
 //   return null;
 // }
 
-function MapBoundsController({ province, geojsonData, fallbackView }) {
+function MapBoundsController({ province, allProvincesData, fallbackView }) { // geojsonData
   const map = useMap();
 
   useEffect(() => {
     // 1. If a specific province is selected, calculate its bounds and zoom
-    if (province && geojsonData && geojsonData.features && geojsonData.features.length > 0) {
-      // Create a temporary Leaflet layer to calculate the bounding box
-      const layer = L.geoJSON(geojsonData);
-      const bounds = layer.getBounds();
-      
-      if (bounds.isValid()) {
-        // fitBounds automatically calculates the perfect center and zoom level!
-        // padding ensures the map doesn't touch the exact edges of the container
-        map.fitBounds(bounds, { padding: [30, 30], animate: true });
+    // if (province && geojsonData && geojsonData.features && geojsonData.features.length > 0) {
+    // Create a temporary Leaflet layer to calculate the bounding box
+    // 1. If a province is selected, find its specific boundary and zoom to it
+    if (province && allProvincesData && allProvincesData.features) {
+      const provinceFeature = allProvincesData.features.find(
+        (f) => f.properties.ADM1_EN === province
+      );
+
+      if (provinceFeature) {
+        // Create a temporary layer JUST for this province to calculate perfect bounds
+        const layer = L.geoJSON(provinceFeature); // geojsonData
+        const bounds = layer.getBounds();
+        
+        if (bounds.isValid()) {
+          // fitBounds automatically calculates the perfect center and zoom level!
+          // padding ensures the map doesn't touch the exact edges of the container
+          map.fitBounds(bounds, { padding: [30, 30], animate: true });
+        }
       }
     } 
     // 2. If no province is selected (Whole Country), use the default COUNTRY_VIEW
     else if (fallbackView) {
       map.setView(fallbackView.center, fallbackView.zoom, { animate: true });
     }
-  }, [province, geojsonData, fallbackView, map]);
+  }, [province, allProvincesData, fallbackView, map]); // geojsonData
 
   return null;
 }
@@ -133,6 +142,7 @@ function BoundaryLayer({ data , weight = 0.5 }) {
     }
     const layer = L.geoJSON(data, {
       pane: "boundary",
+      smoothFactor: 0.99,
       style: {
         interactive: false,
         weight: weight,
@@ -163,6 +173,7 @@ function CountryContextLayer({ data, selectedProvince }) {
 
     const layer = L.geoJSON(data, {
       pane: "contextPane",
+      smoothFactor: 0.99,
       style: (feature) => {
         // Check if the current feature matches the selected province
         const isSelected = feature.properties.ADM1_EN === selectedProvince;
@@ -172,8 +183,8 @@ function CountryContextLayer({ data, selectedProvince }) {
 
         return {
           color: isSelected ? "#000000" : "#888888", // Highlight selected border
-          weight: isSelected ? 2.0 : 0.5,            // Thicker border for selected
-          fillColor: "#e8e8e8",                      // Light gray for background
+          weight: isSelected ? 2.0 : 0.75,            // Thicker border for selected
+          fillColor: "#eeeeee",                      // Light gray for background
           fillOpacity: shouldDim ? 0.7 : 0,          // Show gray only for non-selected
           interactive: false,
         };
@@ -203,7 +214,7 @@ export default function GridMapViewer({
   const [binsAll, setBinsAll] = useState({ actual: [], trend: [] });
   const [showSig, setShowSig] = useState(true);
   const [unit, setUnit] = useState("");
-  const [boundaryData, setBoundaryData] = useState(null);
+  // const [boundaryData, setBoundaryData] = useState(null);
   const layersRef = useRef({ actual: null, trend: null });
 
   // state: loading / error / no-data
@@ -211,7 +222,7 @@ export default function GridMapViewer({
   const [error, setError] = useState(null);
   const [noData, setNoData] = useState(false);
 
-  const [maskData, setMaskData] = useState(null);
+  // const [maskData, setMaskData] = useState(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -596,26 +607,26 @@ useEffect(() => {
     }
   }, [country]);
 
-  // const displayProvinceBoundary = useMemo(() => {
-  //   if (!allProvincesData) return null;
+  const displayProvinceBoundary = useMemo(() => {
+    if (!allProvincesData) return null;
     
-  //   // if select "Whole Country" (province is space ("")) will show province line 
-  //   if (!province) {
-  //     return allProvincesData;
-  //   }
+    // if select "Whole Country" (province is space ("")) will show province line 
+    if (!province) {
+      return allProvincesData;
+    }
 
-  //   // if select province will Filter select only Feature of that province
-  //   // Note: check Property name in GeoJSON files 
-  //   const filteredFeatures = allProvincesData.features.filter(
-  //     (f) => f.properties.ADM1_EN === province
-  //   );
+    // if select province will Filter select only Feature of that province
+    // Note: check Property name in GeoJSON files 
+    const filteredFeatures = allProvincesData.features.filter(
+      (f) => f.properties.ADM1_EN === province
+    );
 
-  //   // Reassemble back into GeoJSON Object
-  //   return {
-  //     type: "FeatureCollection",
-  //     features: filteredFeatures,
-  //   };
-  // }, [allProvincesData, province]);
+    // Reassemble back into GeoJSON Object
+    return {
+      type: "FeatureCollection",
+      features: filteredFeatures,
+    };
+  }, [allProvincesData, province]);
 
   // calculate color scale
   useEffect(() => {
@@ -965,19 +976,24 @@ useEffect(() => {
           zoomSnap={0.25}  // Enable fractional zoom snapping to 0.25 increments
           zoomDelta={0.25} // Set zoom step for +/- buttons to 0.25
           style={{ height: "450px", width: "100%", zIndex: 0 }} //450px
+          preferCanvas={true} //  Use Canvas instead of SVG for crisp vector edges
         >
+          {/* Boundary always on top */}
+          {/* {allProvincesData && <BoundaryLayer data={allProvincesData} weight={1.0} />} */}
+          {displayProvinceBoundary && (
+            <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
+          )}
+
           {/* <MapViewUpdater center={mapView.center} zoom={mapView.zoom} /> */}
           <MapBoundsController 
             province={province} 
-            geojsonData={allProvincesData} //displayProvinceBoundary 
+            allProvincesData={allProvincesData} // geojsonData={displayProvinceBoundary} 
             fallbackView={mapView} 
           />
 
           {/* Mask first */}
-          {maskData && <BoundaryMaskLayer mask={maskData} />}
+          {/* {maskData && <BoundaryMaskLayer mask={maskData} />} */}
 
-          {/* Boundary always on top */}
-          {boundaryData && <BoundaryLayer data={boundaryData} weight={2.0} />}
 
           {/* Province Boundaries */}
           {/* {displayProvinceBoundary && (
@@ -1030,9 +1046,11 @@ useEffect(() => {
             />
           </div>
         )}
-        <div className="d-flex justify-content-between align-items-center px-3">
+        {/* d-flex justify-content-between align-items-center px-3 */}
+        <div className="d-flex flex-wrap justify-content-between align-items-center px-3 gap-3">
 
-        <div className="d-flex align-items-center gap-3">
+        {/* d-flex align-items-center gap-3 */}
+        <div className=" d-flex flex-wrap align-items-center gap-3">
 
             {/* 1. Color Palette Selector */}
             <div className="d-flex align-items-center gap-2">
@@ -1070,61 +1088,63 @@ useEffect(() => {
             </div>
 
         {/* Legend Range Controls */}
-        <div className="d-flex justify-content-center align-items-center gap-1">
-          <span className="small fw-bold text-muted me-2">Legend Range:</span>
+        {/* d-flex justify-content-center align-items-center gap-1 */}
+          <div className="d-flex flex-wrap align-items-center gap-1">
+            <span className="small fw-bold text-muted me-2">Legend Range:</span>
 
-          <input
-            type="number"
-            placeholder="Min"
-            value={legendRange[mode].min ?? ""}
-            onChange={(e) =>
-              setLegendRange((r) => ({
-                ...r,
-                [mode]: {
-                  ...r[mode],
-                  min: e.target.value === "" ? null : +e.target.value,
-                },
-              }))
-            }
-            className="form-control form-control-sm text-center"
-            style={{ width: "65px" }}
-          />
-          
-          <span className="text-muted">-</span>
+            <input
+              type="number"
+              placeholder="Min"
+              value={legendRange[mode].min ?? ""}
+              onChange={(e) =>
+                setLegendRange((r) => ({
+                  ...r,
+                  [mode]: {
+                    ...r[mode],
+                    min: e.target.value === "" ? null : +e.target.value,
+                  },
+                }))
+              }
+              className="form-control form-control-sm text-center"
+              style={{ width: "65px" }}
+            />
+            
+            <span className="text-muted">-</span>
 
-          <input
-            type="number"
-            placeholder="Max"
-            value={legendRange[mode].max ?? ""}
-            onChange={(e) =>
-              setLegendRange((r) => ({
-                ...r,
-                [mode]: {
-                  ...r[mode],
-                  max: e.target.value === "" ? null : +e.target.value,
-                },
-              }))
-            }
-            className="form-control form-control-sm text-center"
-            style={{ width: "65px" }}
-          />
+            <input
+              type="number"
+              placeholder="Max"
+              value={legendRange[mode].max ?? ""}
+              onChange={(e) =>
+                setLegendRange((r) => ({
+                  ...r,
+                  [mode]: {
+                    ...r[mode],
+                    max: e.target.value === "" ? null : +e.target.value,
+                  },
+                }))
+              }
+              className="form-control form-control-sm text-center"
+              style={{ width: "65px" }}
+            />
 
-          <button
-            className="btn btn-sm btn-outline-secondary ms-2"
-            onClick={() =>
-              setLegendRange((r) => ({
-                ...r,
-                [mode]: { min: null, max: null },
-              }))
-            }
-          >
-            Auto Fix
-          </button>
+            <button
+              className="btn btn-sm btn-outline-secondary ms-2"
+              onClick={() =>
+                setLegendRange((r) => ({
+                  ...r,
+                  [mode]: { min: null, max: null },
+                }))
+              }
+            >
+              Auto Fix
+            </button>
+          </div>
         </div>
-        </div>
+
+        {/* d-flex justify-content-end gap-1 */}
         <div 
-          className="d-flex justify-content-end gap-1" 
-          style={{ bottom: "10px", right: "15px" }}
+          className="d-flex align-items-center gap-1" 
         >
           <button
             className={`btn btn-sm ${mapStyle === "grid" ? "btn-secondary" : "btn-outline-secondary"}`}

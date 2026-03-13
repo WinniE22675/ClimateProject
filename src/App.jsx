@@ -103,3 +103,6 @@ function App() {
 }
 
 export default App;
+
+// use "npm run dev" for start frontend app
+// use "npm run dev -- --host 0.0.0.0" for Available via the internet.

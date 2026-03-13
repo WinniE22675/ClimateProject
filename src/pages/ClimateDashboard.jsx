@@ -455,27 +455,29 @@ export default function ClimateDashboard() {
         </div>
 
         {/* 5. Start Year Input (Moved here & formatted to match) */}
-        <div>
-          <label className="form-label small fw-bold text-muted">Start Year</label>
-          <input
-            type="number"
-            className="form-control form-control-sm"
-            style={{ width: "85px" }}
-            value={inputStartYear}
-            onChange={(e) => setInputStartYear(e.target.value)}
-          />
-        </div>
+        <div className="d-flex align-items-end gap-3">
+          <div>
+            <label className="form-label small fw-bold text-muted">Start Year</label>
+            <input
+              type="number"
+              className="form-control form-control-sm"
+              style={{ width: "85px" }}
+              value={inputStartYear}
+              onChange={(e) => setInputStartYear(e.target.value)}
+            />
+          </div>
 
-        {/* 6. End Year Input (Moved here & formatted to match) */}
-        <div>
-          <label className="form-label small fw-bold text-muted">End Year</label>
-          <input
-            type="number"
-            className="form-control form-control-sm"
-            style={{ width: "85px" }}
-            value={inputEndYear}
-            onChange={(e) => setInputEndYear(e.target.value)}
-          />
+          {/* 6. End Year Input (Moved here & formatted to match) */}
+          <div>
+            <label className="form-label small fw-bold text-muted">End Year</label>
+            <input
+              type="number"
+              className="form-control form-control-sm"
+              style={{ width: "85px" }}
+              value={inputEndYear}
+              onChange={(e) => setInputEndYear(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* 7. Apply Button (Moved here) */}
@@ -489,7 +491,7 @@ export default function ClimateDashboard() {
         </div>
 
         {/* 8. Upload New Data Button (Moved to the end of the line) */}
-        <div className="ms-auto"> {/* 'ms-auto' pushes this button to the far right if there is extra space */}
+        <div className="ms-lg-auto mt-3 mt-lg-0 flex-grow-1 flex-lg-grow-0 text-center text-lg-end"> {/* 'ms-auto' pushes this button to the far right if there is extra space */}
           <Link to="/manipulate">
             <button className="btn btn-sm btn-primary p-2">Upload New Data</button>
           </Link>
