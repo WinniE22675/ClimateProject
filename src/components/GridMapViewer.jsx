@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from "react";
-import { MapContainer, GeoJSON, Circle, useMap } from "react-leaflet";
+import { MapContainer, GeoJSON, CircleMarker, useMap } from "react-leaflet"; // Circle,
 import L from "leaflet";
 import * as d3 from "d3";
 import * as turf from "@turf/turf"; // help compute centroid
@@ -804,19 +804,35 @@ useEffect(() => {
     const pt2 = turf.point(coords[1]); // right down (diagonal opposite)
     const cellSizeKm = turf.distance(pt1, pt2, { units: "kilometers" });
     const radiusMeters = (cellSizeKm * 1000) / 10; // convert to m and * 10 for make circle
+
+    const pointRadius = province ? 4 : 1;
     return (
-      <Circle
+      <CircleMarker
         center={[center[1], center[0]]}
-        radius={radiusMeters}
+        radius={pointRadius} // Set fixed size in pixels (e.g., 3 or 4)
         pathOptions={{
-          color: "black",
+          color: "none",       // Remove border stroke for cleaner look
           fillColor: "black",
-          fillOpacity: 0.9,
+          fillOpacity: 0.85,   // Slightly transparent so map beneath is visible
           interactive: false,
         }}
       />
     );
   }
+  //   return (
+  //     <Circle
+  //       center={[center[1], center[0]]}
+  //       radius={radiusMeters}
+  //       pathOptions={{
+  //         color: "black",
+  //         fillColor: "black",
+  //         fillOpacity: 0.9,
+  //         interactive: false,
+  //       }}
+  //     />
+  //   );
+  // }
+
 
   // p-2 small padding
 
