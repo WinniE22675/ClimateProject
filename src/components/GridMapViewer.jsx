@@ -797,13 +797,14 @@ useEffect(() => {
     // const centroid = turf.centroid(feature).geometry.coordinates; // [lng, lat] | centroid is center point of polygon grid cell
 
     // calculate cell (distance between 2 angles)
-    const coords = feature.geometry?.coordinates?.[0];
-    if (!coords || coords.length < 4) return null;
+    // const coords = feature.geometry?.coordinates?.[0];
+    // if (!coords || coords.length < 4) return null;
+
     // const coords = feature.geometry.coordinates[0];
-    const pt1 = turf.point(coords[0]); // left up
-    const pt2 = turf.point(coords[1]); // right down (diagonal opposite)
-    const cellSizeKm = turf.distance(pt1, pt2, { units: "kilometers" });
-    const radiusMeters = (cellSizeKm * 1000) / 10; // convert to m and * 10 for make circle
+    // const pt1 = turf.point(coords[0]); // left up
+    // const pt2 = turf.point(coords[1]); // right down (diagonal opposite)
+    // const cellSizeKm = turf.distance(pt1, pt2, { units: "kilometers" });
+    // const radiusMeters = (cellSizeKm * 1000) / 10; // convert to m and * 10 for make circle
 
     const pointRadius = province ? 4 : 1;
     return (
