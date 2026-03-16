@@ -85,7 +85,7 @@ function resolveSPIColor(d, indexName) {
 
 
 // , datamode setIndexName,
-export default function IndicesViewer({ indexName, datasetName, country, province, startYear, endYear }) {
+export default function IndicesViewer({ indexName, datasetName, country, province, startYear, endYear, availableIndices }) {
   const [allData, setAllData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [allMonthlyData, setAllMonthlyData] = useState([]);
@@ -143,6 +143,9 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
     setLoading(true);
     setError(null);
     setNoData(false);
+
+    if (!availableIndices || availableIndices.length === 0) return;
+    if (!availableIndices.includes(indexName)) return;
 
     const apiBase = "http://localhost:8000";
     // const basePath = datamode === "upload" ? `${apiBase}/output` : "/data";

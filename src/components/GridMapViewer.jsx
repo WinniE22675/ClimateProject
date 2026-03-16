@@ -207,7 +207,8 @@ export default function GridMapViewer({
   country,
   province,
   startYear,
-  endYear
+  endYear, 
+  availableIndices
 }) {
   const [gridData, setGridData] = useState({ actual: null, trend: null });
   const [scales, setScales] = useState({ actual: null, trend: null });
@@ -356,6 +357,14 @@ export default function GridMapViewer({
 
   const mapView = COUNTRY_VIEW[country] || COUNTRY_VIEW.SEA;
 
+  const NO_TREND_INDICES = [
+    "pr",
+    "tmax",
+    "tmin",
+  ];
+
+  const supportsTrend = !NO_TREND_INDICES.includes(indexName);
+
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -367,19 +376,28 @@ export default function GridMapViewer({
     setBinsAll({ actual: [], trend: [] });
     setUnit("");
 
-    const NO_TREND_INDICES = [
-      "pr",
-      "tmax",
-      "tmin",
-    ];
-
-    const supportsTrend = !NO_TREND_INDICES.includes(indexName);
-
     if (!supportsTrend && mode === "trend") {
       setMode("actual");
     }
 
     let isMounted = true;
+
+    if (!availableIndices || availableIndices.length === 0) {
+      console.log(`[Guard] Metadata loading. Waiting...`);
+      return; 
+    }
+
+    if (!availableIndices.includes(indexName)) {
+      console.log(`[Guard] Index '${indexName}' not found in dataset. Waiting...`);
+      return; 
+    }
+
+    // if (availableIndices && availableIndices.length > 0) {
+    //   if (!availableIndices.includes(indexName)) {
+    //     console.log(`[Guard] Index '${indexName}' not found in current dataset. Waiting for update...`);
+    //     return; 
+    //   }
+    // }
 
     const fetchAllMaps = async () => {
       setLoading(true);
@@ -507,10 +525,10 @@ export default function GridMapViewer({
     }
 
     return () => { isMounted = false; };
-  }, [indexName, datasetName, country, province, startYear, endYear , mapStyle]);
+  }, [indexName, datasetName, country, province, startYear, endYear , mapStyle, availableIndices, supportsTrend]);
 
   // Define which dataset to render based on the current mode
-  const currentMapData = mode === "trend" ? gridData.trend : gridData.actual;
+  // const currentMapData = mode === "trend" ? gridData.trend : gridData.actual;
 
     // const apiBase = "http://localhost:8000";
     // // const basePath = datamode === "upload" ? `${apiBase}/output` : "/data";
@@ -935,6 +953,8 @@ useEffect(() => {
           <button
             onClick={() => setMode("trend")}
             className={`btn btn-sm ${mode === "trend" ? "btn-primary shadow-sm" : "btn-outline-secondary"}`}
+            title={!supportsTrend ? "Trend map is not available for raw variables" : "View Trend Map"}
+            disabled={!supportsTrend}
           >
             Trend Map
           </button>

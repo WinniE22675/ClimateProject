@@ -80,7 +80,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
             clipped_vars[var] = clip_to_shape(da, THAILAND_BOUNDARY_SHAPEFILE_PATH) # SEA_SHAPEFILE_PATH
 
         ds_clip = xr.Dataset(clipped_vars)
-        print("Clipped to SEA boundary.")
+        print("Clipped to Thailand boundary.")
         # ds_clip = prepare_for_xclim(ds_clip)
 
         # 3. Indices
@@ -449,16 +449,42 @@ def generate_custom_map_pipeline(
             clipped_vars[var] = clip_to_shape(da, THAILAND_BOUNDARY_SHAPEFILE_PATH)
         ds_clip = xr.Dataset(clipped_vars)
 
-        # 3. Calculate ONLY the specific index requested (saves huge amount of time)
-        print(f"Calculating index: {index_name}")
-        # Note: We pass [index_name] as the selected_indices list
-        indices_annual = calculate_all_indices(ds_clip, "YS", [index_name], baseline)
+        print(f"Processing requested variable: {index_name}")
+        
+        # Check if the requested index_name is actually a raw variable
+        is_raw_variable = index_name in ["pr", "tmax", "tmin", "tas"]
+        
+        if is_raw_variable:
+            # For Raw Data: Just pull the variable and resample to Annual
+            print(f"'{index_name}' is a raw variable. Resampling to annual...")
+            da_raw = ds_clip[index_name]
+            
+            if index_name == "pr":
+                index_data = da_raw.resample(time="YS").sum(skipna=True)
+            else:
+                index_data = da_raw.resample(time="YS").mean(skipna=True)
+                
+            index_data = index_data.load()
+            
+        else:
+            # For Climate Indices: Route through the xclim calculation function
+            print(f"'{index_name}' is a climate index. Calculating via xclim...")
+            indices_annual = calculate_all_indices(ds_clip, "YS", [index_name], baseline)
 
-        if index_name not in indices_annual.data_vars:
-            raise ValueError(f"Failed to calculate index {index_name}")
+            if index_name not in indices_annual.data_vars:
+                raise ValueError(f"Failed to calculate index {index_name}")
 
-        # index_data = indices_annual[index_name]
-        index_data = prep_for_rio(indices_annual[index_name]).load()
+            index_data = prep_for_rio(indices_annual[index_name]).load()
+
+        # print(f"Calculating index: {index_name}")
+        # # Note: We pass [index_name] as the selected_indices list
+        # indices_annual = calculate_all_indices(ds_clip, "YS", [index_name], baseline)
+
+        # if index_name not in indices_annual.data_vars:
+        #     raise ValueError(f"Failed to calculate index {index_name}")
+
+        # # index_data = indices_annual[index_name]
+        # index_data = prep_for_rio(indices_annual[index_name]).load()
 
         da_target = index_data
         target_shp = shp_thai_boundary # Default to country boundary

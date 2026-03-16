@@ -55,51 +55,52 @@ def get_smart_slice(ds, coord_name, min_val, max_val):
 def core_process_file(raw_path, save_path, scope):
     try:
         # use chunks={} for open only Metadata (fast and less eat RAM)
-        ds = xr.open_dataset(raw_path, chunks={})
-        # Standardize Coords (solve latitude/longitude name)
-        ds = standardize_coords(ds)
+        # ds = xr.open_dataset(raw_path, chunks={})
+        with xr.open_dataset(raw_path, chunks={}) as ds:
+            # Standardize Coords (solve latitude/longitude name)
+            ds = standardize_coords(ds)
 
-        # Check Time & Scope Intersection
-        if 'time' not in ds.dims:
-            ds.close()
-            return False
+            # Check Time & Scope Intersection
+            if 'time' not in ds.dims:
+                ds.close()
+                return False
 
-        file_years = ds.time.dt.year
-        min_year = int(file_years.min())
-        max_year = int(file_years.max())
+            file_years = ds.time.dt.year
+            min_year = int(file_years.min())
+            max_year = int(file_years.max())
 
-        if not (min_year <= scope.endYear and max_year >= scope.startYear):
-            ds.close()
-            return False
+            if not (min_year <= scope.endYear and max_year >= scope.startYear):
+                ds.close()
+                return False
 
-        # Rename
-        rename_dict = {}
-        for var_name in ds.data_vars:
-            std_name = normalize_var_name(var_name)
-            if std_name != var_name:
-                rename_dict[var_name] = std_name
-                if "long_name" not in ds[var_name].attrs:
-                    ds[var_name].attrs["long_name"] = var_name 
-        
-        if rename_dict:
-            ds = ds.rename(rename_dict)
+            # Rename
+            rename_dict = {}
+            for var_name in ds.data_vars:
+                std_name = normalize_var_name(var_name)
+                if std_name != var_name:
+                    rename_dict[var_name] = std_name
+                    if "long_name" not in ds[var_name].attrs:
+                        ds[var_name].attrs["long_name"] = var_name 
+            
+            if rename_dict:
+                ds = ds.rename(rename_dict)
 
-        # Clip
-        lat_slice = get_smart_slice(ds, 'latitude', scope.minLat, scope.maxLat)
-        lon_slice = get_smart_slice(ds, 'longitude', scope.minLon, scope.maxLon)
+            # Clip
+            lat_slice = get_smart_slice(ds, 'latitude', scope.minLat, scope.maxLat)
+            lon_slice = get_smart_slice(ds, 'longitude', scope.minLon, scope.maxLon)
 
-        ds_subset = ds.sel(
-            time=slice(str(scope.startYear), str(scope.endYear)),
-            latitude=lat_slice,
-            longitude=lon_slice
-        )
-        
-        if ds_subset.time.size == 0 or ds_subset.latitude.size == 0 or ds_subset.longitude.size == 0:
-            ds.close()
-            return False
+            ds_subset = ds.sel(
+                time=slice(str(scope.startYear), str(scope.endYear)),
+                latitude=lat_slice,
+                longitude=lon_slice
+            )
+            
+            if ds_subset.time.size == 0 or ds_subset.latitude.size == 0 or ds_subset.longitude.size == 0:
+                ds.close()
+                return False
 
-        # 4. Load & Unit Conversion
-        ds_subset = ds_subset.load() 
+            # 4. Load & Unit Conversion
+            ds_subset = ds_subset.load() 
         
         for var in ds_subset.data_vars:
             if var == "pr":

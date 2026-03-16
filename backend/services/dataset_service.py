@@ -228,6 +228,9 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         #     run_preview_visualization,
         #     dataset_name
         # )
+        run_preview_visualization(dataset_name)
+
+        print(f"[Dataset {dataset_name}] All Processes and Previews Finished.")
 
     except Exception as e:
         print(f"[{dataset_name}] Task Failed: {e}")

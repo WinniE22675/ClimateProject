@@ -200,6 +200,8 @@ export default function ClimateDashboard() {
       // Guard clause: Do nothing if no dataset is selected
       if (!activeDataset) return; 
 
+      setAvailableIndices([]);
+
       try {
         // Fetch the metadata file from the backend
         const response = await fetch(`http://localhost:8000/output/${activeDataset}/metadata.json?v=${new Date().getTime()}`);
@@ -216,15 +218,21 @@ export default function ClimateDashboard() {
         // Save raw metadata state in case other components need it
         setMetadata(data); 
 
+        const rawVariables = data.variables || [];
+        const climateIndices = data.available_indices || [];
+        
+        // Merge both arrays: ['pr', 'tmax', 'tmin', 'SPI3', 'PRCPTOT', ...]
+        const combinedOptions = [...rawVariables, ...climateIndices];
+
         // Extract available indices from metadata
-        // Note: Change 'data.available_indices' to match the actual key from your backend JSON
-        if (data.available_indices && Array.isArray(data.available_indices) && data.available_indices.length > 0) {
-          setAvailableIndices(data.available_indices);
+        if (combinedOptions.length > 0) {
+          // Set the combined list to your state
+          setAvailableIndices(combinedOptions);
           
-          // Auto-adjust indexName if the current one is NOT in the new dataset
+          // Auto-adjust indexName if the current one is NOT in the new combined list
           setIndexName((currentIndex) => {
-            if (!data.available_indices.includes(currentIndex)) {
-              return data.available_indices[0]; // Select the first available
+            if (!combinedOptions.includes(currentIndex)) {
+              return combinedOptions[0]; // Select the first available (likely 'pr')
             }
             return currentIndex; // Keep the same if it exists
           });
@@ -385,7 +393,11 @@ export default function ClimateDashboard() {
           <select
             className="form-select form-select-sm"
             value={activeDataset}
-            onChange={(e) => setActiveDataset(e.target.value)}
+            onChange={(e) => {
+              setActiveDataset(e.target.value)
+              setAvailableIndices([]);
+            }
+            }
           >
             {/* <option value="default">Default Dataset</option> */}
             {datasetList.length === 0 && (
@@ -508,7 +520,8 @@ export default function ClimateDashboard() {
             country={country}
             province={province}   
             startYear={inputStartYear}
-            endYear={inputEndYear}     
+            endYear={inputEndYear}
+            availableIndices={availableIndices}     
           />
         </div>
         <div className="col-12 col-lg-6">
@@ -520,7 +533,8 @@ export default function ClimateDashboard() {
             country={country}
             province={province}   
             startYear={startYear}
-            endYear={endYear}    
+            endYear={endYear}
+            availableIndices={availableIndices}    
           />
         </div>
       </div>
