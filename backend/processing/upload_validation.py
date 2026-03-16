@@ -35,16 +35,6 @@ VAR_ALIASES = {
     "tmin": ["tasmin", "tmin", "tas_min", "t2m_min", "mn2t"],
 }
 
-# def normalize_var_name(name: str) -> str:
-#     """
-#     Map variable names to standardized aliases.
-#     Example: tp → pr, t2m → tas
-#     """
-#     for std, aliases in VAR_ALIASES.items():
-#         if name.lower() in aliases:
-#             return std
-#     return name
-
 def filter_dataset_vars(ds: xr.Dataset) -> xr.Dataset:
     """
     Helper function: Keep only allowed variables, drop others.
@@ -77,10 +67,7 @@ def map_and_rename_coord(ds, canonical_name, aliases):
         f"Checked aliases: {aliases}"
     )
 
-# ------------------------------------------------------------------------------
 # Helper Function: Extract Resolution
-# ------------------------------------------------------------------------------
-
 def get_spatial_resolution(ds: xr.Dataset) -> Tuple[Optional[float], Optional[float]]:
     """
     Extract spatial resolution (lat_res, lon_res).
@@ -208,11 +195,6 @@ def inspect_file(path: str) -> Dict[str, Any]:
 
         try:
             delta_days = (np.datetime64(time_end) - np.datetime64(time_start)) / np.timedelta64(1, "D")
-            # print("delta_days :",delta_days)
-            # print("np.datetime64(time_end)", np.datetime64(time_end))
-            # print("np.datetime64(time_start)", np.datetime64(time_start))
-            # print("np.timedelta64(1, D)", np.timedelta64(1, "D"))
-            # print("np.datetime64(time_end) - np.datetime64(time_start)", np.datetime64(time_end) - np.datetime64(time_start))
             time_years = round(delta_days / 365.25, 2)
         except Exception:
             time_years = None
@@ -220,37 +202,14 @@ def inspect_file(path: str) -> Dict[str, Any]:
         # spatial resolution: compute if lat/lon present and 1D
         spatial_resolution = None
         lat_res = lon_res = None
-        # lat_name = None
-        # lon_name = None
-        # for n in ["lat", "latitude", "y", "nav_lat"]:
-        #     if n in ds.coords:
-        #         lat_name = n
-        #         break
-        # for n in ["lon", "longitude", "x", "nav_lon"]:
-        #     if n in ds.coords:
-        #         lon_name = n
-        #         break
 
         if lat_name and lon_name:
             try:
-                # lat = ds[lat_name].values
-                # lon = ds[lon_name].values
-
-                # lat_min = float(lat.min())
-                # lat_max = float(lat.max())
-                # lon_min = float(lon.min())
-                # lon_max = float(lon.max())
                 lat_min = float(ds[lat_name].min())
                 lat_max = float(ds[lat_name].max())
                 lon_min = float(ds[lon_name].min())
                 lon_max = float(ds[lon_name].max())
-
-
-                # if lat.ndim == 1 and lon.ndim == 1 and len(lat) > 1 and len(lon) > 1:
-                #     lat_res = float(abs(lat[1] - lat[0]))
-                #     lon_res = float(abs(lon[1] - lon[0]))
                 lat_res, lon_res = get_spatial_resolution(ds)
-                # spatial_resolution = (round(lat_res, 6), round(lon_res, 6))
                 if lat_res is not None and lon_res is not None:
                     spatial_resolution = f"{lat_res:.3f}° x {lon_res:.3f}°"
             except Exception:
@@ -259,8 +218,6 @@ def inspect_file(path: str) -> Dict[str, Any]:
         # units per variable
         variable_units = {}
         standard_names = {}
-
-        # vars_filtered = [v for v in vars_ if v not in SKIP_VARS]
 
         normalized_vars_all = {
             v: normalize_var_name(v)
@@ -274,12 +231,6 @@ def inspect_file(path: str) -> Dict[str, Any]:
             if norm in ALLOWED_VARS
         }
 
-        # normalized_vars = {v: normalize_var_name(v) for v in vars_filtered}
-
-        # for v in normalized_vars:
-        #     attrs = ds[v].attrs
-        #     variable_units[v] = attrs.get("units", None)
-        #     standard_names[v] = attrs.get("standard_name", attrs.get("long_name", None))
         for original, normalized in normalized_vars.items():
             attrs = ds[original].attrs
 
@@ -290,7 +241,7 @@ def inspect_file(path: str) -> Dict[str, Any]:
             )
 
         try:
-            ds = xr.open_dataset(path, decode_times=False) # decode_times=False เพื่ออ่านค่าดิบ
+            ds = xr.open_dataset(path, decode_times=False) # decode_times=False for read raw values
             calendar = "unknown"
             if "time" in ds.coords:
                 if "calendar" in ds.time.attrs:
@@ -331,125 +282,6 @@ def inspect_file(path: str) -> Dict[str, Any]:
         print(f"Error inspecting {path}: {e}")
         return {"error": str(e)}
 
-# def inspect_file(path: str) -> Dict[str, Any]:
-#     """
-#     Open file and extract metadata efficiently.
-#     """
-#     try:
-#         # decode_times=False เพื่ออ่านค่า raw calendar และ units
-#         ds = xr.open_dataset(path, decode_times=False, chunks={})
-        
-#         # 1. Identify Time Variable
-#         time_var = None
-#         for t in ["time", "t", "date"]:
-#             if t in ds.coords:
-#                 time_var = t
-#                 break
-        
-#         calendar = "unknown"
-#         if time_var:
-#             if "calendar" in ds[time_var].attrs:
-#                 calendar = ds[time_var].attrs["calendar"]
-#             elif "calendar" in ds[time_var].encoding:
-#                 calendar = ds[time_var].encoding["calendar"]
-        
-#         # 2. Get Resolution (Lat/Lon)
-#         lat_res, lon_res = None, None
-#         # พยายามหา Resolution จากความต่างของ coordinates 2 จุดแรก
-#         # (สมมติว่าเป็น standard names 'lat', 'lon' หรือชื่ออื่นๆที่ ds มี)
-#         # เพื่อความง่ายในการ validate เราจะลองหาจาก coords ที่มี
-#         for lat_name in ['lat', 'latitude']:
-#             if lat_name in ds.coords and ds[lat_name].size > 1:
-#                 lat_res = abs(float(ds[lat_name][1] - ds[lat_name][0]))
-#                 break
-        
-#         for lon_name in ['lon', 'longitude']:
-#             if lon_name in ds.coords and ds[lon_name].size > 1:
-#                 lon_res = abs(float(ds[lon_name][1] - ds[lon_name][0]))
-#                 break
-
-#         # 3. Variables
-#         vars_ = list(ds.data_vars.keys())
-
-#         ds.close()
-        
-#         return {
-#             "path": path,
-#             "variables": vars_,
-#             "calendar": calendar,
-#             "lat_res": lat_res,
-#             "lon_res": lon_res
-#         }
-
-#     except Exception as e:
-#         print(f"Error inspecting {path}: {e}")
-#         return {"error": str(e)}
-
-'''
-def detect_mode(metas: List[Dict[str, Any]]) -> Tuple[str, Dict[str, Any], List[str]]:
-    """
-    Decide upload mode based on the inspected metadata list.
-
-    Returns:
-      mode: "attribute" | "time" | "mixed"
-      info: useful grouping info (e.g., grouped by variable)
-      diagnostics: list of strings (notes/warnings)
-    """
-    diagnostics = []
-    all_vars = []
-    for m in metas:
-        all_vars.extend(m.get("variables", []))
-    unique_vars = sorted(set(all_vars))
-
-    # count unique variables per file
-    vars_per_file = [set(m.get("variables", [])) for m in metas]
-
-    # If every file has exactly the same single variable -> time mode candidate
-    single_var_files = all(len(vs) == 1 for vs in vars_per_file)
-    if single_var_files:
-        # check whether all files share the same variable
-        vars_in_files = [next(iter(vs)) for vs in vars_per_file]
-        if len(set(vars_in_files)) == 1:
-            mode = "time"
-            info = {"variable": vars_in_files[0], "files": metas}
-            return mode, info, diagnostics
-
-    # If no overlapping variables across files (each file contains different variables OR files contain differing sets)
-    # but all files are not single-variable identical times -> attribute candidate
-    # We'll be conservative: if union(vars per file) > 1 and there is at least one file with different variable set -> attribute or mixed
-    # Mixed: some files are single-var with same variable but others have different variable -> mixed
-    # Simpler logic:
-    # - if each file contains different variables and times are identical -> attribute
-    # - else mixed
-
-    # Build variable -> list of file indices map
-    var_map = {}
-    for idx, m in enumerate(metas):
-        for v in m.get("variables", []):
-            var_map.setdefault(v, []).append(idx)
-
-    # if all variables appear in only one file and files have same time extents -> attribute
-    all_vars_unique_files = all(len(var_map[v]) == 1 for v in var_map)
-    times = [(m.get("time_start"), m.get("time_end")) for m in metas]
-    times_equal = len(set(times)) == 1
-
-    if all_vars_unique_files and times_equal:
-        mode = "attribute"
-        info = {"variables": list(var_map.keys()), "files": metas}
-        return mode, info, diagnostics
-
-    # fallback: mixed
-    mode = "mixed"
-    # grouping by variable: list of file indices for each variable
-    # groups = {}
-    # for v, idxs in var_map.items():
-    #     groups[v] = [metas[i] for i in idxs]
-    # info = {"groups": groups}
-    info = {"groups": var_map}
-    diagnostics.append("Mixed mode detected: multiple variables and/or differing time ranges.")
-    return mode, info, diagnostics
-'''
-
 def detect_mode(metas: List[Dict[str, Any]]) -> Tuple[str, Dict[str, Any], List[str]]:
     """
     Decide upload mode based on the inspected metadata list.
@@ -457,39 +289,39 @@ def detect_mode(metas: List[Dict[str, Any]]) -> Tuple[str, Dict[str, Any], List[
     """
     diagnostics = []
     
-    # ดึงเซตของตัวแปรในแต่ละไฟล์
+    # Extract the set of variables in each file
     vars_per_file = [set(m.get("variables", [])) for m in metas]
     
     # -------------------------------------------------------------------------
     # 1. TIME MODE CHECK
-    # เงื่อนไข: ทุกไฟล์ต้องมี "ตัวแปรชุดเดียวกัน" (Set Equality)
-    # เช่น File A: {tas, pr}, File B: {tas, pr} -> Time Mode
+    # Condition: All files must have the "exact same set of variables" (Set Equality)
+    # e.g., File A: {tas, pr}, File B: {tas, pr} -> Time Mode
     # -------------------------------------------------------------------------
     first_file_vars = vars_per_file[0]
     is_same_variables = all(vs == first_file_vars for vs in vars_per_file)
     
     if is_same_variables:
         mode = "time"
-        # info อาจจะเก็บ list ของตัวแปรทั้งหมดแทน
+        # info might store the list of all variables instead
         info = {"variables": list(first_file_vars), "files": metas}
         return mode, info, diagnostics
 
     # -------------------------------------------------------------------------
     # 2. ATTRIBUTE MODE CHECK
-    # เงื่อนไข: ตัวแปรในแต่ละไฟล์ต้อง "ไม่ซ้ำกันเลย" (Disjoint Sets)
-    # ไม่สนเรื่องเวลา (Time) ว่าตรงกันไหม เพราะ backend attribute mode เราจัดการได้
+    # Condition: Variables in each file must be "completely non-overlapping" (Disjoint Sets)
+    # Ignore whether time coordinates match, because our backend attribute mode can handle it
     # -------------------------------------------------------------------------
-    # เช็คว่า intersection ของทุกคู่เป็นว่างเปล่าไหม
+    # Check if the intersection of all pairs is empty
     all_vars_flat = [v for m in metas for v in m.get("variables", [])]
     unique_vars_count = len(set(all_vars_flat))
     total_vars_count = len(all_vars_flat)
     
-    # ถ้าจำนวนตัวแปร unique เท่ากับจำนวนตัวแปรทั้งหมดรวมกัน แปลว่าไม่มีตัวไหนซ้ำกันเลย
+    # If the number of unique variables equals the total number of variables, it means there are no duplicates
     is_disjoint = unique_vars_count == total_vars_count
     
     if is_disjoint:
         mode = "attribute"
-        # สร้าง map ว่าตัวแปรไหนอยู่ไฟล์ไหน
+        # Create a map indicating which variable is in which file
         var_map = {}
         for idx, m in enumerate(metas):
             for v in m.get("variables", []):
@@ -500,11 +332,11 @@ def detect_mode(metas: List[Dict[str, Any]]) -> Tuple[str, Dict[str, Any], List[
 
     # -------------------------------------------------------------------------
     # 3. MIXED MODE (Fallback)
-    # กรณี: มีตัวแปรซ้ำกันบ้าง แต่ไม่ทั้งหมด หรือมีความซับซ้อนอื่นๆ
+    # Case: Some overlapping variables, but not all, or other complexities exist
     # -------------------------------------------------------------------------
     mode = "mixed"
     
-    # สร้าง info เพื่อบอกว่าตัวแปรไหน อยู่ในไฟล์ index ไหนบ้าง
+    # Create info to map which variables are in which file indices
     var_map_mixed = {}
     for idx, m in enumerate(metas):
         for v in m.get("variables", []):
@@ -538,15 +370,6 @@ def validate_compatibility(metas: List[Dict[str, Any]]) -> Tuple[bool, List[str]
     if len(calendars) > 1:
         errors.append(f"Inconsistent calendars found: {calendars}. All files must use the same calendar system.")
 
-    # 2. Check Spatial Resolution Consistency (Allow small floating point tolerance)
-    # lat_resolutions = [m.get("lat_res") for m in valid_metas if m.get("lat_res") is not None]
-    # if lat_resolutions:
-    #     # ใช้ numpy.isclose เพื่อเปรียบเทียบ float หรือเช็ค set
-    #     # แบบง่าย: เช็คค่า unique โดยปัดเศษทศนิยม
-    #     unique_lat_res = set(round(r, 5) for r in lat_resolutions)
-    #     if len(unique_lat_res) > 1:
-    #          errors.append(f"Inconsistent latitude resolution found: {unique_lat_res}")
-
     resolutions = [
         (m.get("lat_res"), m.get("lon_res"))
         for m in valid_metas
@@ -564,10 +387,5 @@ def validate_compatibility(metas: List[Dict[str, Any]]) -> Tuple[bool, List[str]
                     f"Inconsistent spatial resolution: "
                     f"({lat:.6f}, {lon:.6f}) != ({base_lat:.6f}, {base_lon:.6f})"
                 )
-    
-    # 2. Check Mode Validity
-    # mode, info, diag = detect_mode(metas)
-    # if mode == "mixed": #
-    #     pass 
     
     return len(errors) == 0, errors

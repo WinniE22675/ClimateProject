@@ -4,11 +4,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-# base output folder (configurable)
-# OUT_INDICES = "output/indices"
-# os.makedirs(OUT_INDICES, exist_ok=True)
-
-
 def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_base_dir: str, region_name: str = "Thailand", province_name: str = None):
     """Export annual timeseries (mean over space, grouped by year)."""
     years = index_data.time.dt.year.values
@@ -23,11 +18,6 @@ def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_b
             .mean("time")
             .mean(dim=spatial_dims, skipna=True)
         )
-    # annual = (
-    #     index_data.groupby("time.year")
-    #     .mean("time")
-    #     .mean(dim=["latitude", "longitude"], skipna=True)
-    # )
 
     # Determine decimal places based on index characteristics
     if "SPI" in index_name:
@@ -72,19 +62,6 @@ def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_b
     # Assuming 'out' dictionary is prepared before this block in your actual code
     with open(out_path, "w") as f:
         json.dump(out, f, indent=2)
-
-    # ensure folder exists
-    # out_dir = os.path.join(output_base_dir, "indices", "annual") # OUT_INDICES
-    # os.makedirs(out_dir, exist_ok=True)
-
-    # suffix = f"_{region_name}" if region_name else ""
-    # filename = f"{index_name}{suffix}_timeseries.json" # ex: PRCPTOT_Thailand_timeseries.json
-
-    # filename = f"{index_name}_timeseries.json"
-
-    # with open(os.path.join(out_dir, filename), "w") as f:
-    #     json.dump(out, f, indent=2)
-
 
 def export_seasonal_cycle(index_data: xr.DataArray, index_name: str, output_base_dir: str, region_name: str = "Thailand", province_name: str = None):
     """Export monthly climatology (mean over space)."""
@@ -148,17 +125,3 @@ def export_seasonal_cycle(index_data: xr.DataArray, index_name: str, output_base
     # Assuming 'out' dictionary is prepared before this block in your actual code
     with open(out_path, "w") as f:
         json.dump(out, f, indent=2)
-
-    # ensure folder exists
-    # out_dir = os.path.join(output_base_dir, "indices", "seasonal") # OUT_INDICES
-    # os.makedirs(out_dir, exist_ok=True)
-
-    # with open(os.path.join(out_dir, f"{index_name}_seasonal.json"), "w") as f:
-    #     json.dump(out, f, indent=2)
-
-    # suffix = f"_{region_name}" if region_name else ""
-    # filename = f"{index_name}{suffix}_seasonal.json"
-    # filename = f"{index_name}_seasonal.json"
-
-    # with open(os.path.join(out_dir, filename), "w") as f:
-    #     json.dump(out, f, indent=2)

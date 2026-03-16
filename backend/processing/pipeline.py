@@ -112,12 +112,6 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"Calculation error: {str(e)}")
-
-        # try:
-        #     shp_sea = gpd.read_file(SEA_SHAPEFILE_PATH).to_crs("EPSG:4326")
-        # except Exception as e:
-        #     print(f"Warning: Could not load SEA shapefile: {e}")
-        #     shp_sea = None
        
         for var in indices_annual.data_vars:
             print(f"Exporting Annual: {var}")
@@ -475,16 +469,6 @@ def generate_custom_map_pipeline(
                 raise ValueError(f"Failed to calculate index {index_name}")
 
             index_data = prep_for_rio(indices_annual[index_name]).load()
-
-        # print(f"Calculating index: {index_name}")
-        # # Note: We pass [index_name] as the selected_indices list
-        # indices_annual = calculate_all_indices(ds_clip, "YS", [index_name], baseline)
-
-        # if index_name not in indices_annual.data_vars:
-        #     raise ValueError(f"Failed to calculate index {index_name}")
-
-        # # index_data = indices_annual[index_name]
-        # index_data = prep_for_rio(indices_annual[index_name]).load()
 
         da_target = index_data
         target_shp = shp_thai_boundary # Default to country boundary

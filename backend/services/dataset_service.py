@@ -1,31 +1,13 @@
 import os
 import shutil
-import xarray as xr
-# import numpy as np
-# import pandas as pd
-# import re
 import json
-# import gc  
-# import time
-# import geopandas as gpd
-# import uuid # use create temp folder not same
-
-# from processing.export_preview import export_preview_all
-# from processing.preprocessing import normalize_var_name, ensure_pr_unit, ensure_temperature_unit
-# from processing.overlay import overlay_with_shapefile
-
-# from processing.upload_validation import inspect_file, validate_compatibility, detect_mode, SKIP_VARS
-# from processing.merge_datasets import merge_time_mode, merge_attribute_mode, merge_mixed_mode
 
 from services.dataset_paths import *
 from services.dataset_merge import prepare_merged_file_for_calculation
 from processing.pipeline import generate_all, generate_custom_map_pipeline
 from services.dataset_clip import process_and_clip
 from services.dataset_metadata import get_dataset_metadata_merged
-
 from services.preview_service import run_preview_visualization
-
-from fastapi import BackgroundTasks
 
 async def save_raw_files(slot_id, files):
     target_dir = get_raw_path(slot_id)
@@ -147,9 +129,7 @@ def run_async_calculation(dataset_name: str, selected_indices: list, baseline=No
         "dataset": f"{dataset_name}_merged.nc"
     }
 
-# ---------------------------------------------------------
 # Asynchronous Background Task Logic
-# ---------------------------------------------------------
 def run_async_processing(slot_id, dataset_name, scope, background_tasks):
     """
     1. Clip files (using core_process_file logic)
@@ -160,7 +140,6 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         print(f"[Dataset {dataset_name}] Async Task Started...")
         
         # 1. Update Status
-        # save_metadata_json(slot_id, {"status": "processing", "message": "Clipping and Merging..."})
         save_metadata_json(
             dataset_name,
             {
@@ -188,12 +167,7 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         merged_filename = prepare_merged_file_for_calculation(dataset_name)
 
         print(f"[Dataset {dataset_name}] Merge Dataset")
-        
-        # proc_dir = get_processed_path(slot_id)
-        # files = [os.path.join(proc_dir, f) for f in os.listdir(proc_dir) if f.endswith('.nc')]
-        
-        # if not files:
-        #     raise Exception("No processed files to merge.")
+
         save_metadata_json(
             dataset_name,
             {
@@ -223,11 +197,6 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
             
         print(f"[Dataset {dataset_name}] Async Task Completed.")
 
-        # background_tasks = BackgroundTasks()
-        # background_tasks.add_task(
-        #     run_preview_visualization,
-        #     dataset_name
-        # )
         run_preview_visualization(dataset_name)
 
         print(f"[Dataset {dataset_name}] All Processes and Previews Finished.")
@@ -255,15 +224,15 @@ def generate_on_demand_map(dataset_name: str, index_name: str, start_year: int, 
     """
     Service layer to handle on-demand map generation.
     """
-    # Define dataset path (Handle 'default' vs uploaded datasets)
-    if dataset_name == "default":
-        # Adjust this to where your default raw/merged data is stored
-        # merged_path = os.path.join("data", "merged.nc") 
-        # output_base_dir = "data"
-        raise Exception(f"default can't calculate indices") #############################################################
-    else:
-        merged_path = os.path.join("output", dataset_name, "merged.nc")
-        output_base_dir = os.path.join("output", dataset_name)
+    # Define dataset path 
+    # if dataset_name == "default":
+    #     # Adjust this to where your default raw/merged data is stored
+    #     # merged_path = os.path.join("data", "merged.nc") 
+    #     # output_base_dir = "data"
+    #     raise Exception(f"default can't calculate indices") #############################################################
+    # else:
+    merged_path = os.path.join("output", dataset_name, "merged.nc")
+    output_base_dir = os.path.join("output", dataset_name)
 
     if not os.path.exists(merged_path):
         raise Exception(f"Merged dataset file not found at {merged_path}")

@@ -39,13 +39,13 @@ def get_smart_slice(ds, coord_name, min_val, max_val):
     แล้ว return slice object ที่ถูกต้อง
     """
     if coord_name not in ds:
-        return slice(None) # ถ้าไม่มีตัวแปรนี้ ให้เอาทั้งหมด
+        return slice(None) 
 
     data = ds[coord_name]
     
-    # ตรวจสอบทิศทาง: ดูค่าแรกเทียบกับค่าสุดท้าย
-    # ถ้าตัวแรก < ตัวสุดท้าย = เรียงน้อยไปมาก (Ascending) -> slice(min, max)
-    # ถ้าตัวแรก > ตัวสุดท้าย = เรียงมากไปน้อย (Descending) -> slice(max, min)
+    # Check direction : Look at the first and last values.
+    # if first < last = Ascending -> slice(min, max)
+    # if first > last = Descending -> slice(max, min)
     
     if data[0] < data[-1]:
         return slice(min_val, max_val)
@@ -131,11 +131,6 @@ def core_process_file(raw_path, save_path, scope):
 def process_and_clip(slot_id: int, dataset_name: str, scope):
     raw_dir = get_raw_path(slot_id)
     proc_dir = get_processed_path(dataset_name)
-    
-    # Clear old processed files for this slot?
-
-    # if os.path.exists(proc_dir):
-    #     shutil.rmtree(proc_dir)
 
     if os.path.exists(proc_dir):
         # force close all files in Python Memory

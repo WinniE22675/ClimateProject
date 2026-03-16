@@ -41,17 +41,6 @@ def clip_to_shape(ds: xr.Dataset | xr.DataArray, shapefile_path: str) -> xr.Data
     else:
         raise TypeError("Input must be xarray.Dataset") 
 
-# def diagnose_clip_issue(da, country_gdf):
-#     print("Data CRS:", da.rio.crs)
-#     print("Country CRS:", country_gdf.crs)
-
-#     print("Data bounds:", da.rio.bounds())
-#     print("Country bounds:", country_gdf.total_bounds)
-
-#     print("Resolution:", da.rio.resolution())
-#     print("Country area:", country_gdf.geometry.area.values)
-#     print("Geometry valid:", country_gdf.is_valid.values)
-
 import numpy as np
 import xarray as xr
 import geopandas as gpd
@@ -166,49 +155,3 @@ def calculate_all_provincial_means(da: xr.DataArray, shapefile_path: str, target
             provincial_data[region_name] = mean_da
             
     return provincial_data
-
-# def calculate_provincial_means_regionmask(da: xr.DataArray, gdf: gpd.GeoDataFrame, target_col: str) -> dict:
-#     """
-#     Calculate spatial mean for all regions using regionmask from an existing GeoDataFrame.
-#     Optimized for xarray processing.
-    
-#     Args:
-#         da (xr.DataArray): The input climate data array (must have 'latitude', 'longitude' coords).
-#         gdf (gpd.GeoDataFrame): GeoDataFrame containing the polygon boundaries.
-#         target_col (str): The column name containing region/province names.
-        
-#     Returns:
-#         dict: A dictionary mapping region names to their calculated spatial mean DataArray (time series).
-#     """
-    
-#     if target_col not in gdf.columns:
-#         raise ValueError(f"Column '{target_col}' not found in shapefile.")
-        
-#     # Create regionmask object from GeoDataFrame
-#     # This maps each polygon to an integer index and stores the names
-#     regions = regionmask.from_geopandas(gdf, names=target_col)
-    
-#     # Create a 2D mask array
-#     # Each pixel gets an integer ID corresponding to the region it falls into (NaN if outside)
-#     mask = regions.mask(da.coords["longitude"], da.coords["latitude"])
-    
-#     # Group by the mask and calculate the mean
-#     # This computes the mean for ALL regions simultaneously over the spatial dimensions
-#     # da_grouped = da.groupby(mask).mean(dim=["latitude", "longitude"])
-#     da_grouped = da.groupby(mask).mean()
-    
-#     # Map the results back to a dictionary with region names as keys
-#     provincial_data = {}
-    
-#     # Iterate through the valid region IDs found in the grouped data
-#     for region_idx in da_grouped.coords["mask"].values:
-#         region_idx = int(region_idx)
-#         region_name = regions.names[region_idx]
-        
-#         # Extract the DataArray (e.g., time series) for this specific region
-#         # We drop the 'mask' coordinate as it's no longer needed
-#         da_region = da_grouped.sel(mask=region_idx).drop_vars("mask")
-        
-#         provincial_data[region_name] = da_region
-        
-#     return provincial_data

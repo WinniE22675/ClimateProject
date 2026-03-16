@@ -273,16 +273,6 @@ export default function ClimateDashboard() {
     console.log("Current Available Indices State:", availableIndices);
   }, [availableIndices]);
 
-  // const handleApplyYearRange = () => {
-  //   // Validate start > end alert
-  //   if (parseInt(inputStartYear) > parseInt(inputEndYear)) {
-  //     alert("Start Year less than or equal End Year.");
-  //     return;
-  //   }
-  //   // update Active for send to sub Component
-  //   setStartYear(inputStartYear);
-  //   setEndYear(inputEndYear);
-  // };
   const handleApplyYearRange = () => {
     let start = parseInt(inputStartYear, 10);
     let end = parseInt(inputEndYear, 10);
@@ -302,19 +292,6 @@ export default function ClimateDashboard() {
       alert("Start year cannot be greater than End year. Please correct it.");
       return; // Stop right here!
     }
-
-    // 2. Validate against Dataset Bounds (if metadata is loaded)
-    // if (datasetBounds && datasetBounds.min !== null && datasetBounds.max !== null) {
-    //   if (start < datasetBounds.min || end > datasetBounds.max) {
-    //     alert(`Years out of range! The dataset only covers ${datasetBounds.min} to ${datasetBounds.max}. Please select within this range.`);
-        
-    //     // Optional: Revert input boxes back to the valid active states
-    //     setInputStartYear(startYear);
-    //     setInputEndYear(endYear);
-        
-    //     return; // Stop right here! No API call.
-    //   }
-    // }
 
     if (datasetBounds && datasetBounds.min !== null && datasetBounds.max !== null) {
       let isAdjusted = false;
@@ -339,22 +316,9 @@ export default function ClimateDashboard() {
       console.warn("Warning: datasetBounds is null. Skipping clamp validation. Please check metadata fetch.");
     }
 
-    // 4. Trend Map specific validation (Requires at least 3 years to calculate Mann-Kendall)
-    // Optional: Add this if your map viewer has a 'mode' state accessible here
-    // if (mode === "trend" && (end - start < 2)) {
-    //   alert("Trend map requires at least a 3-year range.");
-    //   return; // Or auto-expand the range
-    // }
-
-    // Update the UI inputs so the user sees the corrected values
-    // setInputStartYear(start.toString());
-    // setInputEndYear(end.toString());
-
     // Update Active for send to sub Component (GridMapViewer, IndicesViewer)
     setStartYear(start.toString());
     setEndYear(end.toString());
-    // setCountry(inputCountry);    
-    // setProvince(inputProvince);
   };
 
   useEffect(() => {
@@ -371,10 +335,6 @@ export default function ClimateDashboard() {
 
       setDatasetList(datasets);
 
-      // if really have dataset, will select first dataset
-      // if (datasets.length > 0) {
-      //   setActiveDataset(datasets[0]);
-      // }
     } catch (err) {
       console.error("Failed to fetch datasets", err);
     }
@@ -382,7 +342,7 @@ export default function ClimateDashboard() {
 
   return (
     <div className="container-fluid">
-      {/* Controls Container: Added 'flex-wrap' to prevent overflow on smaller screens */}
+      {/* Controls Container */}
       <div className="d-flex align-items-end gap-3 flex-wrap mb-3">
 
         {/* 1. Dataset Selector */}
@@ -541,213 +501,3 @@ export default function ClimateDashboard() {
     </div>
   );
 }
-//   return (
-//     <div className="container-fluid">
-//       {/* <h2 className="text-xl font-bold whitespace-nowrap">Climate Change</h2> */}
-//       {/* Controls Container bg-light rounded shadow-sm*/}
-//       <div className="d-flex align-items-end gap-3 p-2">
-
-//         {/*Dataset Selector*/}
-//         <div>
-//           <label className="form-label small fw-bold text-muted ">
-//             Dataset Source
-//           </label>
-//           {/* <select
-//             className="form-select form-select-sm"
-//             value={datasetId}
-//             onChange={(e) => setDatasetId(e.target.value)}
-//           >
-//             <option value="default">Default Dataset</option>
-//             <option value="1">Dataset 1</option>
-//             <option value="2">Dataset 2</option>
-//             <option value="3">Dataset 3</option>
-//             <option value="4">Dataset 4</option>
-//           </select> */}
-//           <select
-//             className="form-select form-select-sm"
-//             value={activeDataset}
-//             onChange={(e) => setActiveDataset(e.target.value)}
-//           >
-//             <option value="default">Default Dataset</option>
-
-//             {datasetList.length === 0 && (
-//               <option disabled>No uploaded dataset</option>
-//             )}
-
-//             {datasetList.map((name) => (
-//               <option key={name} value={name}>
-//                 {name}
-//               </option>
-//             ))}
-//           </select>
-//         </div>
-
-//         {/* 1. Country Selector */}
-//         <div>
-//           <label className="form-label small fw-bold text-muted">Country</label>
-//           <select
-//             className="form-select form-select-sm"
-//             value={country}
-//             onChange={(e) => {
-//               setCountry(e.target.value)
-//               setProvince("");
-//             }}
-//           >
-//             {countries.map((c) => (
-//               <option key={c} value={c}>
-//                 {c}
-//               </option>
-//             ))}
-//           </select>
-//         </div>
-
-//         {country === "Thailand" && (
-//           <div>
-//             <label className="form-label small fw-bold text-muted">Province</label>
-//             <select
-//               className="form-select form-select-sm"
-//               value={province}
-//               onChange={(e) => setProvince(e.target.value)}
-//             >
-//               <option value="">Whole Country</option> {/* Default option */}
-//               {provinces.map((p) => (
-//                 <option key={p} value={p}>
-//                   {p}
-//                 </option>
-//               ))}
-//             </select>
-//           </div>
-//         )}
-
-//         <div className="">
-//           <Link to="/manipulate" className="btn btn-sm btn-primary">
-//             <button className="btn btn-sm btn-primary">Upload New Data</button>
-//           </Link>
-//         </div>
-//       </div>
-
-//       {/* <div>
-//         <label className="form-label small fw-bold text-muted">
-//           Climate Index
-//         </label>
-//         <select
-//           className="form-select form-select-sm"
-//           value={indexName}
-//           onChange={(e) => setIndexName(e.target.value)}
-//         >
-//           {ALL_INDICES.map((idx) => (
-//             <option key={idx} value={idx}>
-//               {idx}
-//             </option>
-//           ))}
-//         </select>
-//       </div> */}
-//       <div className="flex gap-2 items-center">
-//         <label>Index:</label>
-//         <select
-//           value={indexName}
-//           onChange={(e) => setIndexName(e.target.value)}
-//           className="border p-1 rounded"
-//         >
-//           {ALL_INDICES.map((idx) => (
-//             <option key={idx} value={idx}>
-//               {idx}
-//             </option>
-//           ))}
-//         </select>
-//       </div>
-
-//       {/* <div className="flex flex-wrap gap-2 items-center">
-//         <div className="flex items-center gap-2">
-//           <label>Start Year :</label>
-//           <input
-//             type="number"
-//             value={startYear}
-//             onChange={(e) => setStartYear(e.target.value)}
-//             className="border p-1 w-20 rounded"
-//           />
-//         </div>
-//         <div className="flex items-center gap-2">
-//           <label>End Year :</label>
-//           <input
-//             type="number"
-//             value={endYear}
-//             onChange={(e) => setEndYear(e.target.value)}
-//             className="border p-1 w-20 rounded"
-//           />
-//         </div>
-//       </div> */}
-
-//       <div className="flex flex-wrap gap-2 items-center">
-//           <label>Start Year:</label>
-//           <input
-//             type="number"
-//             value={inputStartYear}
-//             onChange={(e) => setInputStartYear(e.target.value)}
-//             className="border p-1 w-20 rounded"
-//           />
-//         </div>
-//         <div className="flex items-center gap-2">
-//           <label>End Year:</label>
-//           <input
-//             type="number"
-//             value={inputEndYear}
-//             onChange={(e) => setInputEndYear(e.target.value)}
-//             className="border p-1 w-20 rounded"
-//           />
-//         </div>
-//         <button 
-//           className="btn btn-sm btn-primary" 
-//           onClick={handleApplyYearRange}
-//         >
-//           Apply Years
-//         </button>
-
-//       {/* Dataset Source Selector */}
-//       {/* <div className="mb-3">
-//         <label className="form-label fw-bold me-2">Dataset source:</label>
-//         <select
-//           className="form-select form-select-sm d-inline-block w-auto"
-//           value={datamode}
-//           onChange={(e) => setDataMode(e.target.value)}
-//         >
-//           <option value="default">Default dataset</option>
-//           <option value="upload">Uploaded dataset</option>
-//         </select>
-//       </div> */}
-
-//       {/* Dataset Mode Selector */}
-//       {/* <div className="mb-3">
-//         <Link to="/manipulate" className="btn btn-sm btn-primary">
-//           <button className="btn btn-sm btn-primary">Upload New Data</button>
-//         </Link>
-//       </div> */}
-
-//       <div className="row">
-//         {/*col-12 col-lg-6*/}
-//         <div className="col-12 col-lg-6">
-//           <IndicesViewer
-//             indexName={indexName}
-//             datasetName={activeDataset}
-//             country={country}
-//             province={province}   
-//             startYear={inputStartYear}
-//             endYear={inputEndYear}     
-//           />
-//         </div>
-//         <div className="col-12 col-lg-6">
-//           <GridMapViewer
-//             indexName={indexName}
-//             mode={mode}
-//             setMode={setMode}
-//             datasetName={activeDataset}
-//             country={country}
-//             province={province}   
-//             startYear={startYear}
-//             endYear={endYear}    
-//           />
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }

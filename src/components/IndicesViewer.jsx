@@ -111,33 +111,6 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
   const [spiPrepared, setSpiPrepared] = useState([]);
 
   const safeFormat = (v) => (Number.isFinite(v) ? v.toFixed(2) : "–");
-  
-
-  // useEffect(() => {
-  //   const apiBase = "http://localhost:8000";
-  //   const basePath = datamode === "upload" ? `${apiBase}/output` : "/data";
-
-  //   // annual
-  //   fetch(`${basePath}/indices/annual/${baseIndexName}_timeseries.json`)
-  //     .then((res) => res.json())
-  //     .then((d) => {
-  //       setAllData(d.data);
-  //       setFilteredData(d.data);
-  //       setUnit(d.metadata.unit || "");
-  //       if (d.data?.length > 0) {
-  //         setStartYear(String(d.data[0].year));
-  //         setEndYear(String(d.data[d.data.length - 1].year));
-  //       }
-  //     });
-
-  //   // monthly
-  //   fetch(`${basePath}/indices/monthly/${baseIndexName}_monthly.json`)
-  //     .then((res) => res.json())
-  //     .then((d) => {
-  //       setAllMonthlyData(d.data);
-  //       setUnit(d.metadata.unit || "");
-  //     });
-  // }, [indexName, datamode, baseIndexName]);
 
   useEffect(() => {
     setLoading(true);
@@ -323,112 +296,7 @@ const getPerfectTicks = (data) => {
 
   return (
     <div className="flex flex-wrap gap-2 items-center">
-      {/* Select Indices */}
-      {/* <div className="flex gap-2 items-center">
-        <label>Index:</label>
-        <select
-          value={indexName}
-          onChange={(e) => setIndexName(e.target.value)}
-          className="border p-1 rounded"
-        >
-          {[
-            "SPI3",
-            "SPI6",
-            "SPI9",
-            "SPI12",
-            "PRCPTOT",
-            "Rx1day",
-            "Rx5day",
-            "SDII",
-            "R10mm",
-            "R20mm",
-            "CDD",
-            "CWD",
-            "R95p",
-            "R99p",
-            "R95pTOT",
-            "R99pTOT",
-            "FD",
-            "SU",
-            "ID",
-            "TR",
-            "TXx",
-            "TNx",
-            "TXn",
-            "TNn",
-            "TN10p",
-            "TX10p",
-            "TN90p",
-            "TX90p",
-            "WSDI",
-            "CSDI",
-            // "DTR",
-            // "ETR",
-            "SPI3_Drought_Frequency",
-            "SPI3_Drought_Duration",
-            "SPI3_Drought_Peak",
-            "SPI3_Drought_Severity",
-            "SPI3_Flood_Frequency",
-            "SPI3_Flood_Duration",
-            "SPI3_Flood_Peak",
-            "SPI3_Flood_Severity",
-
-            "SPI6_Drought_Frequency",
-            "SPI6_Drought_Duration",
-            "SPI6_Drought_Peak",
-            "SPI6_Drought_Severity",
-            "SPI6_Flood_Frequency",
-            "SPI6_Flood_Duration",
-            "SPI6_Flood_Peak",
-            "SPI6_Flood_Severity",
-
-            "SPI9_Drought_Frequency",
-            "SPI9_Drought_Duration",
-            "SPI9_Drought_Peak",
-            "SPI9_Drought_Severity",
-            "SPI9_Flood_Frequency",
-            "SPI9_Flood_Duration",
-            "SPI9_Flood_Peak",
-            "SPI9_Flood_Severity",
-
-            "SPI12_Drought_Frequency",
-            "SPI12_Drought_Duration",
-            "SPI12_Drought_Peak",
-            "SPI12_Drought_Severity",
-            "SPI12_Flood_Frequency",
-            "SPI12_Flood_Duration",
-            "SPI12_Flood_Peak",
-            "SPI12_Flood_Severity",
-          ].map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-      </div> */}
-
-      {/* Select Start/End Year */}
-      {/* <div className="flex flex-wrap gap-2 items-center">
-        <div className="flex items-center gap-2">
-          <label>Start Year :</label>
-          <input
-            type="number"
-            value={startYear}
-            onChange={(e) => setStartYear(e.target.value)}
-            className="border p-1 w-20 rounded"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <label>End Year :</label>
-          <input
-            type="number"
-            value={endYear}
-            onChange={(e) => setEndYear(e.target.value)}
-            className="border p-1 w-20 rounded"
-          />
-        </div>
-      </div> */}
-
+      
       {/* Select average window size */}
       {!isSPI && (
       <div className="flex gap-2 items-center p-2">
@@ -478,8 +346,6 @@ const getPerfectTicks = (data) => {
 
             {/* Reference lines */}
             <ReferenceLine y={0} stroke="#000" />
-            {/* <ReferenceLine y={1} stroke="#1f77b4" strokeDasharray="4 4" />
-            <ReferenceLine y={-1} stroke="#d62728" strokeDasharray="4 4" /> */}
             <ReferenceLine
               y={spiThreshold}
               stroke="#1f77b4"
@@ -503,23 +369,6 @@ const getPerfectTicks = (data) => {
           <LineChart data={mergedData} margin={{ right: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="year" interval="preserveStartEnd" minTickGap={0} allowDecimals={false} />
-            {/* <XAxis 
-              dataKey="year" 
-              type="number" 
-              domain={['dataMin', 'dataMax']} 
-              ticks={perfectTicks} 
-              interval={0} 
-              tickFormatter={(tick) => Math.round(tick).toString()}
-              allowDecimals={false} 
-            /> */}
-            {/* <XAxis 
-              dataKey="year" 
-              type="number"               
-              domain={['dataMin', 'dataMax']} 
-              tickCount={20}               
-              allowDecimals={false}     
-              padding={{ left: 20, right: 20 }}
-            /> */}
             <YAxis
               width={70}
               label={{ value: unit, angle: -90, position: "insideLeft" }}
@@ -542,29 +391,6 @@ const getPerfectTicks = (data) => {
           </LineChart>
         </ResponsiveContainer>
       )}
-
-      {/* Annual Graph */}
-      {/* <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={mergedData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="year" />
-          <YAxis label={{ value: unit, angle: -90, position: "insideLeft" }} />
-          <Tooltip formatter={(value) => value.toFixed(2)} />
-          <ReLegend />
-          <Line
-            dataKey="annual"
-            stroke="#000"
-            name={`${baseIndexName} Annual Avg`}
-            dot={false}
-          />
-          <Line
-            dataKey="yearAvg"
-            stroke="#800080"
-            name={`${windowSize}-Year Avg`}
-            dot={false}
-          />
-        </LineChart>
-      </ResponsiveContainer> */}
 
       {/* Monthly Graph 100%*/}
       <ResponsiveContainer width="100%" height={240}>
@@ -621,4 +447,3 @@ const getPerfectTicks = (data) => {
     </div>
   );
 }
-//value: unit

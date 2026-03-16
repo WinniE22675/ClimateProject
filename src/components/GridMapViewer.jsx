@@ -4,68 +4,6 @@ import L from "leaflet";
 import * as d3 from "d3";
 import * as turf from "@turf/turf"; // help compute centroid
 import Legend from "./Legend";
-import MapViewUpdater from "./MapViewUpdater";
-
-// function createMask(sea, country) {
-//   return turf.difference(sea, country);
-// }
-
-// function BoundaryMaskLayer({ mask }) {
-//   const map = useMap();
-
-//   useEffect(() => {
-//     if (!mask) return;
-
-//     if (!map.getPane("mask")) {
-//       map.createPane("mask");
-//       map.getPane("mask").style.zIndex = 1000;
-//       map.getPane("mask").style.pointerEvents = "none";
-//     }
-
-//     const layer = L.geoJSON(mask, {
-//       pane: "mask",
-//       style: {
-//         fillColor: "#cccccc",
-//         fillOpacity: 0.6,
-//         weight: 0,
-//         interactive: false,
-//       },
-//     }).addTo(map);
-
-//     return () => map.removeLayer(layer);
-//   }, [map, mask]);
-
-//   return null;
-// }
-
-// function BoundaryLayer({ data, type }) {
-//   const map = useMap();
-
-//   useEffect(() => {
-//     if (!data) return;
-
-//     if (!map.getPane("boundary")) {
-//       map.createPane("boundary");
-//       map.getPane("boundary").style.zIndex = 500;
-//       map.getPane("boundary").style.pointerEvents = "none";
-//     }
-
-//     const layer = L.geoJSON(data, {
-//       pane: "boundary",
-//       style: {
-//         color: "black",
-//         weight: type === "country" ? 2 : 0.5,
-//         fillOpacity: 0,
-//         opacity: type === "country" ? 1 : 0.4, // dim SEA
-//         interactive: false,
-//       },
-//     }).addTo(map);
-
-//     return () => map.removeLayer(layer);
-//   }, [map, data, type]);
-
-//   return null;
-// }
 
 function MapBoundsController({ province, allProvincesData, fallbackView }) { // geojsonData
   const map = useMap();
@@ -101,34 +39,34 @@ function MapBoundsController({ province, allProvincesData, fallbackView }) { // 
   return null;
 }
 
-function BoundaryMaskLayer({ mask }) {
-  const map = useMap();
+// function BoundaryMaskLayer({ mask }) {
+//   const map = useMap();
 
-  useEffect(() => {
-    if (!mask) return;
+//   useEffect(() => {
+//     if (!mask) return;
 
-    if (!map.getPane("mask")) {
-      map.createPane("mask");
-      map.getPane("mask").style.zIndex = 500; // on top of everything
-      map.getPane("mask").style.pointerEvents = "none";
-    }
+//     if (!map.getPane("mask")) {
+//       map.createPane("mask");
+//       map.getPane("mask").style.zIndex = 500; // on top of everything
+//       map.getPane("mask").style.pointerEvents = "none";
+//     }
 
-    const layer = L.geoJSON(mask, {
-      pane: "mask",
-      style: {
-        fillColor: "#dddddd", // background color
-        fillOpacity: 1, // IMPORTANT: must be 1
-        stroke: false,
-        weight: 0,
-        interactive: false,
-      },
-    }).addTo(map);
+//     const layer = L.geoJSON(mask, {
+//       pane: "mask",
+//       style: {
+//         fillColor: "#dddddd", // background color
+//         fillOpacity: 1, // IMPORTANT: must be 1
+//         stroke: false,
+//         weight: 0,
+//         interactive: false,
+//       },
+//     }).addTo(map);
 
-    return () => map.removeLayer(layer);
-  }, [map, mask]);
+//     return () => map.removeLayer(layer);
+//   }, [map, mask]);
 
-  return null;
-}
+//   return null;
+// }
 
 
 function BoundaryLayer({ data , weight = 0.5 }) {
@@ -268,28 +206,6 @@ export default function GridMapViewer({
   // const [seaBoundary, setSeaBoundary] = useState(null);
   // const [countryBoundary, setCountryBoundary] = useState(null);
   // const [maskData, setMaskData] = useState(null);
-
-  // useEffect(() => {
-  //   setGridData({ actual: null, trend: null });
-  //   setScales({ actual: null, trend: null });
-  //   setBinsAll({ actual: [], trend: [] });
-  //   setUnit("");
-  //   const apiBase = "http://localhost:8000";
-  //   const basePath = datamode === "upload" ? `${apiBase}/output` : "/data";
-
-  //   Promise.all([
-  //     fetch(
-  //       `${basePath}/maps_grid/actual/${indexName}_actual_grid.geojson`
-  //     ).then((res) => res.json()),
-  //     fetch(`${basePath}/maps_grid/trend/${indexName}_trend_grid.geojson`).then(
-  //       (res) => res.json()
-  //     ),
-  //   ]).then(([actualData, trendData]) => {
-  //     setGridData({ actual: actualData, trend: trendData });
-  //     const u = actualData.metadata?.unit || trendData.metadata?.unit || "";
-  //     setUnit(u);
-  //   });
-  // }, [indexName, datamode]);
 
   // user-defined legend range (null = auto)
   const [legendRange, setLegendRange] = useState({
@@ -527,59 +443,6 @@ export default function GridMapViewer({
     return () => { isMounted = false; };
   }, [indexName, datasetName, country, province, startYear, endYear , mapStyle, availableIndices, supportsTrend]);
 
-  // Define which dataset to render based on the current mode
-  // const currentMapData = mode === "trend" ? gridData.trend : gridData.actual;
-
-    // const apiBase = "http://localhost:8000";
-    // // const basePath = datamode === "upload" ? `${apiBase}/output` : "/data";
-    // const datasetPath =
-    //   datasetName === "default" ? "/data" : `${apiBase}/output/${datasetName}`;
-
-    // const cacheKey = Date.now();
-
-    // const area = province ? province : "overview";
-
-    // // New Path Structure: datasetPath / country / area / indexName / maps_grid / [actual|trend] / {start}_{end}_[type]_grid.geojson
-    // const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${cacheKey}`;
-    // const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${cacheKey}`;
-
-    // const requests = [
-    //   fetch(
-    //     `${datasetPath}/maps_grid/actual/${indexName}_actual_grid.geojson?v=${cacheKey}`
-    //   ).then((res) => {
-    //     if (!res.ok) throw new Error("Actual grid fetch failed");
-    //     return res.json();
-    //   }),
-    // ];
-
-    // if (supportsTrend) {
-
-    //   requests.push(
-    //     fetch(
-    //       `${datasetPath}/maps_grid/trend/${indexName}_trend_grid.geojson?v=${cacheKey}`
-    //     ).then((res) => {
-    //     if (!res.ok) throw new Error("Trend grid fetch failed");
-    //     return res.json();
-    //   }),
-    //   );
-    // }
-
-    // Promise.all([
-    //   fetch(
-    //     `${datasetPath}/maps_grid/actual/${indexName}_actual_grid.geojson?v=${cacheKey}`
-    //   ).then((res) => {
-    //     if (!res.ok) throw new Error("Actual grid fetch failed");
-    //     return res.json();
-    //   }),
-    //   fetch(
-    //     `${datasetPath}/maps_grid/trend/${indexName}_trend_grid.geojson?v=${cacheKey}`
-    //   ).then((res) => {
-    //     if (!res.ok) throw new Error("Trend grid fetch failed");
-    //     return res.json();
-    //   }),
-    // ])
-
-
   // useEffect(() => {
   //   fetch("/data/southeast-asia-boundary.geojson")
   //     .then((res) => res.json())
@@ -659,8 +522,6 @@ useEffect(() => {
         .sort(d3.ascending);
 
       if (values.length === 0) return;
-      // const p2 = d3.quantile(values, 0.02);
-      // const p98 = d3.quantile(values, 0.98);
 
       const userMin = legendRange[m].min;
       const userMax = legendRange[m].max;
@@ -673,16 +534,7 @@ useEffect(() => {
 
       if (!isFinite(minVal) || !isFinite(maxVal) || minVal >= maxVal) return;
 
-      // if (!isFinite(p2) || !isFinite(p98)) return;
-
       if (m === "actual") {
-        // const thresholds = d3.ticks(p2, p98, nBins);
-        // const scale = d3
-        //   .scaleThreshold()
-        //   .domain(thresholds.slice(1, -1)) // edge each bin
-        //   .range(d3.schemeYlOrRd[nBins]);
-        // setScales((s) => ({ ...s, actual: scale }));
-        // setBinsAll((b) => ({ ...b, actual: thresholds }));
         const thresholds = d3.ticks(minVal, maxVal, nBins);
 
         // const customBlueRange = d3.schemeBlues[11].slice(-nBins);
@@ -716,16 +568,6 @@ useEffect(() => {
         setScales((s) => ({ ...s, actual: scale }));
         setBinsAll((b) => ({ ...b, actual: thresholds }));
       } else {
-        // const maxAbs = Math.max(Math.abs(p2), Math.abs(p98)); // make balance
-        // if (maxAbs === 0) return;
-        // const thresholds = d3.ticks(-maxAbs, maxAbs, nBins);
-        // const colors = [...d3.schemeRdBu[nBins]].reverse();
-        // const scale = d3
-        //   .scaleThreshold()
-        //   .domain(thresholds.slice(1, -1))
-        //   .range(colors);
-        // setScales((s) => ({ ...s, trend: scale }));
-        // setBinsAll((b) => ({ ...b, trend: thresholds }));
         const absMax =
           userMin != null || userMax != null
             ? Math.max(Math.abs(minVal), Math.abs(maxVal))
@@ -811,19 +653,6 @@ useEffect(() => {
       return null;
     }
 
-    // this line use before overlay only after overlay is error
-    // const centroid = turf.centroid(feature).geometry.coordinates; // [lng, lat] | centroid is center point of polygon grid cell
-
-    // calculate cell (distance between 2 angles)
-    // const coords = feature.geometry?.coordinates?.[0];
-    // if (!coords || coords.length < 4) return null;
-
-    // const coords = feature.geometry.coordinates[0];
-    // const pt1 = turf.point(coords[0]); // left up
-    // const pt2 = turf.point(coords[1]); // right down (diagonal opposite)
-    // const cellSizeKm = turf.distance(pt1, pt2, { units: "kilometers" });
-    // const radiusMeters = (cellSizeKm * 1000) / 10; // convert to m and * 10 for make circle
-
     const pointRadius = province ? 4 : 1;
     return (
       <CircleMarker
@@ -838,29 +667,8 @@ useEffect(() => {
       />
     );
   }
-  //   return (
-  //     <Circle
-  //       center={[center[1], center[0]]}
-  //       radius={radiusMeters}
-  //       pathOptions={{
-  //         color: "black",
-  //         fillColor: "black",
-  //         fillOpacity: 0.9,
-  //         interactive: false,
-  //       }}
-  //     />
-  //   );
-  // }
-
-
-  // p-2 small padding
 
   const onEachFeature = (modeKey) => (feature, layer) => {
-    // layer.on("click", () => console.log("clicked"));
-    // console.log("bind tooltip:", modeKey);
-    // layer.on("click", () => {
-    //   console.log("clicked", modeKey);
-    // });
     let html = "";
     const namePrefix = feature.properties.name ? `<strong>${feature.properties.name}</strong><br/>` : "";
 
@@ -877,50 +685,6 @@ useEffect(() => {
     // layer.bindTooltip(html, { sticky: true, direction: "top" });
     layer.bindPopup(html);
   };
-
-  // useEffect(() => {
-  //   Object.entries(layersRef.current).forEach(([key, layer]) => {
-  //     if (!layer) return;
-  //     layer.setStyle({ fillOpacity: key === mode ? 0.8 : 0 });
-
-  //     layer.eachLayer((l) => {
-  //       if (key === mode) {
-  //         l.options.interactive = true;
-  //       } else {
-  //         l.options.interactive = false;
-  //       }
-  //     });
-  //     if (key === mode) layer.bringToFront();
-  //   });
-  // }, [mode]);
-
-  // useEffect(() => {
-  //   if (!seaBoundary) return;
-
-  //   // ถ้าเลือก SEA → ไม่ต้อง mask
-  //   if (!countryBoundary) {
-  //     setMaskData(null);
-  //     return;
-  //   }
-
-  //   try {
-  //     const mask = createMask(seaBoundary, countryBoundary);
-  //     setMaskData(mask);
-  //   } catch (e) {
-  //     console.error("Failed to create mask", e);
-  //     setMaskData(null);
-  //   }
-  // }, [seaBoundary, countryBoundary]);
-
-  // useEffect(() => {
-  //   console.log("SEA:", seaBoundary?.features?.length);
-  //   console.log("Country:", countryBoundary?.features?.length);
-  //   console.log("Mask:", maskData);
-  // }, [seaBoundary, countryBoundary, maskData]);
-
-  // if (loading) return <div>Loading map...</div>;
-  // if (error) return <div style={{ color: "red" }}>Error: {error}</div>;
-  // if (noData) return <div>No map data available.</div>;
 
   if (loading || isGenerating) {
     return (
@@ -1205,150 +969,3 @@ useEffect(() => {
     </div>
   );
 }
-//   return (
-//     <div>
-//       {/* mode button */}
-//       <div className="d-flex gap-2 p-2">
-//         <button
-//           onClick={() => setMode("actual")}
-//           className={`btn ${mode === "actual" ? "btn-primary shadow-sm" : "btn-light border"}`}
-//         >
-//           Actual Map
-//         </button>
-//         <button
-//           onClick={() => setMode("trend")}
-//           className={`btn ${mode === "trend" ? "btn-primary shadow-sm" : "btn-light border"}`}
-//         >
-//           Trend Map
-//         </button>
-//       </div>
-
-//       {/* toggle significant points */}
-//       {mode === "trend" && (
-//         <div className="p-2">
-//           <label>
-//             <input
-//               type="checkbox"
-//               checked={showSig}
-//               onChange={() => setShowSig((s) => !s)}
-//             />{" "}
-//             Significant Points
-//           </label>
-//         </div>
-//       )}
-//       <div className="flex flex-col">
-//         <MapContainer
-//           // center={[15, 101]}
-//           // zoom={5}
-//           center={mapView.center}
-//           zoom={mapView.zoom}
-//           style={{ height: "450px", width: "100%" }}
-//         >
-//           <MapViewUpdater center={mapView.center} zoom={mapView.zoom} />
-
-//           {/* {maskData && <BoundaryMaskLayer mask={maskData} />} */}
-
-//           {/* Mask first */}
-//           {maskData && <BoundaryMaskLayer mask={maskData} />}
-
-//           {/* Boundary always on top */}
-//           {boundaryData && <BoundaryLayer data={boundaryData} weight={2.0}/>}
-
-//           {/* Province Boundaries */}
-//           {displayProvinceBoundary && (
-//             <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
-//           )}
-
-//           {/* SEA view */}
-//           {/* {seaBoundary && !countryBoundary && (
-//             <BoundaryLayer data={seaBoundary} type="sea" />
-//           )} */}
-
-//           {/* Country view */}
-//           {/* {countryBoundary && (
-//             <BoundaryLayer data={countryBoundary} type="country" />
-//           )} */}
-
-//           {mode === "trend" && gridData.trend && (
-//             <GeoJSON
-//               data={gridData.trend}
-//               style={style("trend")}
-//               onEachFeature={onEachFeature("trend")}
-//               ref={(ref) => (layersRef.current.trend = ref)}
-//             />
-//           )}
-//           {mode === "actual" && gridData.actual && (
-//             <GeoJSON
-//               data={gridData.actual}
-//               style={style("actual")}
-//               onEachFeature={onEachFeature("actual")}
-//               ref={(ref) => (layersRef.current.actual = ref)}
-//             />
-//           )}
-
-//           {showSig &&
-//             significantPoints.map((f, i) => <SigPoint key={i} feature={f} />)}
-//         </MapContainer>
-
-//         {scales[mode] && binsAll[mode]?.length > 0 && (
-//           <Legend
-//             bins={binsAll[mode]}
-//             scale={scales[mode]}
-//             mode={mode}
-//             unit={unit}
-//           />
-//         )}
-//       </div>
-
-//       {/* legend range control */}
-//       <div className="flex gap-2 p-2 items-center">
-//         <span className="text-sm">Legend range:</span>
-
-//         <input
-//           type="number"
-//           placeholder="Min"
-//           value={legendRange[mode].min ?? ""}
-//           onChange={(e) =>
-//             setLegendRange((r) => ({
-//               ...r,
-//               [mode]: {
-//                 ...r[mode],
-//                 min: e.target.value === "" ? null : +e.target.value,
-//               },
-//             }))
-//           }
-//           className="border px-1 w-24"
-//         />
-
-//         <input
-//           type="number"
-//           placeholder="Max"
-//           value={legendRange[mode].max ?? ""}
-//           onChange={(e) =>
-//             setLegendRange((r) => ({
-//               ...r,
-//               [mode]: {
-//                 ...r[mode],
-//                 max: e.target.value === "" ? null : +e.target.value,
-//               },
-//             }))
-//           }
-//           className="border px-1 w-24"
-//         />
-
-//         <button
-//           className="text-sm underline"
-//           onClick={() =>
-//             setLegendRange((r) => ({
-//               ...r,
-//               [mode]: { min: null, max: null },
-//             }))
-//           }
-//         >
-//           Auto
-//         </button>
-//       </div>
-
-//     </div>
-//   );
-// }

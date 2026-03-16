@@ -5,12 +5,8 @@ import xarray as xr
 from shapely.geometry import Polygon
 from cf_xarray import vertices_to_bounds
 import pymannkendall as mk
-import regionmask
+# import regionmask
 import geopandas as gpd
-
-# base output folder (configurable)
-# OUT_MAPS = "output/maps_grid"
-# os.makedirs(OUT_MAPS, exist_ok=True)
 
 # ========== helper functions ==========
 
@@ -83,39 +79,6 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
         lat.max() + d_lat / 2,
         d_lat,
     )
-    # # print("ww")
-    # features = []
-    # for i in range(len(lat)):
-    #     # print(i)
-    #     for j in range(len(lon)):
-    #         # print(j)
-    #         val = (
-    #             avg_map.sel(latitude=lat[i], longitude=lon[j], method="nearest")
-    #             .values.item()
-    #         )
-    #         if np.isnan(val):
-    #             continue
-
-    #         # print(val)
-
-    #         poly = Polygon(
-    #             [
-    #                 (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
-    #                 (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 0]),
-    #                 (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 1]),
-    #                 (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 1]),
-    #             ]
-    #         )
-
-    #         # print(poly)
-
-    #         features.append(
-    #             {
-    #                 "type": "Feature",
-    #                 "geometry": poly.__geo_interface__,
-    #                 "properties": {"value": round(float(val),2)},
-    #             }
-    #         )
 
     avg_map_values = avg_map.values 
     
@@ -176,17 +139,6 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
     print(f"  Saved actual map to {out_path}")
     return out_path
 
-    # out_dir = os.path.join(output_base_dir, "maps_grid", "actual") # OUT_MAPS
-    # os.makedirs(out_dir, exist_ok=True)
-    # out_path = os.path.join(out_dir, f"{index_name}_actual_grid.geojson")
-
-    # with open(out_path, "w") as f:
-    #     json.dump(out, f, indent=2)
-    # print(f"  Saved actual map to {out_path}")
-
-    # return out_path
-
-
 # ========== 2. Export Trend Map ==========
 def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand", province_name: str = None):
     """Export trend map using Mann-Kendall test (GeoJSON grid)."""
@@ -225,43 +177,6 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
         lats.max() + d_lat / 2,
         d_lat,
     )
-
-    # slope_map = np.full((len(lats), len(lons)), np.nan)
-    # p_map = np.full_like(slope_map, np.nan)
-
-    # for i, lat in enumerate(lats):
-    #     for j, lon in enumerate(lons):
-    #         series = trend[:, i, j].values
-    #         if np.sum(~np.isnan(series)) >= len(series) * 0.7:
-    #             try:
-    #                 result = mk.original_test(series)
-    #                 slope_map[i, j] = result.slope * 10  # per decade
-    #                 p_map[i, j] = result.p
-    #             except Exception:
-    #                 pass
-
-    # features = []
-    # for i in range(len(lats)):
-    #     for j in range(len(lons)):
-    #         slope = slope_map[i, j]
-    #         pval = p_map[i, j]
-    #         if not np.isnan(slope):
-    #             poly = Polygon(
-    #                 [
-    #                     (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
-    #                     (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 0]),
-    #                     (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 1]),
-    #                     (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 1]),
-    #                 ]
-    #             )
-
-    #             features.append(
-    #                 {
-    #                     "type": "Feature",
-    #                     "geometry": poly.__geo_interface__,
-    #                     "properties": {"slope": round(float(slope),2), "p": round(float(pval),2)},
-    #                 }
-    #             )
     
     # Shape is typically (time, lat, lon)
     trend_values = trend.values 
@@ -339,154 +254,6 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
         
     print(f"  Saved trend map to {out_path}")
     return out_path
-
-    # out_dir = os.path.join(output_base_dir, "maps_grid", "trend") # OUT_MAPS
-    # os.makedirs(out_dir, exist_ok=True)
-    # out_path = os.path.join(out_dir, f"{index_name}_trend_grid.geojson")
-
-    # with open(out_path, "w") as f:
-    #     json.dump(out, f, indent=2)
-    # print(f"  Saved trend map to {out_path}")
-
-    # return out_path
-
-# def export_actual_map_shapefile(index_data: xr.DataArray, index_name: str, output_base_dir: str, gdf_provinces: gpd.GeoDataFrame, target_col: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand"):
-#     """Export average map (GeoJSON Polygon) with all_touched=True to fix missing small provinces."""
-
-#     if start_year is None:
-#         start_year = int(index_data.time.dt.year.min())
-#     if end_year is None:
-#         end_year = int(index_data.time.dt.year.max())
-    
-#     # Filter data and calculate time average
-#     index_data = index_data.sel(time=slice(str(start_year), str(end_year)))
-#     avg_map = index_data.mean("time", skipna=True)
-
-#     # Ensure spatial dimensions and CRS are set for rioxarray
-#     if not hasattr(avg_map.rio, "crs") or avg_map.rio.crs is None:
-#         avg_map = avg_map.rio.write_crs("EPSG:4326")
-#     avg_map = avg_map.rio.set_spatial_dims(x_dim="longitude", y_dim="latitude")
-
-#     features = []
-    
-#     # Loop through each province and clip with all_touched=True
-#     for idx, row in gdf_provinces.iterrows():
-#         prov_name = row[target_col]
-        
-#         try:
-#             # all_touched=True ensures small provinces that don't cover pixel centers are still processed
-#             clipped = avg_map.rio.clip([row.geometry], gdf_provinces.crs, all_touched=True, drop=True)
-#             val = float(clipped.mean().values)
-#         except Exception:
-#             val = np.nan
-            
-#         if np.isnan(val):
-#             continue
-            
-#         features.append({
-#             "type": "Feature",
-#             "geometry": row.geometry.__geo_interface__,
-#             "properties": {
-#                 "name": prov_name,
-#                 "value": round(val, 2)
-#             }
-#         })
-
-#     out = {
-#         "type": "FeatureCollection",
-#         "metadata": {
-#             "index": index_name,
-#             "unit": getattr(index_data, "units", ""),
-#             "start_date": str(index_data.time.min().values)[:10],
-#             "end_date": str(index_data.time.max().values)[:10],
-#             "years": [start_year, end_year],
-#             "mode": "shapefile"
-#         },
-#         "features": features,
-#     }
-
-#     out_dir = os.path.join(output_base_dir, region_name, "overview", index_name, "maps_shp", "actual")
-#     os.makedirs(out_dir, exist_ok=True)
-    
-#     filename = f"{start_year}_{end_year}_actual_shp.geojson"
-#     out_path = os.path.join(out_dir, filename)
-
-#     with open(out_path, "w") as f:
-#         json.dump(out, f, indent=2) 
-        
-#     print(f"  Saved actual shapefile map to {out_path}")
-#     return out_path
-
-
-# def export_trend_map_shapefile(index_data: xr.DataArray, index_name: str, output_base_dir: str, gdf_provinces: gpd.GeoDataFrame, target_col: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand"):
-#     """Export trend map using Mann-Kendall test with all_touched=True for complete province coverage."""
-
-#     if start_year is None:
-#         start_year = int(index_data.time.dt.year.min())
-#     if end_year is None:
-#         end_year = int(index_data.time.dt.year.max())
-    
-#     index_data = index_data.sel(time=slice(str(start_year), str(end_year)))
-
-#     # Ensure spatial dimensions and CRS are set for rioxarray
-#     if not hasattr(index_data.rio, "crs") or index_data.rio.crs is None:
-#         index_data = index_data.rio.write_crs("EPSG:4326")
-#     index_data = index_data.rio.set_spatial_dims(x_dim="longitude", y_dim="latitude")
-
-#     features = []
-    
-#     for idx, row in gdf_provinces.iterrows():
-#         prov_name = row[target_col]
-        
-#         try:
-#             # Clip time-series data for the province
-#             clipped = index_data.rio.clip([row.geometry], gdf_provinces.crs, all_touched=True, drop=True)
-#             # Spatial average to get 1D time-series
-#             series = clipped.mean(dim=["latitude", "longitude"]).values
-            
-#             # Check for valid data threshold
-#             if np.sum(~np.isnan(series)) >= len(series) * 0.7:
-#                 result = mk.original_test(series)
-#                 slope = result.slope * 10 
-#                 pval = result.p
-                
-#                 features.append({
-#                     "type": "Feature",
-#                     "geometry": row.geometry.__geo_interface__,
-#                     "properties": {
-#                         "name": prov_name,
-#                         "slope": round(float(slope), 2),
-#                         "p": round(float(pval), 2)
-#                     }
-#                 })
-#         except Exception:
-#             pass
-
-#     out = {
-#         "type": "FeatureCollection",
-#         "metadata": {
-#             "index": index_name,
-#             "method": "Mann-Kendall",
-#             "unit": getattr(index_data, "units", ""),
-#             "start_date": str(index_data.time.min().values)[:10],
-#             "end_date": str(index_data.time.max().values)[:10],
-#             "years": [start_year, end_year],
-#             "mode": "shapefile"
-#         },
-#         "features": features,
-#     }
-
-#     out_dir = os.path.join(output_base_dir, region_name, "overview", index_name, "maps_shp", "trend")
-#     os.makedirs(out_dir, exist_ok=True)
-    
-#     filename = f"{start_year}_{end_year}_trend_shp.geojson"
-#     out_path = os.path.join(out_dir, filename)
-
-#     with open(out_path, "w") as f:
-#         json.dump(out, f, indent=2) 
-        
-#     print(f"  Saved trend shapefile map to {out_path}")
-#     return out_path
 
 # ========== 3. Export Actual Map (Shapefile Mode) ==========
 def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, output_base_dir: str, gdf_provinces: gpd.GeoDataFrame, target_col: str, region_name: str = "Thailand"):

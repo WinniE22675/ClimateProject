@@ -23,8 +23,6 @@ from processing.export_maps import (
 # ============================
 THAILAND_PROVINCES_SHAPEFILE_PATH = "data/tha_admbnda_adm1_rtsd_20190221.shp"
 THAILAND_BOUNDARY_SHAPEFILE_PATH = r"data/geoBoundaries-THA-ADM0.geojson"
-# THAILAND_BOUNDARY_SHAPEFILE_PATH = "data/shapefiles/thailand_boundary.geojson" 
-# THAILAND_PROVINCES_SHAPEFILE_PATH = "data/shapefiles/thailand_provinces.geojson"
 
 # Load Shapefiles safely
 try:
