@@ -1,6 +1,6 @@
 // src/components/DownloadSection.jsx 
-
 import React, { useState } from "react";
+import { apiFetch } from '../services/api';
 
 export default function DownloadSection({ datasetName, datasetStatus }) {
   const [downloading, setDownloading] = useState(false);
@@ -13,15 +13,17 @@ export default function DownloadSection({ datasetName, datasetStatus }) {
 
     setDownloading(true);
     try {
-      const response = await fetch(
-        // `http://localhost:8000/api/datasets/${slotId}/download_custom`,
-        `http://localhost:8000/api/datasets/${datasetName}/download_merged`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          // body: JSON.stringify(scope),
-        }
-      );
+      // const response = await fetch(
+      //   `http://localhost:8000/api/datasets/${datasetName}/download_merged`,
+      //   {
+      //     method: "GET",
+      //     headers: { "Content-Type": "application/json" },
+      //     // body: JSON.stringify(scope),
+      //   }
+      // );
+      const response = await apiFetch(`/datasets/${datasetName}/download_merged`, {
+        method: "GET"
+      });
 
       if (response.ok) {
         // Blob trick เพื่อดาวน์โหลดไฟล์จาก POST request

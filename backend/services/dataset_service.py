@@ -9,8 +9,8 @@ from services.dataset_clip import process_and_clip
 from services.dataset_metadata import get_dataset_metadata_merged
 from services.preview_service import run_preview_visualization
 
-async def save_raw_files(slot_id, files):
-    target_dir = get_raw_path(slot_id)
+async def save_raw_files(user_id: str, slot_id, files):
+    target_dir = get_raw_path(user_id, slot_id)
     saved_list = []
     
     for file in files:
@@ -20,16 +20,16 @@ async def save_raw_files(slot_id, files):
         saved_list.append(file.filename)
     return saved_list
 
-def delete_raw_file(slot_id, filename):
-    target_dir = get_raw_path(slot_id)
+def delete_raw_file(user_id: str, slot_id, filename):
+    target_dir = get_raw_path(user_id, slot_id)
     file_path = os.path.join(target_dir, filename)
     if os.path.exists(file_path):
         os.remove(file_path)
         return True
     return False
 
-def get_file_list(slot_id):
-    target_dir = get_raw_path(slot_id)
+def get_file_list(user_id: str, slot_id):
+    target_dir = get_raw_path(user_id, slot_id)
     if not os.path.exists(target_dir):
         return {"files": []}
     
@@ -42,9 +42,9 @@ def get_file_list(slot_id):
     return {"files": file_data}
 
 # function for DatasetProcessPage
-def get_processed_files(slot_id):
+def get_processed_files(user_id: str, slot_id):
     """List files in the processed folder"""
-    proc_dir = get_processed_path(slot_id)
+    proc_dir = get_processed_path(user_id, slot_id)
     if not os.path.exists(proc_dir):
         return []
     return sorted([f for f in os.listdir(proc_dir) if f.endswith('.nc')])
@@ -130,7 +130,7 @@ def run_async_calculation(dataset_name: str, selected_indices: list, baseline=No
     }
 
 # Asynchronous Background Task Logic
-def run_async_processing(slot_id, dataset_name, scope, background_tasks):
+def run_async_processing(user_id: str, slot_id, dataset_name, scope, background_tasks):
     """
     1. Clip files (using core_process_file logic)
     2. Merge files
@@ -150,7 +150,7 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         )
 
         # 2. Process & Clip 
-        process_and_clip(slot_id, dataset_name, scope)
+        process_and_clip(user_id, slot_id, dataset_name, scope)
 
         print(f"[Dataset {dataset_name}] Clipping")
 
@@ -164,7 +164,7 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         )
         
         # 3. Merge (use Logic from prepare_merged_file_for_calculation)
-        merged_filename = prepare_merged_file_for_calculation(dataset_name)
+        merged_filename = prepare_merged_file_for_calculation(user_id, dataset_name)
 
         print(f"[Dataset {dataset_name}] Merge Dataset")
 
@@ -200,6 +200,15 @@ def run_async_processing(slot_id, dataset_name, scope, background_tasks):
         run_preview_visualization(dataset_name)
 
         print(f"[Dataset {dataset_name}] All Processes and Previews Finished.")
+
+        # Delete the temporary 'processed' folder immediately after successful merge
+        proc_dir = get_processed_path(user_id, dataset_name)
+        if os.path.exists(proc_dir):
+            try:
+                print(f"[Dataset {dataset_name}] Cleaning up temporary processed files...")
+                shutil.rmtree(proc_dir)
+            except Exception as e:
+                print(f"[Warning] Failed to cleanup processed folder for {dataset_name}: {e}")
 
     except Exception as e:
         print(f"[{dataset_name}] Task Failed: {e}")

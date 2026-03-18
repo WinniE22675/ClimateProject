@@ -1,31 +1,34 @@
-# Core
-netCDF4>=1.7.4
-numpy>=2.3.5
-pandas>=3.0.0
-xarray>=2023.5.0
-cf_xarray>=0.8.2
+# Web Framework & Server
+fastapi>=0.116.2
+uvicorn>=0.35.0
+python-multipart>=0.0.20
+
+# Authentication, Database & Environment
+SQLAlchemy>=2.0.48
+passlib>=1.7.4
+python-jose>=3.5.0
+python-dotenv>=1.2.2
+# STRICT PIN: Must be 4.0.1 to avoid passlib ValueError (Bug Fix)
+bcrypt==4.0.1
+
+# Core Data Science
+numpy>=1.26.4
+pandas>=2.3.1
+xarray>=2025.7.1
+netCDF4>=1.7.2
+
+# Geospatial & Climate Tools
+cf_xarray>=0.10.6
 rioxarray>=0.19.0
-geopandas>=1.1.2
-shapely>=2.1.2
+geopandas>=1.1.1
 regionmask>=0.13.0
-
-# Climate indices
-xclim>=0.60.0
-
-# Interpolation / regrid
-xesmf>=0.5.1
-
-# Trend analysis
+xclim>=0.57.0
+xesmf>=0.8.1
 pymannkendall>=1.4.3
-
-# Web framework
-fastapi>=0.129.0
-uvicorn>=0.41.0
-
-# File handling & utils
-python-multipart>=0.0.22
-netCDF4>=1.6.4
+climate_indices>=2.0.1
+rasterstats>=0.20.0
 cf-units>=3.3.1
 
-# Optional plotting / debugging
-matplotlib>=3.10.8
+# Visualization (Optional / Debugging)
+matplotlib>=3.10.3
+Cartopy>=0.24.1

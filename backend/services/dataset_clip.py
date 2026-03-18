@@ -128,9 +128,9 @@ def core_process_file(raw_path, save_path, scope):
         print(f"Error processing {raw_path}: {e}")
         return False
 
-def process_and_clip(slot_id: int, dataset_name: str, scope):
-    raw_dir = get_raw_path(slot_id)
-    proc_dir = get_processed_path(dataset_name)
+def process_and_clip(user_id: str, slot_id: int, dataset_name: str, scope):
+    raw_dir = get_raw_path(user_id, slot_id)
+    proc_dir = get_processed_path(user_id, dataset_name)
 
     if os.path.exists(proc_dir):
         # force close all files in Python Memory

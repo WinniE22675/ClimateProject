@@ -4,6 +4,7 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import IndicesSelector from "../components/IndicesSelector";
 import DatasetPreview from "../components/DatasetPreview";
 import DownloadSection from "../components/DownloadSection";
+import { apiFetch, datasetAPI } from '../services/api';
 
 export default function DatasetProcessPage() {
   const location = useLocation();
@@ -57,9 +58,10 @@ export default function DatasetProcessPage() {
 
     try {
       // Fetch Merged Metadata
-      const resMeta = await fetch(
-        `http://localhost:8000/api/datasets/${activeDataset}/metadata`
-      );
+      // const resMeta = await fetch(
+      //   `http://localhost:8000/api/datasets/${activeDataset}/metadata`
+      // );
+      const resMeta = await apiFetch(`/datasets/${activeDataset}/metadata`);
       if (resMeta.ok) {
         const dataMeta = await resMeta.json();
         setMetadata(dataMeta);
@@ -90,17 +92,24 @@ export default function DatasetProcessPage() {
     setIsCalculating(true);
 
     try {
-      const res = await fetch(
-        `http://localhost:8000/api/datasets/${activeDataset}/calculate_indices`, //${activeSlot}
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            selected_indices: selectedIndices,
-            baseline: baseline,
-           }),
-        }
-      );
+      // const res = await fetch(
+      //   `http://localhost:8000/api/datasets/${activeDataset}/calculate_indices`, //${activeSlot}
+      //   {
+      //     method: "POST",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({ 
+      //       selected_indices: selectedIndices,
+      //       baseline: baseline,
+      //      }),
+      //   }
+      // );
+      const res = await apiFetch(`/datasets/${activeDataset}/calculate_indices`, {
+        method: "POST",
+        body: JSON.stringify({ 
+          selected_indices: selectedIndices,
+          baseline: baseline,
+        }),
+      });
 
       if (res.ok) {
         alert("Calculation started. You can leave this page to Dashboard...");
@@ -129,9 +138,10 @@ export default function DatasetProcessPage() {
       // }
 
       try {
-        const res = await fetch(
-          `http://localhost:8000/api/datasets/${activeDataset}/status`
-        );
+        // const res = await fetch(
+        //   `http://localhost:8000/api/datasets/${activeDataset}/status`
+        // );
+        const res = await apiFetch(`/datasets/${activeDataset}/status`);
 
         if (!res.ok) return;
         const data = await res.json();
@@ -167,7 +177,8 @@ export default function DatasetProcessPage() {
 
   const fetchDatasetList = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/datasets");
+      // const res = await fetch("http://localhost:8000/api/datasets");
+      const res = await datasetAPI.getDatasets();
       if (!res.ok) return 
         const data = await res.json();
         setDatasetList(data.datasets || []);
@@ -193,7 +204,8 @@ export default function DatasetProcessPage() {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/datasets");
+        // const res = await fetch("http://localhost:8000/api/datasets");
+        const res = await datasetAPI.getDatasets();
         if (!res.ok) return;
 
         const data = await res.json();
@@ -222,17 +234,21 @@ export default function DatasetProcessPage() {
   }, [pendingDataset]);
 
   const fetchDatasets = async () => {
-    const res = await fetch("http://localhost:8000/api/datasets");
+    // const res = await fetch("http://localhost:8000/api/datasets");
+    const res = await datasetAPI.getDatasets();
     const data = await res.json();
     setDatasetList(data.datasets);
   };
 
   const handleDeleteDataset = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:8000/api/datasets/${activeDataset}`,
-        { method: "DELETE" }
-      );
+      // const res = await fetch(
+      //   `http://localhost:8000/api/datasets/${activeDataset}`,
+      //   { method: "DELETE" }
+      // );
+      const res = await apiFetch(`/datasets/${activeDataset}`, { 
+        method: "DELETE" 
+      });
 
       if (!res.ok) {
         const err = await res.json();

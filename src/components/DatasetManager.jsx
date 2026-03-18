@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import DatasetUploader from "./DatasetUploader";
 import { useNavigate } from "react-router-dom";
+import { apiFetch, datasetAPI } from '../services/api';
 
 const DATASET_SLOTS = [1, 2, 3, 4];
 
@@ -30,9 +31,10 @@ export default function DatasetManager() {
 
   const fetchFiles = async (slotId) => {
     try {
-      const res = await fetch(
-        `http://localhost:8000/api/datasets/${slotId}/files`
-      );
+      // const res = await fetch(
+      //   `http://localhost:8000/api/datasets/${slotId}/files`
+      // );
+      const res = await apiFetch(`/datasets/${slotId}/files`);
       if (res.ok) {
         const data = await res.json();
         setFileList(data.files || []); // Expecting { files: [{name:Str, year:Int}, ...] }
@@ -48,12 +50,15 @@ export default function DatasetManager() {
     if (!window.confirm(`Delete ${filename}?`)) return;
 
     try {
-      const res = await fetch(
-        `http://localhost:8000/api/datasets/${activeSlot}/files/${filename}`,
-        {
-          method: "DELETE",
-        }
-      );
+      // const res = await fetch(
+      //   `http://localhost:8000/api/datasets/${activeSlot}/files/${filename}`,
+      //   {
+      //     method: "DELETE",
+      //   }
+      // );
+      const res = await apiFetch(`/datasets/${activeSlot}/files/${filename}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         fetchFiles(activeSlot); // Refresh list
       } else {
@@ -68,18 +73,23 @@ export default function DatasetManager() {
     setLoading(true);
     try {
       // send Scope to Backend manage file follow Metadata
-      const res = await fetch(
-        `http://localhost:8000/api/datasets/process_selection`, //`http://localhost:8000/api/datasets/${activeSlot}/process_selection`
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slot_id: activeSlot,
-            dataset_name: datasetName,
-            scope: scope,
-          }),
-        }
-      );
+      // const res = await fetch(
+      //   `http://localhost:8000/api/datasets/process_selection`, 
+      //   {
+      //     method: "POST",
+      //     headers: { "Content-Type": "application/json" },
+      //     body: JSON.stringify({
+      //       slot_id: activeSlot,
+      //       dataset_name: datasetName,
+      //       scope: scope,
+      //     }),
+      //   }
+      // );
+      const res = await datasetAPI.processSelection({
+        slot_id: activeSlot,
+        dataset_name: datasetName,
+        scope: scope,
+      });
       if (res.ok) {
         // const result = await res.json();
         // alert(result.message || "Data processed successfully!");

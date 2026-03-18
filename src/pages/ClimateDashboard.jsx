@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import IndicesViewer from "../components/IndicesViewer";
 import GridMapViewer from "../components/GridMapViewer";
+import { datasetAPI } from '../services/api';
 
 export default function ClimateDashboard() {
 
@@ -327,7 +328,8 @@ export default function ClimateDashboard() {
 
   const fetchDatasetList = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/datasets");
+      // const res = await fetch("http://localhost:8000/api/datasets");
+      const res = await datasetAPI.getDatasets();
       if (!res.ok) return;
 
       const data = await res.json();

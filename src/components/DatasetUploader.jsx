@@ -1,5 +1,6 @@
 // src/components/DatasetUploader.jsx
 import { useState } from "react";
+import { datasetAPI } from '../services/api';
 
 export default function DatasetUploader({ slotId, onUploadSuccess }) {
   const [files, setFiles] = useState([]);
@@ -10,15 +11,16 @@ export default function DatasetUploader({ slotId, onUploadSuccess }) {
     setUploading(true);
 
     const formData = new FormData();
-    // เพิ่ม slot_id ลงไปใน formData หรือใช้เป็น path parameter ก็ได้
+    // add slot_id into formData or use for path parameter 
     Array.from(files).forEach((f) => formData.append("files", f));
 
     try {
-      // ส่งไป Route ใหม่
-      const res = await fetch(`http://localhost:8000/api/datasets/${slotId}/upload`, {
-        method: "POST",
-        body: formData,
-      });
+      // const res = await fetch(`http://localhost:8000/api/datasets/${slotId}/upload`, {
+      //   method: "POST",
+      //   body: formData,
+      // });
+      // It handles the formData automatically behind the scenes
+      const res = await datasetAPI.uploadFiles(slotId, formData);
       if (res.ok) {
         setFiles([]); // Clear selection
         if (onUploadSuccess) onUploadSuccess();

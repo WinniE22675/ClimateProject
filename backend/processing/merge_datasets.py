@@ -17,19 +17,19 @@ Each function returns:
   - diagnostics/errors list
 """
 
-PREVIEW_MERGED_DIR = "uploads/merged"  # or configurable
-os.makedirs(PREVIEW_MERGED_DIR, exist_ok=True)
+# PREVIEW_MERGED_DIR = "uploads/merged"  # or configurable
+# os.makedirs(PREVIEW_MERGED_DIR, exist_ok=True)
 
-def save_dataset_to_netcdf(ds: xr.Dataset, prefix: str = "merged") -> str:
+def save_dataset_to_netcdf(ds: xr.Dataset, merged_dir: str, prefix: str = "merged") -> str:
     """
     Save dataset to temporary netCDF (or in PREVIEW_MERGED_DIR) and return path.
     """
-    out_path = os.path.join(PREVIEW_MERGED_DIR, f"{prefix}_{next(tempfile._get_candidate_names())}.nc")
+    out_path = os.path.join(merged_dir, f"{prefix}_{next(tempfile._get_candidate_names())}.nc")
     # choose NETCDF4 format
     ds.to_netcdf(out_path, format="NETCDF4")
     return out_path
 
-def merge_attribute_mode(paths: List[str]) -> Tuple[bool, Any, List[str]]:
+def merge_attribute_mode(paths: List[str], merged_dir: str) -> Tuple[bool, Any, List[str]]:
     errors = []
     datasets = [] 
     merged = None 
@@ -83,7 +83,7 @@ def merge_attribute_mode(paths: List[str]) -> Tuple[bool, Any, List[str]]:
                 print(f"Gap filling completely failed: {e}")
                 pass
 
-        out_path = save_dataset_to_netcdf(merged, prefix="attribute")
+        out_path = save_dataset_to_netcdf(merged, merged_dir, prefix="attribute")
         
         # Cleanup
         for ds in datasets:
@@ -105,7 +105,7 @@ def merge_attribute_mode(paths: List[str]) -> Tuple[bool, Any, List[str]]:
         errors.append(f"Attribute Merge Error: {str(e)}")
         return False, None, errors
 
-def merge_time_mode(paths: List[str]) -> Tuple[bool, Any, List[str]]:
+def merge_time_mode(paths: List[str], merged_dir: str) -> Tuple[bool, Any, List[str]]:
     errors = []
     ds = None 
     
@@ -143,7 +143,7 @@ def merge_time_mode(paths: List[str]) -> Tuple[bool, Any, List[str]]:
                 pass
             
         ds_to_save = ds.to_dataset() if isinstance(ds, xr.DataArray) else ds
-        out_path = save_dataset_to_netcdf(ds_to_save, prefix="time")
+        out_path = save_dataset_to_netcdf(ds_to_save, merged_dir, prefix="time")
         
         return True, {"dataset": ds, "path": out_path}, []
 
@@ -155,7 +155,7 @@ def merge_time_mode(paths: List[str]) -> Tuple[bool, Any, List[str]]:
         errors.append(f"Time Merge Error: {str(e)}")
         return False, None, errors
 
-def merge_mixed_mode(paths: List[str], groups: Dict[str, List[int]], metas: List[Dict[str, Any]], temp_paths: List[str]) -> Tuple[bool, Any, List[str]]:
+def merge_mixed_mode(paths: List[str], groups: Dict[str, List[int]], metas: List[Dict[str, Any]], temp_paths: List[str], merged_dir: str) -> Tuple[bool, Any, List[str]]:
     errors = []
     per_var_ds = {} 
     merged = None  
@@ -168,7 +168,7 @@ def merge_mixed_mode(paths: List[str], groups: Dict[str, List[int]], metas: List
             var_paths = [temp_paths[i] for i in idxs]
             
             # call merge_time_mode
-            ok, res, errs = merge_time_mode(var_paths)
+            ok, res, errs = merge_time_mode(var_paths, merged_dir)
             
             if not ok:
                 errors.append(f"Failed to merge variable '{var}': {errs}")
@@ -218,7 +218,7 @@ def merge_mixed_mode(paths: List[str], groups: Dict[str, List[int]], metas: List
                  print(f"Global gap filling completely failed: {e}")
                  pass
              
-        out_path = save_dataset_to_netcdf(merged, prefix="mixed")
+        out_path = save_dataset_to_netcdf(merged, merged_dir, prefix="mixed")
 
         print("closing resources...")
         

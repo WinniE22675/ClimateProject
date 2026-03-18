@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import FileResponse
 from typing import List, Optional
 from pydantic import BaseModel
@@ -16,6 +16,8 @@ from services.dataset_service import (
 
 from services.dataset_metadata import get_dataset_metadata_merged
 
+from dependencies import get_current_user
+
 router = APIRouter()
 
 class SelectionScope(BaseModel):
@@ -28,19 +30,23 @@ class SelectionScope(BaseModel):
 
 # Upload Route: get raw file into Folder follow Slot
 @router.post("/datasets/{slot_id}/upload")
-async def upload_dataset_files(slot_id: int, files: List[UploadFile] = File(...)):
+async def upload_dataset_files(
+    slot_id: int, 
+    files: List[UploadFile] = File(...), 
+    current_user: dict = Depends(get_current_user)
+):
     # Validate slot_id 1-4
     if slot_id not in [1, 2, 3, 4]:
         raise HTTPException(status_code=400, detail="Invalid slot ID")
     
-    saved_files = await save_raw_files(slot_id, files)
+    saved_files = await save_raw_files(current_user["id"], slot_id, files)
     return {"message": f"Saved {len(saved_files)} files", "files": saved_files}
 
 # List Files Route: send list file to Frontend
 @router.get("/datasets/{slot_id}/files")
-def list_dataset_files(slot_id: int):
+def list_dataset_files(slot_id: int, current_user: dict = Depends(get_current_user)):
     # Return List of file name 
-    return get_file_list(slot_id)
+    return get_file_list(current_user["id"], slot_id)
 
 class ProcessSelectionRequest(BaseModel):
     slot_id: int
@@ -50,11 +56,13 @@ class ProcessSelectionRequest(BaseModel):
 @router.post("/datasets/process_selection")
 def process_selection(
     req: ProcessSelectionRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user)    
 ):
     try:
         background_tasks.add_task(
             run_async_processing,
+            current_user["id"],
             req.slot_id,
             req.dataset_name,
             req.scope,
@@ -69,8 +77,8 @@ def process_selection(
 
     
 @router.delete("/datasets/{slot_id}/files/{filename}")
-def delete_file(slot_id: int, filename: str):
-    success = delete_raw_file(slot_id, filename)
+def delete_file(slot_id: int, filename: str, current_user: dict = Depends(get_current_user)):
+    success = delete_raw_file(current_user["id"], slot_id, filename)
     if not success:
         raise HTTPException(status_code=404, detail="File not found")
     return {"message": f"Deleted {filename}"}
@@ -154,11 +162,11 @@ def list_available_datasets():
     return {"datasets": datasets}
 
 @router.delete("/datasets/{dataset_name}")
-def delete_dataset(dataset_name: str):
+def delete_dataset(dataset_name: str, current_user: dict = Depends(get_current_user)):
 
     DATASET_ROOTS = {
         "output": os.path.join("output", dataset_name),
-        "processed": os.path.join("uploads","processed", dataset_name),
+        # "processed": os.path.join("uploads","processed", dataset_name),
         # optional future
         # "uploads": os.path.join("uploads", dataset_name),
     }
@@ -187,6 +195,7 @@ def delete_dataset(dataset_name: str):
         "dataset": dataset_name,
         "deleted": deleted,
         "missing": missing,
+        "deleted_by": current_user["email"]
     }
 
 class MapGenerateRequest(BaseModel):

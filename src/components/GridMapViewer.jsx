@@ -5,6 +5,8 @@ import * as d3 from "d3";
 import * as turf from "@turf/turf"; // help compute centroid
 import Legend from "./Legend";
 
+import { apiFetch } from '../services/api';
+
 function MapBoundsController({ province, allProvincesData, fallbackView }) { // geojsonData
   const map = useMap();
 
@@ -370,14 +372,26 @@ export default function GridMapViewer({
           setIsGenerating(true);
 
           // Trigger generation API
-          const generateRes = await fetch(`${apiBase}/api/maps/generate`, {
+          // const generateRes = await fetch(`${apiBase}/api/maps/generate`, {
+          //   method: "POST",
+          //   headers: { "Content-Type": "application/json" },
+          //   body: JSON.stringify({
+          //     indexName,
+          //     datasetName,
+          //     country,
+          //     province: province || null, // Send null if empty string
+          //     startYear: parseInt(startYear, 10),
+          //     endYear: parseInt(endYear, 10),
+          //     supportsTrend
+          //   }),
+          // });
+          const generateRes = await apiFetch(`/maps/generate`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               indexName,
               datasetName,
               country,
-              province: province || null, // Send null if empty string
+              province: province || null,
               startYear: parseInt(startYear, 10),
               endYear: parseInt(endYear, 10),
               supportsTrend
