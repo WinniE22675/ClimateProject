@@ -41,7 +41,7 @@ def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_b
         "type": "TimeSeries",
         "metadata": {
             "index": index_name,
-            "unit": getattr(index_data, "units", ""),
+            "unit": index_data.attrs.get("units", ""), # getattr(index_data, "units", ""),
             "method": "annual mean",
             "start_date": str(index_data.time.min().values)[:10],
             "end_date": str(index_data.time.max().values)[:10],
@@ -104,8 +104,8 @@ def export_seasonal_cycle(index_data: xr.DataArray, index_name: str, output_base
         "type": "Climatology",
         "metadata": {
             "index": index_name,
-            "unit": getattr(index_data, "units", ""),
-            "method": "monthly climatology",
+            "unit": index_data.attrs.get("units", ""), # getattr(index_data, "units", ""),
+            "method": "seasonal cycle",
             "start_date": str(index_data.time.min().values)[:10],
             "end_date": str(index_data.time.max().values)[:10],
             "period": [int(years.min()), int(years.max())],

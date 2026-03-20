@@ -153,7 +153,14 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
 
         setAllData(annual.data);
         setFilteredData(annual.data);
-        setUnit(annual.metadata.unit || "");
+        // setUnit(annual.metadata.unit || "");
+        let apiUnit = annual.metadata.unit || "";
+        if (baseIndexName.startsWith("SPI")) {
+          // Force unit to be the base SPI name (e.g., "SPI6")
+          apiUnit = baseIndexName;
+        }
+        setUnit(apiUnit);
+
         setAllMonthlyData(monthly?.data || []);
 
         if (baseIndexName.startsWith("SPI") && monthly?.data?.length) {
@@ -257,38 +264,6 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
   //items-center >> align vertical center
 
   //strokeDasharray="3 3" >> 3px line 3px space
-const getPerfectTicks = (data) => {
-    if (!data || data.length === 0) return [];
-
-    const minYear = Math.min(...data.map(d => Number(d.year)));
-    const maxYear = Math.max(...data.map(d => Number(d.year)));
-    const range = maxYear - minYear;
-
-    // 1. ถ้าระยะเวลาสั้นกว่า 10 ปี โชว์แกนทุกๆ 1 ปีไปเลย
-    if (range <= 10) {
-      const ticks = [];
-      for (let i = minYear; i <= maxYear; i++) ticks.push(i);
-      return ticks;
-    }
-
-    // 2. กำหนดจำนวนป้าย (Ticks) ที่ต้องการแสดง 
-    // ยิ่งช่วงปีเยอะ ยิ่งเพิ่มป้าย (เลข 9 เหมาะกับช่วง 64 ปี เพราะ 64/(9-1) = 8 พอดี)
-    let numTicks = 9; 
-    if (range <= 20) numTicks = 5;
-    else if (range <= 40) numTicks = 7;
-
-    // 3. คำนวณระยะห่างเป๊ะๆ (อาจเป็นจุดทศนิยม เช่น ห่างกัน 8.2 ปี)
-    const ticks = [];
-    const step = range / (numTicks - 1); 
-
-    for (let i = 0; i < numTicks; i++) {
-      ticks.push(minYear + (step * i));
-    }
-
-    return ticks; // จะได้ Array เช่น [1960, 1968, 1976, 1984, 1992, 2000, 2008, 2016, 2024]
-  };
-
-  const perfectTicks = getPerfectTicks(mergedData);
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div style={{ color: "red" }}>Error: {error}</div>;
@@ -299,7 +274,7 @@ const getPerfectTicks = (data) => {
       
       {/* Select average window size */}
       {!isSPI && (
-      <div className="flex gap-2 items-center p-2">
+      <div className="flex gap-2 items-center mb-2">
         <label>Year Average Window:</label>
         <input
           type="number"
@@ -311,7 +286,7 @@ const getPerfectTicks = (data) => {
       )}
 
       {isSPI && (
-        <div className="flex gap-2 items-center p-2">
+        <div className="flex gap-2 items-center mb-2">
           <label>SPI Threshold:</label>
           <input
             type="number"
@@ -325,48 +300,57 @@ const getPerfectTicks = (data) => {
 
       {isSPI ? (
         // <SPIBarChart data={spiMonthlyData} />
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={spiSeries}>
-            {/* <CartesianGrid strokeDasharray="3 3" /> */}
+        <>
+          <ResponsiveContainer width="100%" height={250}>
+            {/* Added margin left to align nicely */}
+            <BarChart data={spiSeries}>
+              <XAxis dataKey="date" interval="preserveStartEnd" minTickGap={0} tick={{ fontSize: 11 }} />
+              <YAxis
+                width={70}
+                domain={[-3, 3]}
+                label={{
+                  value: unit,
+                  angle: -90,
+                  position: "insideLeft",
+                }}
+              />
+              <Tooltip formatter={safeFormat} />
+              <ReferenceLine y={0} stroke="#000" />
+              <ReferenceLine y={spiThreshold} stroke="#1f77b4" strokeDasharray="4 4" />
+              <ReferenceLine y={-spiThreshold} stroke="#d62728" strokeDasharray="4 4" />
+              <Bar dataKey="spi">
+                {spiSeries.map((d, i) => (
+                  <Cell key={i} fill={resolveSPIColor(d, indexName)} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
 
-            <XAxis dataKey="date" interval="preserveStartEnd" minTickGap={0} tick={{ fontSize: 11 }} />
-
-            <YAxis
-              width={70}
-              domain={[-3, 3]}
-              label={{
-                value: "SPI",
-                angle: -90,
-                position: "insideLeft",
-              }}
-            />
-
-            {/* <Tooltip formatter={(v) => v.toFixed(2)} /> */}
-            <Tooltip formatter={safeFormat} />
-
-            {/* Reference lines */}
-            <ReferenceLine y={0} stroke="#000" />
-            <ReferenceLine
-              y={spiThreshold}
-              stroke="#1f77b4"
-              strokeDasharray="4 4"
-            />
-            <ReferenceLine
-              y={-spiThreshold}
-              stroke="#d62728"
-              strokeDasharray="4 4"
-            />
-
-            <Bar dataKey="spi">
-              {spiSeries.map((d, i) => (
-                <Cell key={i} fill={resolveSPIColor(d, indexName)} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+          <div className="d-flex justify-content-center align-items-center gap-3 mb-3 small text-muted w-100">
+            <span className="d-flex align-items-center gap-2">
+              <span style={{ width: 12, height: 12, backgroundColor: "#bdbdbd", display: "inline-block", borderRadius: "2px" }}></span>
+              Normal
+            </span>
+            
+            {!indexName.includes("Flood") && (
+              <span className="d-flex align-items-center gap-2">
+                <span style={{ width: 12, height: 12, backgroundColor: "#d62728", display: "inline-block", borderRadius: "2px" }}></span>
+                Drought (≤ -{spiThreshold})
+              </span>
+            )}
+            
+            {!indexName.includes("Drought") && (
+              <span className="d-flex align-items-center gap-2">
+                <span style={{ width: 12, height: 12, backgroundColor: "#1f77b4", display: "inline-block", borderRadius: "2px" }}></span>
+                Wet / Flood (≥ {spiThreshold})
+              </span>
+            )}
+          </div>
+        </>
       ) : (
+        <div className="mb-3">
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={mergedData} margin={{ right: 20 }}>
+          <LineChart data={mergedData} margin={{ left: 5, right: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="year" interval="preserveStartEnd" minTickGap={0} allowDecimals={false} />
             <YAxis
@@ -390,11 +374,12 @@ const getPerfectTicks = (data) => {
             />
           </LineChart>
         </ResponsiveContainer>
+        </div>
       )}
 
       {/* Monthly Graph 100%*/}
       <ResponsiveContainer width="100%" height={240}>
-        <LineChart data={monthlyData} margin={{ right: 20 }}>
+        <LineChart data={monthlyData} margin={{ left: 5, right: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="month"

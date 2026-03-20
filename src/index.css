@@ -66,3 +66,92 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 } */
+
+/* Custom Material-style Outlined Input */
+.custom-outlined-input {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+/* Input field styling */
+.custom-outlined-input input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  background-color: transparent;
+  outline: none;
+  transition: border-color 0.2s ease-in-out;
+}
+
+/* Label styling (Default state inside the box) */
+.custom-outlined-input label {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  padding: 0 0.2rem;
+  color: #6c757d;
+  background-color: #ffffff; /* Must match the card's background color to cut the border */
+  transition: all 0.2s ease-in-out;
+  pointer-events: none; /* Allows clicking through the label to focus the input */
+}
+
+/* Float the label UP when input is focused OR has text */
+/* Note: The input MUST have a placeholder=" " (a space) for this to work */
+.custom-outlined-input input:focus,
+.custom-outlined-input input:not(:placeholder-shown) {
+  border-color: #0d6efd; /* Highlight border color */
+}
+
+/* Move label to the border */
+.custom-outlined-input input:focus + label,
+.custom-outlined-input input:not(:placeholder-shown) + label {
+  top: -0.6rem;
+  left: 0.8rem;
+  font-size: 0.85rem;
+  color: #0d6efd; /* Highlight label color */
+}
+
+/*
+   Climate Navbar Custom Styles
+*/
+
+/* The main deep blue background */
+.bg-climate-primary {
+  background-color: #0462b4; /* Classic deep ocean/atmosphere blue */
+}
+
+/* Base style for nav links */
+.nav-link-custom {
+  position: relative;
+  color: rgba(255, 255, 255, 0.7); /* Slightly dimmed white for inactive */
+  text-decoration: none;
+  padding: 0.5rem 0.2rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+/* Hover and Active text color */
+.nav-link-custom:hover,
+.nav-link-custom.active {
+  color: #ffffff; /* Bright white */
+}
+
+/* The Underline Line (Hidden by default using width: 0) */
+.nav-link-custom::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 50%; /* Start growing from the center */
+  transform: translateX(-50%);
+  background-color: #ffffff; /* Bright cyan/blue underline #38bdf8*/
+  transition: width 0.3s ease-in-out;
+}
+
+/* Expand the line on hover and when active */
+.nav-link-custom:hover::after,
+.nav-link-custom.active::after {
+  width: 100%;
+}

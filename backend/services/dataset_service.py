@@ -54,6 +54,48 @@ def save_metadata_json(dataset_name, metadata):
     with open(os.path.join(out_dir, "metadata.json"), "w") as f:
         json.dump(metadata, f)
 
+# Define the Master Order to enforce beautiful sorting
+MASTER_ORDER = [
+    "SPI3", "SPI9", "SPI6", "SPI12", "PRCPTOT", "Rx1day", "Rx5day", "SDII", "R10mm", "R20mm", 
+    "CDD", "CWD", "R95p", "R99p", "R95pTOT", "R99pTOT", "FD", "SU", 
+    "ID", "TR", "TXx", "TNx", "TXn", "TNn", "TN10p", "TX10p", "TN90p", 
+    "TX90p", "WSDI", "CSDI","SPI3_Drought_Frequency",
+    "SPI3_Drought_Duration",
+    "SPI3_Drought_Peak",
+    "SPI3_Drought_Severity",
+    "SPI3_Flood_Frequency",
+    "SPI3_Flood_Duration",
+    "SPI3_Flood_Peak",
+    "SPI3_Flood_Severity",
+
+    "SPI6_Drought_Frequency",
+    "SPI6_Drought_Duration",
+    "SPI6_Drought_Peak",
+    "SPI6_Drought_Severity",
+    "SPI6_Flood_Frequency",
+    "SPI6_Flood_Duration",
+    "SPI6_Flood_Peak",
+    "SPI6_Flood_Severity",
+
+    "SPI9_Drought_Frequency",
+    "SPI9_Drought_Duration",
+    "SPI9_Drought_Peak",
+    "SPI9_Drought_Severity",
+    "SPI9_Flood_Frequency",
+    "SPI9_Flood_Duration",
+    "SPI9_Flood_Peak",
+    "SPI9_Flood_Severity",
+
+    "SPI12_Drought_Frequency",
+    "SPI12_Drought_Duration",
+    "SPI12_Drought_Peak",
+    "SPI12_Drought_Severity",
+    "SPI12_Flood_Frequency",
+    "SPI12_Flood_Duration",
+    "SPI12_Flood_Peak",
+    "SPI12_Flood_Severity"
+]
+
 def update_metadata_json(dataset_name: str, new_data: dict):
     """
     Read existing metadata.json, update with new_data, and save back.
@@ -72,7 +114,37 @@ def update_metadata_json(dataset_name: str, new_data: dict):
                 pass # Proceed with empty dict if file is corrupt
                 
     # Update the dictionary with new values
-    existing_data.update(new_data)
+    # existing_data.update(new_data)
+    # for key, value in new_data.items():
+    #     # Check if the key already exists and BOTH values are lists
+    #     if key in existing_data and isinstance(existing_data[key], list) and isinstance(value, list):
+    #         # Combine the old list and the new list
+    #         combined_list = existing_data[key] + value
+    #         # Use set() to remove duplicates, then convert back to list
+    #         # Note: set() might lose order. If order matters, use a different deduplication method.
+    #         existing_data[key] = list(set(combined_list))
+    #     else:
+    #         # If it's not a list (e.g., string, dict, or new key), overwrite normally
+    #         existing_data[key] = value
+    for key, value in new_data.items():
+        if key in existing_data and isinstance(existing_data[key], list) and isinstance(value, list):
+            
+            # 1. Combine lists without destroying the initial order
+            # Using dict.fromkeys() is a Python trick to remove duplicates while preserving order
+            combined_list = existing_data[key] + value
+            unique_list = list(dict.fromkeys(combined_list))
+            
+            # 2. Sort the list if the key is 'available_indices' (or any other key you want to sort)
+            if key == "available_indices":
+                unique_list.sort(
+                    key=lambda x: MASTER_ORDER.index(x) if x in MASTER_ORDER else 999
+                )
+                
+            existing_data[key] = unique_list
+            
+        else:
+            # Overwrite normally for non-list items
+            existing_data[key] = value
     
     with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(existing_data, f, indent=2)

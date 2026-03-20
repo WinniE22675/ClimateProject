@@ -143,7 +143,7 @@ def wsdi(ds: xr.Dataset, freq="YS", baseline=None):
 
 def csdi(ds: xr.Dataset, freq="YS", baseline=None):
     tmin_10 = compute_temp_percentiles(ds, var_name="tmin", percentile=10, baseline=baseline)
-    return xc.indicators.icclim.CSDI(tasmin=ds["tmin"], tasmax_per=tmin_10, freq=freq)
+    return xc.indicators.icclim.CSDI(tasmin=ds["tmin"], tasmin_per=tmin_10, freq=freq)
 
 def tn10p(ds: xr.Dataset, freq="YS", baseline=None):
     tmin_10 = compute_temp_percentiles(ds, var_name="tmin", percentile=10, baseline=baseline)
@@ -267,6 +267,7 @@ TMAX_INDICES = {
     "TR": tr,
     "TX10p": tx10p,
     "TX90p": tx90p,
+    "WSDI": wsdi,
 }
 
 TMIN_INDICES = {
@@ -276,6 +277,7 @@ TMIN_INDICES = {
     "ID": id,
     "TN10p": tn10p,
     "TN90p": tn90p,
+    "CSDI": csdi,
 }
 
 SPI_INDICES = {

@@ -56,56 +56,99 @@ const RegisterPage = () => {
 
     // 4. UI Rendering
     return (
-        <div className="container mt-5" style={{ maxWidth: '400px' }}>
-            <h2 className="mb-4 text-center">Create an Account</h2>
-            
-            {errorMsg && <div className="alert alert-danger mb-3">{errorMsg}</div>}
+        <div className="d-flex justify-content-center align-items-center mt-5">
+            {/* Card UI */}
+            <div className="card shadow-lg border-0 rounded-4" style={{ width: '100%', maxWidth: '450px' }}>
+                <div className="card-body p-5">
+                    {/* <h2 className="mb-4 text-center fw-bold">Create an Account</h2> */}
+                    <div className="text-center mb-4">
+                        <h2 className="fw-bold">Create an Account</h2>
+                        <p className="text-muted">Join the climate data services platform</p>
+                    </div>
+                    {errorMsg && <div className="alert alert-danger mb-3">{errorMsg}</div>}
 
-            <form onSubmit={handleRegister}>
-                <div className="mb-3">
-                    <label className="form-label">Email:</label>
-                    <input 
-                        type="email" 
-                        className="form-control"
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)} 
-                        required 
-                    />
+                    <form onSubmit={handleRegister}>
+                        {/* <div className="mb-3">
+                            <label className="form-label">Email</label>
+                            <input 
+                                type="email" 
+                                className="form-control"
+                                value={email} 
+                                onChange={(e) => setEmail(e.target.value)} 
+                                required 
+                            />
+                        </div>
+
+                        <div className="mb-3">
+                            <label className="form-label">Password</label>
+                            <input 
+                                type="password" 
+                                className="form-control"
+                                value={password} 
+                                onChange={(e) => setPassword(e.target.value)} 
+                                required 
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="form-label">Confirm Password</label>
+                            <input 
+                                type="password" 
+                                className="form-control"
+                                value={confirmPassword} 
+                                onChange={(e) => setConfirmPassword(e.target.value)} 
+                                required 
+                            />
+                        </div> */}
+                        <div className="custom-outlined-input">
+                            <input 
+                                type="email" 
+                                id="regEmailInput" 
+                                placeholder=" " /* MUST BE A SPACE */
+                                value={email} 
+                                onChange={(e) => setEmail(e.target.value)} 
+                                required 
+                            />
+                            <label htmlFor="regEmailInput">Email address</label>
+                        </div>
+
+                        <div className="custom-outlined-input">
+                            <input 
+                                type="password" 
+                                id="regPasswordInput" 
+                                placeholder=" " 
+                                value={password} 
+                                onChange={(e) => setPassword(e.target.value)} 
+                                required 
+                            />
+                            <label htmlFor="regPasswordInput">Password</label>
+                        </div>
+
+                        <div className="custom-outlined-input">
+                            <input 
+                                type="password" 
+                                id="regConfirmInput" 
+                                placeholder=" " 
+                                value={confirmPassword} 
+                                onChange={(e) => setConfirmPassword(e.target.value)} 
+                                required 
+                            />
+                            <label htmlFor="regConfirmInput">Confirm Password</label>
+                        </div>
+
+                        <button type="submit" className="btn btn-primary w-100" disabled={isLoading}>
+                            {isLoading ? 'Creating Account...' : 'Sign up'}
+                        </button>
+                    </form>
+
+                    {/* Link back to Login Page */}
+                    <div className="mt-4 text-center">
+                        <span className="text-muted">Already have an account? </span>
+                        <Link to="/login" className="text-decoration-none fw-bold text-primary" >
+                            Sign in here
+                        </Link>
+                    </div>
                 </div>
-
-                <div className="mb-3">
-                    <label className="form-label">Password:</label>
-                    <input 
-                        type="password" 
-                        className="form-control"
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        required 
-                    />
-                </div>
-
-                <div className="mb-4">
-                    <label className="form-label">Confirm Password:</label>
-                    <input 
-                        type="password" 
-                        className="form-control"
-                        value={confirmPassword} 
-                        onChange={(e) => setConfirmPassword(e.target.value)} 
-                        required 
-                    />
-                </div>
-
-                <button type="submit" className="btn btn-success w-100" disabled={isLoading}>
-                    {isLoading ? 'Creating Account...' : 'Register'}
-                </button>
-            </form>
-
-            {/* Link back to Login Page */}
-            <div className="mt-4 text-center">
-                <span className="text-muted">Already have an account? </span>
-                <Link to="/login" className="text-decoration-none fw-bold text-primary">
-                    Login here
-                </Link>
             </div>
         </div>
     );

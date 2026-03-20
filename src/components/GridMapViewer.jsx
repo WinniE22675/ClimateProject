@@ -82,7 +82,7 @@ function BoundaryLayer({ data , weight = 0.5 }) {
     }
     const layer = L.geoJSON(data, {
       pane: "boundary",
-      smoothFactor: 0.99,
+      smoothFactor: 0.8,
       style: {
         interactive: false,
         weight: weight,
@@ -137,6 +137,14 @@ function CountryContextLayer({ data, selectedProvince }) {
   }, [map, data, selectedProvince]);
 
   return null;
+}
+
+function getBaseIndexName(name) {
+  const match = name.match(/(SPI\d+)/);
+  if (match) {
+    return match[1]; // Extracts SPI3, SPI6, etc.
+  }
+  return name;
 }
 
 export default function GridMapViewer({
@@ -432,7 +440,13 @@ export default function GridMapViewer({
           } else {
             setGridData({ actual: actualData, trend: trendData });
             // Extract unit from metadata
-            const u = actualData?.metadata?.unit || trendData?.metadata?.unit || "";
+            // const u = actualData?.metadata?.unit || trendData?.metadata?.unit || "";
+            let u = actualData?.metadata?.unit || trendData?.metadata?.unit || "";
+            // Check if the current index is an SPI event
+            if (indexName.startsWith("SPI")) {
+              // Override the unit with the base SPI name (e.g., "SPI6")
+              u = getBaseIndexName(indexName);
+            }
             setUnit(u);
           }
         }
@@ -715,7 +729,7 @@ useEffect(() => {
   if (noData) return <div className="p-3 text-warning border rounded">No map data available for the selected parameters.</div>;
 
   return (
-    <div className="card  border-0">
+    <div className="card border-0">
       
       {/* 1. Header Section: Mode Buttons & Map Title */}
       <div className="card-header bg-white d-flex justify-content-between align-items-center p-3 border-bottom">
@@ -786,6 +800,7 @@ useEffect(() => {
       {/* 3. Map Container */}
       <div className="card-body p-0 position-relative">
         <MapContainer
+          key={`map-container-${country}`} // Force re-mount of map ONLY when country changes
           center={mapView.center}
           zoom={mapView.zoom}
           zoomSnap={0.25}  // Enable fractional zoom snapping to 0.25 increments
@@ -825,7 +840,8 @@ useEffect(() => {
           {/* Map Data Layers */}
           {mode === "trend" && gridData.trend && (
             <GeoJSON
-              key={`trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
+              // key={`trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
+              key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
               data={gridData.trend}
               style={style("trend")}
               onEachFeature={onEachFeature("trend")}
@@ -834,7 +850,8 @@ useEffect(() => {
           )}
           {mode === "actual" && gridData.actual && (
             <GeoJSON
-              key={`actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
+              // key={`actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
+              key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
               data={gridData.actual}
               style={style("actual")}
               onEachFeature={onEachFeature("actual")}

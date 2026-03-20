@@ -29,8 +29,8 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
         "SPI9",
         "SPI12",
       ],
-      tmax: ["TXx", "TXn", "SU", "TR", "TX10p", "TX90p"],
-      tmin: ["TNx", "TNn", "FD", "ID", "TN10p", "TN90p"],
+      tmax: ["TXx", "TXn", "SU", "TR", "TX10p", "TX90p", "WSDI"],
+      tmin: ["TNx", "TNn", "FD", "ID", "TN10p", "TN90p", "CSDI"],
     };
 
     let result = {};

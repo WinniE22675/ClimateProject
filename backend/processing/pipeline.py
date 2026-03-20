@@ -185,6 +185,9 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     )
 
                     if weighted_da_overview is not None and not weighted_da_overview.isnull().all():
+
+                        weighted_da_overview.attrs = current_da.attrs.copy()
+
                         export_yearly_timeseries(
                             index_data=weighted_da_overview, 
                             index_name=var, 
@@ -251,6 +254,8 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
 
                 # print(f"Export Timeseries: {var}")
                 if weighted_da is not None and not weighted_da.isnull().all():
+
+                    weighted_da.attrs = current_da.attrs.copy()
 
                     provincial_ts_dict[province] = weighted_da
                     # """
@@ -328,6 +333,9 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 )
 
                 if weighted_da_overview is not None and not weighted_da_overview.isnull().all():
+                    
+                    weighted_da_overview.attrs = current_da.attrs.copy()
+
                     export_seasonal_cycle(
                         index_data=weighted_da_overview, 
                         index_name=var, 
@@ -370,6 +378,9 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
 
                 if weighted_da is not None and not weighted_da.isnull().all():
                     # Export using the province flag to route to the correct folder
+
+                    weighted_da.attrs = current_da.attrs.copy()
+                    
                     export_seasonal_cycle(
                         index_data=weighted_da, 
                         index_name=var, 

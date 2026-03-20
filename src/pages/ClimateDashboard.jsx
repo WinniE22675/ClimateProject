@@ -343,7 +343,7 @@ export default function ClimateDashboard() {
   };
 
   return (
-    <div className="container-fluid">
+    <div className="container-fluid mt-4">
       {/* Controls Container */}
       <div className="d-flex align-items-end gap-3 flex-wrap mb-3">
 
