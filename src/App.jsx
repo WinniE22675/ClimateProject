@@ -17,21 +17,41 @@ function App() {
         <Navbar />
         <div className="content-container">
           <Routes>
-            <Route path="/" element={<ClimateDashboard />} />
+            {/* MODIFIED: Dashboard is now a protected route. 
+              Both 'viewer' and 'analyst' can access this page. 
+            */}
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute allowedRoles={["viewer", "analyst"]}>
+                  <ClimateDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Public Routes: Anyone can access these to authenticate */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            
+            {/* MODIFIED: Manipulate page is restricted. 
+              ONLY users with the 'analyst' role can access this page. 
+            */}
             <Route
               path="/manipulate"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={["analyst"]}>
                   <UploadDatasetPage />
                 </ProtectedRoute>
               }
             />
+            
+            {/* MODIFIED: Process page is restricted. 
+              ONLY users with the 'analyst' role can access this page. 
+            */}
             <Route
               path="/process"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={["analyst"]}>
                   <DatasetProcessPage />
                 </ProtectedRoute>
               }

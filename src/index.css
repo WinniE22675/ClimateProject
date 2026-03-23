@@ -155,3 +155,35 @@ button:focus-visible {
 .nav-link-custom.active::after {
   width: 100%;
 }
+
+/* ==========================================
+   ADDED: Support for <select> in Custom Outlined Input
+   ========================================== */
+.custom-outlined-input select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  background-color: transparent;
+  outline: none;
+  transition: border-color 0.2s ease-in-out;
+  /* Add padding to the right to prevent text from hiding under the dropdown arrow */
+  padding-right: 2.5rem; 
+}
+
+.custom-outlined-input select:focus {
+  border-color: #0d6efd;
+}
+
+/* For <select>, the label should ALWAYS be floating at the top because a value is always selected */
+.custom-outlined-input select + label {
+  top: -0.6rem;
+  left: 0.8rem;
+  font-size: 0.85rem;
+  color: #6c757d; /* Default gray color */
+}
+
+/* Change label color to blue when the select box is clicked/focused */
+.custom-outlined-input select:focus + label {
+  color: #0d6efd;
+}

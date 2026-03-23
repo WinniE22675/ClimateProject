@@ -37,7 +37,7 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Generate a JWT token containing user data (e.g., user_id)."""
+    """Generate a JWT token containing user data (e.g., user_id and role)."""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -54,6 +54,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    role: Optional[str] = "viewer"
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -71,7 +72,7 @@ router = APIRouter()
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
     """
-    Register a new user and return an access token so they are logged in immediately.
+    Register a new user, save their role, and return an access token.
     """
     # Check if user already exists
     existing_user = db.query(User).filter(User.email == user_data.email).first()
@@ -81,19 +82,23 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Email is already registered"
         )
     
+    # Validate and assign role securely (prevent users from sending fake roles like 'admin_super')
+    valid_roles = ["viewer", "analyst"]
+    assigned_role = user_data.role if user_data.role in valid_roles else "viewer"
+    
     # Create new user with hashed password
     hashed_pw = get_password_hash(user_data.password)
-    new_user = User(email=user_data.email, hashed_password=hashed_pw)
+    new_user = User(email=user_data.email, hashed_password=hashed_pw, role=assigned_role)
     
     # Save to database
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     
-    # Generate token for immediate login
+    # Generate token WITH role included in the payload
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": str(new_user.id)}, 
+        data={"sub": str(new_user.id), "role": new_user.role}, 
         expires_delta=access_token_expires
     )
     
@@ -103,7 +108,7 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse)
 def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
     """
-    Authenticate a user and return a JWT access token.
+    Authenticate a user and return a JWT access token containing their role.
     """
     # Find user by email
     user = db.query(User).filter(User.email == user_data.email).first()
@@ -116,10 +121,10 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Generate token
+    # Generate token WITH role included in the payload
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": str(user.id)}, 
+        data={"sub": str(user.id), "role": user.role}, 
         expires_delta=access_token_expires
     )
     

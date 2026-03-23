@@ -63,5 +63,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     # This matches the format expected by 'dataset_routes.py' (current_user["id"])
     return {
         "id": str(user.id),
-        "email": str(user.email)
+        "email": str(user.email),
+        "role": str(user.role)
     }
+# ==========================================
+# 4. Role-Based Access Control (RBAC) Guards
+# ==========================================
+def require_analyst_role(current_user: dict = Depends(get_current_user)):
+    """
+    Dependency that checks if the authenticated user has the 'analyst' role.
+    If not, it blocks access and returns a 403 Forbidden error.
+    """
+    # Check if the role is 'analyst'
+    if current_user.get("role") != "analyst":
+        # 403 Forbidden means "I know who you are (logged in), but you don't have permission."
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Operation not permitted. Analyst role required."
+        )
+        
+    # If passed, return the user so the route can use their info if needed
+    return current_user

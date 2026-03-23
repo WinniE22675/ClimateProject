@@ -16,7 +16,7 @@ from services.dataset_service import (
 
 from services.dataset_metadata import get_dataset_metadata_merged
 
-from dependencies import get_current_user
+from dependencies import get_current_user, require_analyst_role
 
 router = APIRouter()
 
@@ -33,7 +33,7 @@ class SelectionScope(BaseModel):
 async def upload_dataset_files(
     slot_id: int, 
     files: List[UploadFile] = File(...), 
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_analyst_role)
 ):
     # Validate slot_id 1-4
     if slot_id not in [1, 2, 3, 4]:
@@ -57,7 +57,7 @@ class ProcessSelectionRequest(BaseModel):
 def process_selection(
     req: ProcessSelectionRequest,
     background_tasks: BackgroundTasks,
-    current_user: dict = Depends(get_current_user)    
+    current_user: dict = Depends(require_analyst_role)   
 ):
     try:
         background_tasks.add_task(
@@ -77,7 +77,7 @@ def process_selection(
 
     
 @router.delete("/datasets/{slot_id}/files/{filename}")
-def delete_file(slot_id: int, filename: str, current_user: dict = Depends(get_current_user)):
+def delete_file(slot_id: int, filename: str, current_user: dict = Depends(require_analyst_role)):
     success = delete_raw_file(current_user["id"], slot_id, filename)
     if not success:
         raise HTTPException(status_code=404, detail="File not found")
@@ -105,7 +105,8 @@ class CalculateRequest(BaseModel):
 async def calculate_indices_from_slot(
     dataset_name: str,
     req: CalculateRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_analyst_role)
 ):
     try:
         # Schedule heavy calculation as background task (Level 2)
@@ -164,7 +165,7 @@ def list_available_datasets():
     return {"datasets": datasets}
 
 @router.delete("/datasets/{dataset_name}")
-def delete_dataset(dataset_name: str, current_user: dict = Depends(get_current_user)):
+def delete_dataset(dataset_name: str, current_user: dict = Depends(require_analyst_role)):
 
     DATASET_ROOTS = {
         "output": os.path.join("output", dataset_name),

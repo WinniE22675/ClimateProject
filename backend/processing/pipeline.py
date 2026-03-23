@@ -558,8 +558,6 @@ def generate_custom_map_pipeline(
                         gdf_provinces=shp_thai_provinces,
                         target_col="ADM1_EN",
                         region_name=country,
-                        start_year=start_year, # Requires function modification (see note below)
-                        end_year=end_year,      # Requires function modification (see note below)
                         spi_threshold=spi_threshold if is_spi_event else None
                     )
                     
@@ -572,8 +570,6 @@ def generate_custom_map_pipeline(
                             gdf_provinces=shp_thai_provinces,
                             target_col="ADM1_EN",
                             region_name=country,
-                            start_year=start_year, 
-                            end_year=end_year,
                             spi_threshold=spi_threshold if is_spi_event else None
                         )
 
