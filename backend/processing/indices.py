@@ -327,7 +327,7 @@ def convert_temperature_unit(da: xr.DataArray) -> xr.DataArray:
     # For all other units ('c', 'days', '%', 'mm'), return as-is safely
     return da
 
-def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, baseline=None) -> xr.Dataset:
+def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, baseline=None, spi_threshold: float = 1) -> xr.Dataset:
     print(f"Calculating Indices")
 
     results = {}
@@ -397,7 +397,9 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
             # Step 4.2: Calculate Event Maps using the SAME spi_data
             # Define event configurations
             if freq == "YS":
-                event_configs = [("Drought", -1.0), ("Flood", 1.0)]
+                safe_threshold = abs(spi_threshold)
+                # event_configs = [("Drought", -1.0), ("Flood", 1.0)]
+                event_configs = [("Drought", -safe_threshold), ("Flood", safe_threshold)]
                 metrics = ["Frequency", "Duration", "Peak", "Severity"]
 
                 for event_type, threshold in event_configs:

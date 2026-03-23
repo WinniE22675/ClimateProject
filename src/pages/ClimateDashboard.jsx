@@ -182,7 +182,7 @@ export default function ClimateDashboard() {
   const [country, setCountry] = useState("Thailand"); //"SEA"
   // const [datasetId, setDatasetId] = useState("default"); // default, 1, 2, 3, 4
   const [datasetList, setDatasetList] = useState([]);
-  const [activeDataset, setActiveDataset] = useState("ERA5_1960_2024"); //default
+  const [activeDataset, setActiveDataset] = useState("ERA5"); //default
   const [province, setProvince] = useState("");
 
   const [inputStartYear, setInputStartYear] = useState("1960");
@@ -195,6 +195,9 @@ export default function ClimateDashboard() {
   const [datasetBounds, setDatasetBounds] = useState({ min: null, max: null });
 
   const [availableIndices, setAvailableIndices] = useState(ALL_INDICES);
+
+  const [spiThreshold, setSpiThreshold] = useState(1);
+  const [appliedSpiThreshold, setAppliedSpiThreshold] = useState(1);
 
   useEffect(() => {
     const fetchMetadata = async () => {
@@ -320,6 +323,7 @@ export default function ClimateDashboard() {
     // Update Active for send to sub Component (GridMapViewer, IndicesViewer)
     setStartYear(start.toString());
     setEndYear(end.toString());
+    setAppliedSpiThreshold(spiThreshold);
   };
 
   useEffect(() => {
@@ -460,7 +464,7 @@ export default function ClimateDashboard() {
             className="btn btn-sm btn-primary" 
             onClick={handleApplyYearRange}
           >
-            Apply Years for Maps
+            {indexName.startsWith("SPI") ? "Apply Years & Threshold for Maps" : "Apply Years for Maps"}
           </button>
         </div>
 
@@ -483,7 +487,9 @@ export default function ClimateDashboard() {
             province={province}   
             startYear={inputStartYear}
             endYear={inputEndYear}
-            availableIndices={availableIndices}     
+            availableIndices={availableIndices}
+            spiThreshold={spiThreshold} //
+            setSpiThreshold={setSpiThreshold} //
           />
         </div>
         <div className="col-12 col-lg-6">
@@ -496,7 +502,8 @@ export default function ClimateDashboard() {
             province={province}   
             startYear={startYear}
             endYear={endYear}
-            availableIndices={availableIndices}    
+            availableIndices={availableIndices}
+            spiThreshold={appliedSpiThreshold} //
           />
         </div>
       </div>

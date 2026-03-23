@@ -7,6 +7,8 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
   const [baselineStart, setBaselineStart] = useState("");
   const [baselineEnd, setBaselineEnd] = useState("");
 
+  const [spiThreshold, setSpiThreshold] = useState(1);
+
   useEffect(() => {
     if (!availableVars || availableVars.length === 0) return;
 
@@ -80,6 +82,9 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
       setSelected((prev) => [...new Set([...prev, ...indicesInCat])]);
     }
   };
+
+  const hasSPISelected = selected.some((idx) => idx.startsWith("SPI"));
+
   return (
     <div className="card shadow-sm border-0 h-100">
       <div className="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center" style={{ minHeight: "60px" }}>
@@ -91,34 +96,60 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
         </button>
       </div>
 
-      <div className="card-body p-3 d-flex flex-column">
-        
-        {/* Baseline Input */}
-        <div className="bg-light border rounded p-3 mb-3 shadow-sm">
-          <label className="form-label fw-bold small text-muted mb-2">Baseline Period (for percentile-based indices)</label>
-          <div className="input-group input-group-sm">
-            <span className="input-group-text bg-white">Start Year</span>
-            <input
-              type="number"
-              className="form-control text-center"
-              placeholder="e.g. 1981"
-              value={baselineStart}
-              onChange={(e) => setBaselineStart(e.target.value)}
-            />
-            <span className="input-group-text bg-white border-start-0 border-end-0">-</span>
-            <span className="input-group-text bg-white">End Year</span>
-            <input
-              type="number"
-              className="form-control text-center"
-              placeholder="e.g. 2010"
-              value={baselineEnd}
-              onChange={(e) => setBaselineEnd(e.target.value)}
-            />
+      {/* Baseline & SPI Threshold Input (Side-by-Side) */}
+        <div className="row g-0 mb-3">
+          
+          {/* Baseline Column (Takes 12 cols if no SPI, 7 cols if SPI is selected) */}
+          <div className={hasSPISelected ? "col-12 col-lg-7" : "col-12"}>
+            <div className="bg-light border rounded p-3 h-100 shadow-sm">
+              <label className="form-label fw-bold small text-muted mb-2">
+                Baseline Period (for percentile-based)
+              </label>
+              <div className="input-group input-group-sm">
+                <span className="input-group-text bg-white">Start Year</span>
+                <input
+                  type="number"
+                  className="form-control text-center"
+                  placeholder="e.g. 1981"
+                  value={baselineStart}
+                  onChange={(e) => setBaselineStart(e.target.value)}
+                />
+                <span className="input-group-text bg-white border-start-0 border-end-0">-</span>
+                <span className="input-group-text bg-white">End Year</span>
+                <input
+                  type="number"
+                  className="form-control text-center"
+                  placeholder="e.g. 2010"
+                  value={baselineEnd}
+                  onChange={(e) => setBaselineEnd(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+
+          {/* SPI Threshold Column (Shows only if SPI is selected, takes 5 cols) */}
+          {hasSPISelected && (
+            <div className="col-12 col-lg-5">
+              <div className="bg-light border rounded p-3 h-100 shadow-sm">
+                <label className="form-label fw-bold small text-muted mb-2">
+                  SPI Threshold (for SPI Event)
+                </label>
+                <div className="input-group input-group-sm">
+                  <span className="input-group-text bg-white">Threshold</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    className="form-control text-center"
+                    value={spiThreshold}
+                    onChange={(e) => setSpiThreshold(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
         {/* Indices Checkboxes (Scrollable) */}
-        <div className="overflow-auto pe-2 flex-grow-1" style={{ maxHeight: "280px" }}>
+        <div className="overflow-auto mt-2 pe-2 flex-grow-1" style={{ maxHeight: "280px" }}>
           {Object.keys(availableIndices).map((variable) => (
             <div key={variable} className="mb-4">
               
@@ -161,7 +192,7 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
             onCalculate(selected, {
               start_year: baselineStart ? parseInt(baselineStart) : null,
               end_year: baselineEnd ? parseInt(baselineEnd) : null,
-            })
+            }, parseFloat(spiThreshold))
           }
           disabled={selected.length === 0}
         >

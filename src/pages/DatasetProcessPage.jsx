@@ -81,7 +81,7 @@ export default function DatasetProcessPage() {
     }
   };
 
-  const handleCalculateIndices = async (selectedIndices, baseline) => {
+  const handleCalculateIndices = async (selectedIndices, baseline, spiThreshold) => {
     console.log("Calculate:", selectedIndices);
 
     // tell user will start
@@ -108,6 +108,7 @@ export default function DatasetProcessPage() {
         body: JSON.stringify({ 
           selected_indices: selectedIndices,
           baseline: baseline,
+          spi_threshold: spiThreshold,
         }),
       });
 

@@ -99,6 +99,7 @@ class BaselinePeriod(BaseModel):
 class CalculateRequest(BaseModel):
     selected_indices: List[str]
     baseline: Optional[BaselinePeriod] = None
+    spi_threshold: Optional[float] = 1 # Add SPI threshold with a default value
 
 @router.post("/datasets/{dataset_name}/calculate_indices")
 async def calculate_indices_from_slot(
@@ -112,7 +113,8 @@ async def calculate_indices_from_slot(
             run_async_calculation,
             dataset_name,
             req.selected_indices,
-            req.baseline
+            req.baseline,
+            req.spi_threshold
         )
 
         # Return immediately (do NOT wait for calculation)
@@ -206,6 +208,7 @@ class MapGenerateRequest(BaseModel):
     startYear: int
     endYear: int
     supportsTrend: bool
+    spi_threshold: Optional[float] = 1
 
 @router.post("/maps/generate")
 async def generate_map_endpoint(req: MapGenerateRequest):
@@ -222,7 +225,8 @@ async def generate_map_endpoint(req: MapGenerateRequest):
             end_year=req.endYear,
             country=req.country,
             province=req.province,
-            supports_trend=req.supportsTrend
+            supports_trend=req.supportsTrend,
+            spi_threshold=req.spi_threshold
         )
         
         return {

@@ -83,9 +83,8 @@ function resolveSPIColor(d, indexName) {
   return d.color; // SPI ปกติ
 }
 
-
 // , datamode setIndexName,
-export default function IndicesViewer({ indexName, datasetName, country, province, startYear, endYear, availableIndices }) {
+export default function IndicesViewer({ indexName, datasetName, country, province, startYear, endYear, availableIndices, spiThreshold, setSpiThreshold }) {
   const [allData, setAllData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [allMonthlyData, setAllMonthlyData] = useState([]);
@@ -107,7 +106,7 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
 
   const isSPI = baseIndexName.startsWith("SPI");
 
-  const [spiThreshold, setSpiThreshold] = useState(1);
+  // const [spiThreshold, setSpiThreshold] = useState(1);
   const [spiPrepared, setSpiPrepared] = useState([]);
 
   const safeFormat = (v) => (Number.isFinite(v) ? v.toFixed(2) : "–");
@@ -287,7 +286,7 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
 
       {isSPI && (
         <div className="flex gap-2 items-center mb-2">
-          <label>SPI Threshold:</label>
+          <label>SPI Threshold (for event):</label>
           <input
             type="number"
             step="0.1"

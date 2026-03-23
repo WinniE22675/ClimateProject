@@ -156,7 +156,8 @@ export default function GridMapViewer({
   province,
   startYear,
   endYear, 
-  availableIndices
+  availableIndices,
+  spiThreshold
 }) {
   const [gridData, setGridData] = useState({ actual: null, trend: null });
   const [scales, setScales] = useState({ actual: null, trend: null });
@@ -291,6 +292,8 @@ export default function GridMapViewer({
 
   const supportsTrend = !NO_TREND_INDICES.includes(indexName);
 
+  const isSPIEvent = indexName.startsWith("SPI") && (indexName.includes("_Drought_") || indexName.includes("_Flood_"));
+
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -331,6 +334,9 @@ export default function GridMapViewer({
       setNoData(false);
       setIsGenerating(false);
 
+      // Check SPI event and add thresholdPart for fetch
+      const thresholdPart = isSPIEvent ? `_${spiThreshold}` : "";
+
       const apiBase = "http://localhost:8000";
       // Determine base path based on dataset type
       const datasetPath = datasetName === "default" ? "/data" : `${apiBase}/output/${datasetName}`;
@@ -346,10 +352,10 @@ export default function GridMapViewer({
       // const fileSuffix = mapStyle === "shapefile" ? "grid" : "grid";
 
       // Construct file paths based on the domain-centric structure
-      // const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${cacheKey}`;
-      // const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${cacheKey}`;
-      const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}_actual_${fileSuffix}.geojson?v=${cacheKey}`;
-      const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}_trend_${fileSuffix}.geojson?v=${cacheKey}`;
+      // const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}_actual_${fileSuffix}.geojson?v=${cacheKey}`;
+      const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}${thresholdPart}_actual_${fileSuffix}.geojson?v=${cacheKey}`;
+      // const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}_trend_${fileSuffix}.geojson?v=${cacheKey}`;
+      const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}${thresholdPart}_trend_${fileSuffix}.geojson?v=${cacheKey}`;
 
       // Helper function to handle fetch and return 404 gracefully instead of breaking
       const fetchGracefully = async (url) => {
@@ -402,7 +408,8 @@ export default function GridMapViewer({
               province: province || null,
               startYear: parseInt(startYear, 10),
               endYear: parseInt(endYear, 10),
-              supportsTrend
+              supportsTrend,
+              spi_threshold: parseFloat(spiThreshold)
             }),
           });
 
@@ -412,10 +419,10 @@ export default function GridMapViewer({
 
           // Re-fetch after generation ---
           const newCacheKey = Date.now(); 
-          // const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/actual/${startYear}_${endYear}_actual_grid.geojson?v=${newCacheKey}`;
-          // const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/maps_grid/trend/${startYear}_${endYear}_trend_grid.geojson?v=${newCacheKey}`;
-          const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}_actual_${fileSuffix}.geojson?v=${newCacheKey}`;
-          const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}_trend_${fileSuffix}.geojson?v=${newCacheKey}`;
+          // const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}_actual_${fileSuffix}.geojson?v=${newCacheKey}`;
+          // const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}_trend_${fileSuffix}.geojson?v=${newCacheKey}`;
+          const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}${thresholdPart}_actual_${fileSuffix}.geojson?v=${newCacheKey}`;
+          const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}${thresholdPart}_trend_${fileSuffix}.geojson?v=${newCacheKey}`;
 
           const retryRequests = [fetchGracefully(retryActualPath)];
           if (supportsTrend) retryRequests.push(fetchGracefully(retryTrendPath));
@@ -469,7 +476,7 @@ export default function GridMapViewer({
     }
 
     return () => { isMounted = false; };
-  }, [indexName, datasetName, country, province, startYear, endYear , mapStyle, availableIndices, supportsTrend]);
+  }, [indexName, datasetName, country, province, startYear, endYear , mapStyle, availableIndices, supportsTrend, spiThreshold]);
 
   // useEffect(() => {
   //   fetch("/data/southeast-asia-boundary.geojson")
@@ -763,7 +770,7 @@ useEffect(() => {
               onChange={() => setShowSig((s) => !s)}
             />
             <label className="form-check-label small text-muted fw-bold" htmlFor="sigPointsToggle">
-              Show Significant Points (p &lt; 0.05)
+              Significant Points (p &lt; 0.05)
             </label>
           </div>
         )}
@@ -774,7 +781,7 @@ useEffect(() => {
             {indexName} {mode === "actual" ? "Average" : "Trend"} Map
           </h6>
           <small className="text-muted">
-            {startYear} - {endYear} {province ? `| ${province}` : "| Whole Country"}
+            {startYear} - {endYear} {isSPIEvent && `| Threshold ${spiThreshold}`} {province ? `| ${province}` : "| Whole Country"}
           </small>
         </div>
       </div>
@@ -806,7 +813,7 @@ useEffect(() => {
           zoomSnap={0.25}  // Enable fractional zoom snapping to 0.25 increments
           zoomDelta={0.25} // Set zoom step for +/- buttons to 0.25
           style={{ height: "450px", width: "100%", zIndex: 0 }} //450px
-          preferCanvas={true} //  Use Canvas instead of SVG for crisp vector edges
+          // preferCanvas={true} //  Use Canvas instead of SVG for crisp vector edges
         >
           {/* Boundary always on top */}
           {/* {allProvincesData && <BoundaryLayer data={allProvincesData} weight={1.0} />} */}
@@ -841,7 +848,8 @@ useEffect(() => {
           {mode === "trend" && gridData.trend && (
             <GeoJSON
               // key={`trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
-              key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
+              // key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
+              key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
               data={gridData.trend}
               style={style("trend")}
               onEachFeature={onEachFeature("trend")}
@@ -851,7 +859,8 @@ useEffect(() => {
           {mode === "actual" && gridData.actual && (
             <GeoJSON
               // key={`actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
-              key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
+              // key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
+              key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
               data={gridData.actual}
               style={style("actual")}
               onEachFeature={onEachFeature("actual")}

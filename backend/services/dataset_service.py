@@ -160,11 +160,25 @@ def read_metadata_json(dataset_name: str) -> dict:
                 return {}
     return {}
 
-def run_async_calculation(dataset_name: str, selected_indices: list, baseline=None): # slot_id: int
+def run_async_calculation(dataset_name: str, selected_indices: list, baseline=None, spi_threshold: float = 1): # slot_id: int
     """
     Run indices calculation using already-merged dataset.
     No merge or clip is performed here.
     """
+
+    # Expand selected_indices to automatically include all 8 SPI events if a base SPI is selected
+    extended_indices = []
+    if selected_indices:
+        for idx in selected_indices:
+            extended_indices.append(idx)
+            # Check if it is a base SPI (e.g., "SPI6" without underscores)
+            if idx.startswith("SPI") and "_" not in idx:
+                for event in ["Drought", "Flood"]:
+                    for metric in ["Frequency", "Duration", "Peak", "Severity"]:
+                        extended_indices.append(f"{idx}_{event}_{metric}")
+
+    # Remove duplicates while preserving order
+    extended_indices = list(dict.fromkeys(extended_indices))
 
     # Update baseline and basic info BEFORE generation starts
     metadata_updates = {}
@@ -191,10 +205,11 @@ def run_async_calculation(dataset_name: str, selected_indices: list, baseline=No
         file_input=merged_path,
         selected_indices=selected_indices,
         dataset_name=dataset_name,
-        baseline=baseline
+        baseline=baseline,
+        spi_threshold=spi_threshold
     )
 
-    update_metadata_json(dataset_name, {"available_indices": selected_indices})
+    update_metadata_json(dataset_name, {"available_indices": extended_indices})
 
     return {
         "status": "success",
@@ -301,7 +316,7 @@ def check_processing_status(dataset_name: str):
             return json.load(f)
     return {"status": "idle"} 
 
-def generate_on_demand_map(dataset_name: str, index_name: str, start_year: int, end_year: int, country: str, province: str, supports_trend: bool):
+def generate_on_demand_map(dataset_name: str, index_name: str, start_year: int, end_year: int, country: str, province: str, supports_trend: bool, spi_threshold: float = 1):
     """
     Service layer to handle on-demand map generation.
     """
@@ -332,7 +347,8 @@ def generate_on_demand_map(dataset_name: str, index_name: str, start_year: int, 
         country=country,
         province=province,
         supports_trend=supports_trend,
-        baseline=saved_baseline
+        baseline=saved_baseline,
+        spi_threshold=spi_threshold
     )
 
     return {"dataset": dataset_name, "index": index_name}

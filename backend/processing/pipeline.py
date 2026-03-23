@@ -54,7 +54,7 @@ SEA_COUNTRIES = [
 
 #     return ds
 
-def generate_all(file_input, selected_indices, dataset_name, baseline=None):
+def generate_all(file_input, selected_indices, dataset_name, baseline=None, spi_threshold: float = 1):
     """
     Main pipeline:
     1. Load dataset
@@ -90,7 +90,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
             # indices_monthly = calculate_all_indices(ds_clip, "MS", selected_indices, baseline)
 
             # 1. Calculate EVERYTHING in the annual pass (SPI will use 'MS' internally)
-            indices_annual = calculate_all_indices(ds_clip, "YS", selected_indices, baseline)
+            indices_annual = calculate_all_indices(ds_clip, "YS", selected_indices, baseline, spi_threshold=spi_threshold)
             
             # 2. Filter out all SPI-related variables to PREVENT duplicate calculation in the monthly pass
             if selected_indices is not None:
@@ -101,7 +101,7 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 monthly_selected = [str(var) for var in indices_annual.data_vars if not str(var).startswith("SPI")]
 
             # 3. Calculate Monthly ONLY for Non-SPI variables
-            indices_monthly = calculate_all_indices(ds_clip, "MS", monthly_selected, baseline)
+            indices_monthly = calculate_all_indices(ds_clip, "MS", monthly_selected, baseline, spi_threshold=spi_threshold)
             
             # 4. Inject the pre-calculated SPI variables from annual back into monthly
             # This ensures the "--- Monthly Export ---" loop below has the SPI data it needs
@@ -154,7 +154,8 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 index_name=var, 
                 output_base_dir=output_base_dir,
                 region_name="Thailand",
-                province_name=None 
+                province_name=None,
+                spi_threshold=spi_threshold if is_spi_event else None
             )
             
             trend_json_path_overview = export_trend_map_xesmf(
@@ -162,7 +163,8 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                 index_name=var, 
                 output_base_dir=output_base_dir,
                 region_name="Thailand",
-                province_name=None
+                province_name=None,
+                spi_threshold=spi_threshold if is_spi_event else None
             )
 
             if shp_thai_provinces is not None:
@@ -225,7 +227,8 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                         index_name=var, 
                         output_base_dir=output_base_dir,
                         region_name="Thailand",
-                        province_name=province
+                        province_name=province,
+                        spi_threshold=spi_threshold if is_spi_event else None
                     )
                     
                     # print(f"Export Trend Map : {province}")
@@ -234,7 +237,8 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                         index_name=var, 
                         output_base_dir=output_base_dir,
                         region_name="Thailand",
-                        province_name=province
+                        province_name=province,
+                        spi_threshold=spi_threshold if is_spi_event else None
                     )
                     
                     # Overlay Map 
@@ -283,7 +287,8 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     output_base_dir=output_base_dir,
                     gdf_provinces=shp_thai_provinces,
                     target_col="ADM1_EN",
-                    region_name="Thailand"
+                    region_name="Thailand",
+                    spi_threshold=spi_threshold if is_spi_event else None
                 )
                 
                 # Trend Map for Shapefile Mode
@@ -293,7 +298,8 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     output_base_dir=output_base_dir,
                     gdf_provinces=shp_thai_provinces,
                     target_col="ADM1_EN",
-                    region_name="Thailand"
+                    region_name="Thailand",
+                    spi_threshold=spi_threshold if is_spi_event else None
                 )
             # ==========================================
             # '''
@@ -345,28 +351,6 @@ def generate_all(file_input, selected_indices, dataset_name, baseline=None):
                     )
                 else:
                     print(f"Skipping Thailand Overview seasonal for {var}")
-            
-            if is_spi_event:
-                # Actual and Trend Maps Overview
-                actual_json_path_overview = export_actual_maps_xesmf(
-                    index_data=current_da, # indices_annual[var], 
-                    index_name=var, 
-                    output_base_dir=output_base_dir,
-                    region_name="Thailand",
-                    province_name=None 
-                )
-                
-                trend_json_path_overview = export_trend_map_xesmf(
-                    index_data=current_da, #indices_annual[var], 
-                    index_name=var, 
-                    output_base_dir=output_base_dir,
-                    region_name="Thailand",
-                    province_name=None
-                )
-
-                if shp_thai_provinces is not None:
-                    overlay_with_shapefile(actual_json_path_overview, shp_thai_boundary)
-                    overlay_with_shapefile(trend_json_path_overview, shp_thai_boundary)
 
             for province in THAILAND_PROVINCES_LIST:
                 weighted_da = calc_weighted_mean(
@@ -410,7 +394,9 @@ def generate_custom_map_pipeline(
     country: str, 
     province: str, 
     supports_trend: bool, 
-    baseline=None
+    baseline=None,
+    spi_threshold: float = 1
+    
 ):
     """
     Lightweight pipeline:
@@ -421,18 +407,29 @@ def generate_custom_map_pipeline(
     5. Overlay masking for the specific area
     """
     
+    is_spi_event = index_name.startswith("SPI") and any(evt in index_name for evt in ["_Drought_", "_Flood_"])
+
+    # Determine filenames dynamically based on whether it's an SPI event
+    if is_spi_event:
+        grid_filename = f"{start_year}_{end_year}_{spi_threshold}_actual_grid.geojson"
+        shp_filename = f"{start_year}_{end_year}_{spi_threshold}_actual_shp.geojson"
+    else:
+        grid_filename = f"{start_year}_{end_year}_actual_grid.geojson"
+        shp_filename = f"{start_year}_{end_year}_actual_shp.geojson"
+
     # 0. Check existing files 
     area_name = province if province and province.strip() else "overview"
 
     # Define paths to check if files already exist
-    grid_file = os.path.join(output_base_dir, country, area_name, index_name, "maps_grid", "actual", f"{start_year}_{end_year}_actual_grid.geojson")
-    # shp_file = os.path.join(output_base_dir, country, area_name, index_name, "maps_shp", "actual", f"{start_year}_{end_year}_actual_shp.geojson")
+    # grid_file = os.path.join(output_base_dir, country, area_name, index_name, "maps_grid", "actual", f"{start_year}_{end_year}_actual_grid.geojson")
+    grid_file = os.path.join(output_base_dir, country, area_name, index_name, "maps_grid", "actual", grid_filename)
 
     if not province: # <-- if it is Overview
-        shp_file = os.path.join(output_base_dir, country, "overview", index_name, "maps_shp", "actual", f"{start_year}_{end_year}_actual_shp.geojson")
+        # shp_file = os.path.join(output_base_dir, country, "overview", index_name, "maps_shp", "actual", f"{start_year}_{end_year}_actual_shp.geojson")
+        shp_file = os.path.join(output_base_dir, country, "overview", index_name, "maps_shp", "actual", shp_filename)
         need_shp = not os.path.exists(shp_file)
     else:
-        need_shp = False # <-- if select province don't do Shapefile mode map
+        need_shp = False # if select province don't do Shapefile mode map
 
     need_grid = not os.path.exists(grid_file)
     # need_shp = not os.path.exists(shp_file)
@@ -474,7 +471,7 @@ def generate_custom_map_pipeline(
         else:
             # For Climate Indices: Route through the xclim calculation function
             print(f"'{index_name}' is a climate index. Calculating via xclim...")
-            indices_annual = calculate_all_indices(ds_clip, "YS", [index_name], baseline)
+            indices_annual = calculate_all_indices(ds_clip, "YS", [index_name], baseline, spi_threshold=spi_threshold)
 
             if index_name not in indices_annual.data_vars:
                 raise ValueError(f"Failed to calculate index {index_name}")
@@ -518,7 +515,8 @@ def generate_custom_map_pipeline(
                     start_year=start_year,
                     end_year=end_year,
                     region_name=country,
-                    province_name=province
+                    province_name=province,
+                    spi_threshold=spi_threshold if is_spi_event else None
                 )
 
                 trend_json_path = None
@@ -530,7 +528,8 @@ def generate_custom_map_pipeline(
                         start_year=start_year,
                         end_year=end_year,
                         region_name=country,
-                        province_name=province
+                        province_name=province,
+                        spi_threshold=spi_threshold if is_spi_event else None
                     )
 
                 # 5. Overlay Map with Shapefile (Masking)
@@ -560,7 +559,8 @@ def generate_custom_map_pipeline(
                         target_col="ADM1_EN",
                         region_name=country,
                         start_year=start_year, # Requires function modification (see note below)
-                        end_year=end_year      # Requires function modification (see note below)
+                        end_year=end_year,      # Requires function modification (see note below)
+                        spi_threshold=spi_threshold if is_spi_event else None
                     )
                     
                     if supports_trend:
@@ -573,7 +573,8 @@ def generate_custom_map_pipeline(
                             target_col="ADM1_EN",
                             region_name=country,
                             start_year=start_year, 
-                            end_year=end_year      
+                            end_year=end_year,
+                            spi_threshold=spi_threshold if is_spi_event else None
                         )
 
             print(f"On-demand map generation completed for {index_name} in {province if province else country}")

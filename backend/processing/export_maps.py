@@ -39,7 +39,7 @@ def cf_grid_2d(lon0_b, lon1_b, d_lon, lat0_b, lat1_b, d_lat):
 
 
 # ========== 1. Export Actual Map ==========
-def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand", province_name: str = None):
+def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand", province_name: str = None, spi_threshold: float = None):
     """Export average map (GeoJSON grid) over a the dataset's time range."""
 
     if start_year is None:
@@ -123,6 +123,10 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
         "features": features,
     }
 
+    # Add threshold to metadata if it's an SPI event
+    if spi_threshold is not None:
+        out["metadata"]["spi_threshold"] = spi_threshold
+
     area_name = province_name if province_name else "overview"
     
     # structure: base_dir / country / area / index / maps_grid / actual
@@ -130,7 +134,11 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
     os.makedirs(out_dir, exist_ok=True)
     
     # filename with dynamic year range
-    filename = f"{start_year}_{end_year}_actual_grid.geojson"
+    # filename = f"{start_year}_{end_year}_actual_grid.geojson"
+    if spi_threshold is not None:
+        filename = f"{start_year}_{end_year}_{spi_threshold}_actual_grid.geojson"
+    else:
+        filename = f"{start_year}_{end_year}_actual_grid.geojson"
     out_path = os.path.join(out_dir, filename)
 
     with open(out_path, "w") as f:
@@ -140,7 +148,7 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
     return out_path
 
 # ========== 2. Export Trend Map ==========
-def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand", province_name: str = None):
+def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand", province_name: str = None, spi_threshold: float = None):
     """Export trend map using Mann-Kendall test (GeoJSON grid)."""
 
     if start_year is None:
@@ -238,6 +246,10 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
         "features": features,
     }
 
+    # Add threshold to metadata if it's an SPI event
+    if spi_threshold is not None:
+        out["metadata"]["spi_threshold"] = spi_threshold
+
     # Determine area directory
     area_name = province_name if province_name else "overview"
     
@@ -246,7 +258,11 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
     os.makedirs(out_dir, exist_ok=True)
     
     # filename with dynamic year range
-    filename = f"{start_year}_{end_year}_trend_grid.geojson"
+    # filename = f"{start_year}_{end_year}_trend_grid.geojson"
+    if spi_threshold is not None:
+        filename = f"{start_year}_{end_year}_{spi_threshold}_trend_grid.geojson"
+    else:
+        filename = f"{start_year}_{end_year}_trend_grid.geojson"
     out_path = os.path.join(out_dir, filename)
 
     with open(out_path, "w") as f:
@@ -256,7 +272,7 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
     return out_path
 
 # ========== 3. Export Actual Map (Shapefile Mode) ==========
-def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, output_base_dir: str, gdf_provinces: gpd.GeoDataFrame, target_col: str, region_name: str = "Thailand"):
+def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, output_base_dir: str, gdf_provinces: gpd.GeoDataFrame, target_col: str, region_name: str = "Thailand", spi_threshold: float = None):
     """Export average map (GeoJSON Polygon). Calculation is inside, clipping is done outside."""
 
     # Get metadata (year range and units) from the first available province data
@@ -312,10 +328,18 @@ def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, outpu
         "features": features,
     }
 
+    # Add threshold to metadata if it's an SPI event
+    if spi_threshold is not None:
+        out["metadata"]["spi_threshold"] = spi_threshold
+
     out_dir = os.path.join(output_base_dir, region_name, "overview", index_name, "maps_shp", "actual")
     os.makedirs(out_dir, exist_ok=True)
     
-    filename = f"{start_year}_{end_year}_actual_shp.geojson"
+    # filename = f"{start_year}_{end_year}_actual_shp.geojson"
+    if spi_threshold is not None:
+        filename = f"{start_year}_{end_year}_{spi_threshold}_actual_shp.geojson"
+    else:
+        filename = f"{start_year}_{end_year}_actual_shp.geojson"
     out_path = os.path.join(out_dir, filename)
 
     with open(out_path, "w") as f:
@@ -326,7 +350,7 @@ def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, outpu
 
 
 # ========== 4. Export Trend Map (Shapefile Mode) ==========
-def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output_base_dir: str, gdf_provinces: gpd.GeoDataFrame, target_col: str, region_name: str = "Thailand"):
+def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output_base_dir: str, gdf_provinces: gpd.GeoDataFrame, target_col: str, region_name: str = "Thailand", spi_threshold: float = None):
     """Export trend map using Mann-Kendall test. Calculation is inside, clipping is done outside."""
 
     # Get metadata
@@ -392,10 +416,18 @@ def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output
         "features": features,
     }
 
+    # Add threshold to metadata if it's an SPI event
+    if spi_threshold is not None:
+        out["metadata"]["spi_threshold"] = spi_threshold
+
     out_dir = os.path.join(output_base_dir, region_name, "overview", index_name, "maps_shp", "trend")
     os.makedirs(out_dir, exist_ok=True)
     
-    filename = f"{start_year}_{end_year}_trend_shp.geojson"
+    # filename = f"{start_year}_{end_year}_trend_shp.geojson"
+    if spi_threshold is not None:
+        filename = f"{start_year}_{end_year}_{spi_threshold}_trend_shp.geojson"
+    else:
+        filename = f"{start_year}_{end_year}_trend_shp.geojson"
     out_path = os.path.join(out_dir, filename)
 
     with open(out_path, "w") as f:
