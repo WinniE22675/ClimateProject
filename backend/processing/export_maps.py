@@ -1,3 +1,4 @@
+#@Export Map
 import os
 import json
 import numpy as np
@@ -7,6 +8,7 @@ from cf_xarray import vertices_to_bounds
 import pymannkendall as mk
 # import regionmask
 import geopandas as gpd
+import pandas as pd
 
 # ========== helper functions ==========
 
@@ -42,6 +44,10 @@ def cf_grid_2d(lon0_b, lon1_b, d_lon, lat0_b, lat1_b, d_lat):
 def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand", province_name: str = None, spi_threshold: float = None):
     """Export average map (GeoJSON grid) over a the dataset's time range."""
 
+    index_data = index_data.assign_coords(
+    time=pd.to_datetime(index_data["time"].values)
+)
+
     if start_year is None:
         start_year = int(index_data.time.dt.year.min())
     if end_year is None:
@@ -63,7 +69,11 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
     index_data = index_data.sel(time=slice(str(start_year), str(end_year)))
 
     actual = index_data.sortby("latitude", "longitude")
-    avg_map = actual.mean("time", skipna=True)
+
+    if "Frequency" in index_name:
+        avg_map = actual.sum("time", skipna=True)
+    else:
+        avg_map = actual.mean("time", skipna=True)
 
     # create grid from latitude/longitude of dataset
     lat = avg_map.latitude.values
@@ -107,7 +117,7 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
                     "properties": {"value": round(float(val), decimals)},
                 }
             )
-    # print("www")
+
     out = {
         "type": "FeatureCollection",
         "metadata": {
@@ -151,6 +161,10 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
 def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand", province_name: str = None, spi_threshold: float = None):
     """Export trend map using Mann-Kendall test (GeoJSON grid)."""
 
+    index_data = index_data.assign_coords(
+    time=pd.to_datetime(index_data["time"].values)
+)
+
     if start_year is None:
         start_year = int(index_data.time.dt.year.min())
     if end_year is None:
@@ -172,6 +186,8 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
     index_data = index_data.sel(time=slice(str(start_year), str(end_year)))
 
     trend = index_data.sortby("latitude", "longitude")
+    # trend = index_data.transpose("time", "latitude", "longitude").sortby("latitude", "longitude")
+
     lats = trend.latitude.values
     lons = trend.longitude.values
     d_lat = abs(lats[1] - lats[0])
@@ -197,6 +213,9 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
             
             # Fast numpy indexing to get the 1D time series for this specific pixel
             series = trend_values[:, i, j] 
+
+            if "SPI" in index_name and any(m in index_name for m in ["Duration", "Peak", "Severity"]):
+                series = np.nan_to_num(series, nan=0.0)
             
             # Check if there is enough valid data (at least 70% non-NaN)
             if np.sum(~np.isnan(series)) >= len(series) * 0.7:
@@ -205,6 +224,22 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
                     result = mk.original_test(series)
                     slope = result.slope * 10  # per decade
                     pval = result.p
+
+                    props = {
+                        "slope": round(float(slope), decimals), 
+                        "p": round(float(pval), 3)
+                    }
+                    
+                    # Trend Direction use Z-score (for SPI event)
+                    is_spi_event = "SPI" in index_name and any(evt in index_name for evt in ["_Drought_", "_Flood_"])
+                    
+                    if is_spi_event:
+                        if result.z > 0:
+                            props["trend"] = "increasing"
+                        elif result.z < 0:
+                            props["trend"] = "decreasing"
+                        else:
+                            props["trend"] = "no trend"
                     
                     # If calculation succeeds, immediately create the Polygon
                     poly = Polygon(
@@ -220,10 +255,7 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
                         {
                             "type": "Feature",
                             "geometry": poly.__geo_interface__,
-                            "properties": {
-                                "slope": round(float(slope), decimals), 
-                                "p": round(float(pval), 2)
-                            },
+                            "properties": props,
                         }
                     )
                 except Exception as e:
@@ -275,6 +307,13 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
 def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, output_base_dir: str, gdf_provinces: gpd.GeoDataFrame, target_col: str, region_name: str = "Thailand", spi_threshold: float = None):
     """Export average map (GeoJSON Polygon). Calculation is inside, clipping is done outside."""
 
+    # Ensure datetime format for the time coordinate in all provinces
+    # This prevents errors when extracting .dt.year later
+    for prov_key, ts_data in provincial_ts_dict.items():
+        provincial_ts_dict[prov_key] = ts_data.assign_coords(
+            time=pd.to_datetime(ts_data["time"].values)
+        )
+
     # Get metadata (year range and units) from the first available province data
     first_da = next(iter(provincial_ts_dict.values()))
     start_year = int(first_da.time.dt.year.min())
@@ -303,7 +342,10 @@ def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, outpu
         
         if ts_da is not None:
             # 1. Calculate Actual (Time Average) INSIDE the function
-            val = float(ts_da.mean(skipna=True).values)
+            if "Frequency" in index_name:
+                val = float(ts_da.sum(skipna=True).values)
+            else:
+                val = float(ts_da.mean(skipna=True).values)
             
             if not np.isnan(val):
                 features.append({
@@ -353,6 +395,13 @@ def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, outpu
 def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output_base_dir: str, gdf_provinces: gpd.GeoDataFrame, target_col: str, region_name: str = "Thailand", spi_threshold: float = None):
     """Export trend map using Mann-Kendall test. Calculation is inside, clipping is done outside."""
 
+    # Ensure datetime format for the time coordinate in all provinces
+    # This prevents errors when extracting .dt.year later
+    for prov_key, ts_data in provincial_ts_dict.items():
+        provincial_ts_dict[prov_key] = ts_data.assign_coords(
+            time=pd.to_datetime(ts_data["time"].values)
+        )
+
     # Get metadata
     first_da = next(iter(provincial_ts_dict.values()))
     start_year = int(first_da.time.dt.year.min())
@@ -372,6 +421,8 @@ def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output
         decimals = 2
 
     features = []
+
+    is_spi_event = "SPI" in index_name and any(evt in index_name for evt in ["_Drought_", "_Flood_"])
     
     for idx, row in gdf_provinces.iterrows():
         prov_name = row[target_col]
@@ -381,6 +432,9 @@ def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output
         
         if ts_da is not None:
             series = ts_da.values
+
+            if is_spi_event and any(m in index_name for m in ["Duration", "Peak", "Severity"]):
+                series = np.nan_to_num(series, nan=0.0)
             
             # Check for valid data threshold
             if np.sum(~np.isnan(series)) >= len(series) * 0.7:
@@ -389,15 +443,25 @@ def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output
                     result = mk.original_test(series)
                     slope = result.slope * 10  # per decade
                     pval = result.p
+
+                    props = {
+                        "name": prov_name,
+                        "slope": round(float(slope), decimals),
+                        "p": round(float(pval), 3)
+                    }
+
+                    if is_spi_event:
+                        if result.z > 0:
+                            props["trend"] = "increasing"
+                        elif result.z < 0:
+                            props["trend"] = "decreasing"
+                        else:
+                            props["trend"] = "no trend"
                     
                     features.append({
                         "type": "Feature",
                         "geometry": row.geometry.__geo_interface__,
-                        "properties": {
-                            "name": prov_name,
-                            "slope": round(float(slope), decimals),
-                            "p": round(float(pval), 2)
-                        }
+                        "properties": props
                     })
                 except Exception as e:
                     pass

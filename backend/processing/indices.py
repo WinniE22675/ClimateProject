@@ -167,22 +167,120 @@ def spi(ds: xr.Dataset, window: int, freq="MS"):
         pr=ds["pr"], freq=freq, window=window, dist="gamma", method="ML", ds=ds
     )
 
-# ========================= Event characteristic per time series =========================
-def event_characteristics(spi_ts, threshold=-1.0, event_type="drought", min_duration=2):
-    values = np.asarray(spi_ts)
-    n = len(values)
-    if np.all(np.isnan(values)):
-        return np.nan, np.nan, np.nan, np.nan
+# # ========================= Event characteristic per time series =========================
+# def event_characteristics(spi_ts, threshold=-1.0, event_type="drought", min_duration=2):
+#     values = np.asarray(spi_ts)
+#     n = len(values)
+#     if np.all(np.isnan(values)):
+#         return np.nan, np.nan, np.nan, np.nan
 
+#     events = []
+#     in_event = False
+#     start = None
+
+#     for t in range(n):
+#         if event_type == "drought":
+#             cond_start = values[t] < threshold
+#             cond_end = values[t] >= threshold
+#         else:
+#             cond_start = values[t] > abs(threshold)
+#             cond_end = values[t] <= abs(threshold)
+
+#         if cond_start and not in_event:
+#             in_event = True
+#             start = t
+#         elif cond_end and in_event:
+#             end = t - 1
+#             events.append((start, end))
+#             in_event = False
+#     if in_event:
+#         events.append((start, n - 1))
+
+#     events = [e for e in events if (e[1] - e[0] + 1) >= min_duration]
+
+#     durations, peaks, severities = [], [], []
+#     for (s, e) in events:
+#         dur = e - s + 1
+#         peak = np.min(values[s:e+1]) if event_type == "drought" else np.max(values[s:e+1])
+#         sev = np.sum(-values[s:e+1]) if event_type == "drought" else np.sum(values[s:e+1])
+#         durations.append(dur)
+#         peaks.append(peak)
+#         severities.append(sev)
+
+#     freq = len(events) if len(events) > 0 else np.nan
+#     max_duration = np.max(durations) if durations else np.nan
+#     extreme_peak = np.min(peaks) if event_type == "drought" and peaks else (np.max(peaks) if peaks else np.nan)
+#     mean_severity = np.mean(severities) if severities else np.nan
+
+#     return freq, max_duration, extreme_peak, mean_severity
+
+# def calc_event_maps(spi: xr.DataArray, threshold=-1.0, event_type="drought"):
+#     results = xr.apply_ufunc(
+#         lambda x: np.array(event_characteristics(x, threshold, event_type)),
+#         spi,
+#         input_core_dims=[["time"]],
+#         output_core_dims=[["metric"]],
+#         vectorize=True,
+#         dask="parallelized",
+#         output_dtypes=[float],
+#         dask_gufunc_kwargs={"output_sizes": {"metric": 4}}
+#     )
+
+#     results = results.assign_coords(metric=["freq", "duration", "peak", "severity"])
+
+#     freq_map = results.sel(metric="freq")
+#     dur_map = results.sel(metric="duration")
+#     peak_map = results.sel(metric="peak")
+#     sev_map = results.sel(metric="severity")
+
+#     t_start = spi.time.min().values
+#     t_end = spi.time.max().values
+
+#     out = {
+#         "Frequency": freq_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
+#         "Duration": dur_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
+#         "Peak": peak_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
+#         "Severity": sev_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
+#     }
+
+#     return out
+
+import numpy as np
+import xarray as xr
+import pandas as pd
+
+def event_characteristics_annual_continuous(spi_ts, threshold=-1.0, event_type="drought", min_duration=2):
+    """
+    Extracts continuous SPI event characteristics (Frequency, Duration, Peak, Severity) 
+    over the entire timeseries, but aggregates the results into an annual format.
+    Events that cross calendar years are preserved and assigned to the starting year.
+    """
+    values = np.asarray(spi_ts)
+    n_months = len(values)
+    n_years = n_months // 12
+
+    # 1. Initialize result arrays for the full timeframe (e.g., 65 years).
+    # - Frequency uses 0.0 (meaning no events occurred).
+    # - Duration, Peak, Severity use NaN (to avoid pulling down future averages).
+    freq_yr = np.zeros(n_years)
+    dur_yr = np.full(n_years, np.nan)
+    peak_yr = np.full(n_years, np.nan)
+    sev_yr = np.full(n_years, np.nan)
+
+    # Return immediately if the entire timeseries is missing data (e.g., ocean pixels).
+    if np.all(np.isnan(values)):
+        return np.column_stack([np.full(n_years, np.nan)] * 4)
+
+    # 2. Detect continuous events across the entire timeseries.
     events = []
     in_event = False
     start = None
 
-    for t in range(n):
+    for t in range(n_months):
         if event_type == "drought":
             cond_start = values[t] < threshold
             cond_end = values[t] >= threshold
-        else:
+        else: # Flood event
             cond_start = values[t] > abs(threshold)
             cond_end = values[t] <= abs(threshold)
 
@@ -193,57 +291,83 @@ def event_characteristics(spi_ts, threshold=-1.0, event_type="drought", min_dura
             end = t - 1
             events.append((start, end))
             in_event = False
+            
+    # Handle event that is still ongoing at the end of the timeseries
     if in_event:
-        events.append((start, n - 1))
+        events.append((start, n_months - 1))
 
+    # Filter out events shorter than the minimum duration requirement
     events = [e for e in events if (e[1] - e[0] + 1) >= min_duration]
 
-    durations, peaks, severities = [], [], []
+    # 3. Calculate metrics for each valid event and assign to the appropriate starting year.
     for (s, e) in events:
         dur = e - s + 1
         peak = np.min(values[s:e+1]) if event_type == "drought" else np.max(values[s:e+1])
-        sev = np.sum(-values[s:e+1]) if event_type == "drought" else np.sum(values[s:e+1])
-        durations.append(dur)
-        peaks.append(peak)
-        severities.append(sev)
+        
+        if event_type == "drought":
+            event_vals = values[s:e+1]
+            # Severity is the absolute sum of negative values during the event
+            sev = np.sum(np.abs(event_vals[event_vals < 0]))
+        else:
+            event_vals = values[s:e+1]
+            sev = np.sum(event_vals[event_vals > 0])
 
-    freq = len(events) if len(events) > 0 else np.nan
-    max_duration = np.max(durations) if durations else np.nan
-    extreme_peak = np.min(peaks) if event_type == "drought" and peaks else (np.max(peaks) if peaks else np.nan)
-    mean_severity = np.mean(severities) if severities else np.nan
+        # Determine the starting year index of this event (e.g., month 25 // 12 = year 2)
+        y_idx = s // 12
+        if y_idx >= n_years:
+            y_idx = n_years - 1
 
-    return freq, max_duration, extreme_peak, mean_severity
+        # Increment event frequency for the starting year
+        freq_yr[y_idx] += 1
 
-def calc_event_maps(spi: xr.DataArray, threshold=-1.0, event_type="drought"):
-    results = xr.apply_ufunc(
-        lambda x: np.array(event_characteristics(x, threshold, event_type)),
+        # Store the maximum characteristics if multiple events occur in the same year
+        if np.isnan(dur_yr[y_idx]):
+            dur_yr[y_idx] = dur
+            peak_yr[y_idx] = peak
+            sev_yr[y_idx] = sev
+        else:
+            dur_yr[y_idx] = max(dur_yr[y_idx], dur)
+            peak_yr[y_idx] = min(peak_yr[y_idx], peak) if event_type == "drought" else max(peak_yr[y_idx], peak)
+            sev_yr[y_idx] = max(sev_yr[y_idx], sev)
+
+    # Return a combined 2D array of shape (n_years, 4 metrics)
+    return np.column_stack([freq_yr, dur_yr, peak_yr, sev_yr])
+
+def calc_event_maps(spi, threshold=-1.0, event_type="drought"):
+    """
+    Applies the event extraction function across all pixels using xarray apply_ufunc,
+    and returns a dictionary of DataArrays formatted for downstream mapping.
+    """
+    n_years = len(spi.time) // 12
+
+    # Run the continuous extraction function over the entire time dimension
+    result = xr.apply_ufunc(
+        lambda x: event_characteristics_annual_continuous(x, threshold, event_type),
         spi,
         input_core_dims=[["time"]],
-        output_core_dims=[["metric"]],
+        output_core_dims=[["year", "metric"]],
         vectorize=True,
         dask="parallelized",
         output_dtypes=[float],
-        dask_gufunc_kwargs={"output_sizes": {"metric": 4}}
+        dask_gufunc_kwargs={"output_sizes": {"year": n_years, "metric": 4}},
     )
 
-    results = results.assign_coords(metric=["freq", "duration", "peak", "severity"])
+    # Reconstruct the time coordinates (using January of each year)
+    yearly_times = spi.time.values[::12]
+    result = result.rename({"year": "time"}).assign_coords(time=yearly_times)
+    
+    # Assign labels to the metric dimension
+    out = result.assign_coords(metric=["freq", "duration", "peak", "severity"])
 
-    freq_map = results.sel(metric="freq")
-    dur_map = results.sel(metric="duration")
-    peak_map = results.sel(metric="peak")
-    sev_map = results.sel(metric="severity")
+    # Ensure the dimension order is (time, lat, lon) before exporting
+    out = out.transpose("time", "latitude", "longitude", "metric")
 
-    t_start = spi.time.min().values
-    t_end = spi.time.max().values
-
-    out = {
-        "Frequency": freq_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
-        "Duration": dur_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
-        "Peak": peak_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
-        "Severity": sev_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
+    return {
+        "Frequency": out.sel(metric="freq").drop_vars("metric"),
+        "Duration": out.sel(metric="duration").drop_vars("metric"),
+        "Peak": out.sel(metric="peak").drop_vars("metric"),
+        "Severity": out.sel(metric="severity").drop_vars("metric"),
     }
-
-    return out
 
 PR_INDICES = {
     "SDII": sdii,
