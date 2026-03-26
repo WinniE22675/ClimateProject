@@ -464,7 +464,10 @@ export default function ClimateDashboard() {
             className="btn btn-sm btn-primary" 
             onClick={handleApplyYearRange}
           >
-            {indexName.startsWith("SPI") ? "Apply Years & Threshold for Maps" : "Apply Years for Maps"}
+            {/* {indexName.startsWith("SPI") ? "Apply Years & Threshold for Maps" : "Apply Years for Maps"} */}
+            {indexName.startsWith("SPI") && (indexName.includes("Drought") || indexName.includes("Flood"))
+              ? "Apply Years & Threshold for Maps" 
+              : "Apply Years for Maps"}
           </button>
         </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-export default function Legend({ bins, scale, mode, unit }) {
+export default function Legend({ bins, scale, mode, unit, indexName, isSPIEvent }) {
   const [width, setWidth] = useState(240); // default width
   const height = 20;
   const containerRef = useRef(null);
@@ -23,11 +23,76 @@ export default function Legend({ bins, scale, mode, unit }) {
     return () => resizeObserver.disconnect();
   }, []);
 
+  
+  if (mode === "trend" && isSPIEvent) {
+    return (
+      <div className="d-flex flex-column align-items-center w-100 mt-2 px-4">
+        <div className="d-flex flex-wrap justify-content-center align-items-center gap-4">
+          
+          {/* Increasing Box */}
+          <div className="d-flex align-items-center gap-2">
+            <div style={{ width: "30px", height: "16px", backgroundColor: "#d73027", borderRadius: "2px" }}></div>
+            <span className="small fw-bold text-dark">Increasing</span>
+          </div>
+          
+          {/* No Trend Box */}
+          <div className="d-flex align-items-center gap-2">
+            <div style={{ width: "30px", height: "16px", backgroundColor: "#dddddd", border: "1px solid #bbbbbb", borderRadius: "2px" }}></div>
+            <span className="small fw-bold text-dark">No Trend</span>
+          </div>
+          
+          {/* Decreasing Box */}
+          <div className="d-flex align-items-center gap-2">
+            <div style={{ width: "30px", height: "16px", backgroundColor: "#1f77b4", borderRadius: "2px" }}></div>
+            <span className="small fw-bold text-dark">Decreasing</span>
+          </div>
+
+        </div>
+        
+        {/* Legend Title */}
+        <div className="text-center mt-2">
+          <small className="text-muted fw-bold">Trend Direction</small>
+        </div>
+      </div>
+    );
+  }
+
+  if (!bins || !scale) return null;
+
   const formatLegendValue = (v) => {
+    // 1. Force 0 decimals if the unit is "days"
+    if (unit && unit.toLowerCase().includes("days")) {
+      return Math.round(v).toString();
+    }
+
+    // 2. SPI Event Specific Rules
+    if (indexName.startsWith("SPI")) {
+      if (indexName.includes("Frequency")) {
+        // Frequency: no forced decimal, but usually it's an integer
+        return Math.round(v).toString();
+      }
+      if (indexName.includes("Duration") || indexName.includes("Peak") || indexName.includes("Severity")) {
+        // Duration, Peak, Severity: 2 decimals
+        return v.toFixed(2);
+      }
+    }
+
+    // 3. Value-based Rules
+    // If absolute value is greater than or equal to 10, force 0 decimals
+    if (Math.abs(v) >= 10) {
+      return Math.round(v).toString();
+    }
+    
+    // If value is less than 0 (and not handled by above rules), use 2 decimals
+    if (v < 0) {
+      return v.toFixed(2);
+    }
+
+    // 4. Default rules based on data span (Fallback for other indices)
     const span = Math.abs(bins[bins.length - 1] - bins[0]);
     if (span < 0.05) return v.toFixed(3);
     if (span < 1) return v.toFixed(2);
-    // if (span < 10) return v.toFixed(1);
+    
     return Math.round(v).toString();
   };
 

@@ -113,7 +113,7 @@ function CountryContextLayer({ data, selectedProvince }) {
 
     const layer = L.geoJSON(data, {
       pane: "contextPane",
-      smoothFactor: 0.99,
+      smoothFactor: 0.8,
       style: (feature) => {
         // Check if the current feature matches the selected province
         const isSelected = feature.properties.ADM1_EN === selectedProvince;
@@ -291,6 +291,8 @@ export default function GridMapViewer({
   ];
 
   const supportsTrend = !NO_TREND_INDICES.includes(indexName);
+
+  const isSPI = indexName.startsWith("SPI");
 
   const isSPIEvent = indexName.startsWith("SPI") && (indexName.includes("_Drought_") || indexName.includes("_Flood_"));
 
@@ -646,18 +648,34 @@ useEffect(() => {
     const col = modeKey === "trend" ? "slope" : "value";
     const val = feature.properties[col];
     // const isActive = mode === modeKey;
+
+    // Default color calculation using D3 scales
+    let cellColor = scales[modeKey] && val != null && !isNaN(val) 
+      ? scales[modeKey](val)
+      : "#dddddd";
+    
+    let opacity = 0.8;
+
+    // --- Override color specifically for SPI Event Trends ---
+    if (modeKey === "trend" && isSPIEvent) {
+      const { trend } = feature.properties;
+      
+      // Color based ONLY on trend direction (ignore p-value)
+      if (trend === "increasing") {
+        cellColor = "#d73027"; // Red color for increasing trend
+      } else if (trend === "decreasing") {
+        cellColor = "#1f77b4"; // Green color for decreasing trend
+      } else {
+        cellColor = "#dddddd"; // Gray color for no trend (or slope = 0)
+      }
+    }
     return {
-      fillColor:
-        scales[modeKey] && val != null && !isNaN(val) // from color scale func. if have scale fill color, but if have not is gray color
-          ? scales[modeKey](val)
-          : "#dddddd",
+      fillColor: cellColor,
       stroke: false,
       weight: 0,
       color: "none",
       fillOpacity: 0.8,
       interactive: true,
-      // fillOpacity: isActive ? 0.8 : 0,
-      // interactive: isActive,
     };
   };
 
@@ -709,13 +727,31 @@ useEffect(() => {
 
     if (modeKey === "actual") {
       const val = feature.properties.value;
-      html = `${namePrefix} Value: ${val != null ? val.toFixed(2) : "N/A"} ${unit}`;
+      html = `${namePrefix} Value: ${
+        val != null 
+      ? (indexName.includes("Frequency") ? val.toFixed(0) 
+        : indexName.includes("Duration") ? val.toFixed(2)
+        : indexName.includes("Peak") ? val.toFixed(2) 
+        : isSPI ? val.toFixed(4) 
+        : val.toFixed(2))
+      : "N/A"
+      } ${unit}`;
     } else if (modeKey === "trend") {
       const slope = feature.properties.slope;
       const pval = feature.properties.p;
+      const trendDir = feature.properties.trend;
+      
       html = `${namePrefix} Slope: ${slope != null ? slope.toFixed(2) : "N/A"}<br/>p-value: ${
         pval != null ? pval.toFixed(2) : "N/A"
       }`;
+
+      if (isSPIEvent && trendDir) {
+        const trendText = trendDir.charAt(0).toUpperCase() + trendDir.slice(1);
+        
+        // Add text color based on direction
+        const color = trendDir === "increasing" ? "red" : trendDir === "decreasing" ? "blue" : "gray";
+        html += `<br/>Trend: <strong style="color: ${color}">${trendText}</strong>`;
+      }
     }
     // layer.bindTooltip(html, { sticky: true, direction: "top" });
     layer.bindPopup(html);
@@ -778,7 +814,11 @@ useEffect(() => {
         {/* Right: Dynamic Map Title */}
         <div className="text-end">
           <h6 className="mb-0 fw-bold text-secondary">
-            {indexName} {mode === "actual" ? "Average" : "Trend"} Map
+            {indexName} {
+              mode === "actual" 
+                ? (indexName.includes("Frequency") ? "Sum" : "Average") 
+                : "Trend"
+            } Map
           </h6>
           <small className="text-muted">
             {startYear} - {endYear} {isSPIEvent && `| Threshold ${spiThreshold}`} {province ? `| ${province}` : "| Whole Country"}
@@ -877,13 +917,28 @@ useEffect(() => {
       <div className="card-footer bg-white border-top pt-2 pb-3 px-0">
         
         {/* Color Bar */}
-        {scales[mode] && binsAll[mode]?.length > 0 && (
+        {/* {scales[mode] && binsAll[mode]?.length > 0 && (
           <div className="mb-2">
             <Legend
               bins={binsAll[mode]}
               scale={scales[mode]}
               mode={mode}
               unit={unit}
+              indexName={indexName}
+              isSPIEvent={isSPIEvent}
+            />
+          </div>
+        )} */}
+        {((scales[mode] && binsAll[mode]?.length > 0) || (mode === "trend" && isSPIEvent && gridData[mode])) && (
+          <div className="mb-2">
+            <Legend
+              key={`legend-${indexName}-${mode}-${isSPIEvent}`} 
+              bins={binsAll[mode]}
+              scale={scales[mode]}
+              mode={mode}
+              unit={unit}
+              indexName={indexName}
+              isSPIEvent={isSPIEvent}
             />
           </div>
         )}
@@ -893,117 +948,122 @@ useEffect(() => {
         {/* d-flex align-items-center gap-3 */}
         <div className=" d-flex flex-wrap align-items-center gap-3">
 
-            {/* 1. Color Palette Selector */}
-            <div className="d-flex align-items-center gap-2">
-              <span className="small fw-bold text-muted">Color:</span>
-              <select
-                className="form-select form-select-sm"
-                style={{ width: "140px" }}
-                value={colorSchemes[mode]}
-                onChange={(e) =>
-                  setColorSchemes((prev) => ({ ...prev, [mode]: e.target.value }))
-                }
-              >
-                {mode === "actual" ? (
-                  <>
-                    <optgroup label="Temperature">
-                      <option value="YlOrRd">Yellow-Orange-Red</option>
-                      <option value="OrRd">Orange-Red</option>
-                      <option value="Reds">Reds</option>
-                    </optgroup>
-                    <optgroup label="Precipitation">
-                      <option value="Blues">Blues</option>
-                      <option value="YlGnBu">Yellow-Green-Blue</option>
-                      <option value="GnBu">Green-Blue</option>
-                    </optgroup>
-                  </>
-                ) : (
-                  <>
-                      {/* Note: -RdBu means we will reverse it in the logic */}
-                      <option value="RdBu">Red-Blue</option>
-                      <option value="-RdBu">Blue-Red</option>
-                      <option value="BrBG">Brown-Green</option>
-                  </>
-                )}
-              </select>
-            </div>
+          {!(mode === "trend" && isSPIEvent) && (
+            <>
 
-        {/* Legend Range Controls */}
-        {/* d-flex justify-content-center align-items-center gap-1 */}
-          <div className="d-flex flex-wrap align-items-center gap-1">
-            <span className="small fw-bold text-muted me-2">Legend Range:</span>
+                {/* 1. Color Palette Selector */}
+                <div className="d-flex align-items-center gap-2">
+                  <span className="small fw-bold text-muted">Color:</span>
+                  <select
+                    className="form-select form-select-sm"
+                    style={{ width: "140px" }}
+                    value={colorSchemes[mode]}
+                    onChange={(e) =>
+                      setColorSchemes((prev) => ({ ...prev, [mode]: e.target.value }))
+                    }
+                  >
+                    {mode === "actual" ? (
+                      <>
+                        <optgroup label="Temperature">
+                          <option value="YlOrRd">Yellow-Orange-Red</option>
+                          <option value="OrRd">Orange-Red</option>
+                          <option value="Reds">Reds</option>
+                        </optgroup>
+                        <optgroup label="Precipitation">
+                          <option value="Blues">Blues</option>
+                          <option value="YlGnBu">Yellow-Green-Blue</option>
+                          <option value="GnBu">Green-Blue</option>
+                        </optgroup>
+                      </>
+                    ) : (
+                      <>
+                          {/* Note: -RdBu means we will reverse it in the logic */}
+                          <option value="RdBu">Red-Blue</option>
+                          <option value="-RdBu">Blue-Red</option>
+                          <option value="BrBG">Brown-Green</option>
+                      </>
+                    )}
+                  </select>
+                </div>
 
-            <input
-              type="number"
-              placeholder="Min"
-              value={legendRange[mode].min ?? ""}
-              onChange={(e) =>
-                setLegendRange((r) => ({
-                  ...r,
-                  [mode]: {
-                    ...r[mode],
-                    min: e.target.value === "" ? null : +e.target.value,
-                  },
-                }))
-              }
-              className="form-control form-control-sm text-center"
-              style={{ width: "65px" }}
-            />
-            
-            <span className="text-muted">-</span>
+              {/* Legend Range Controls */}
+              {/* d-flex justify-content-center align-items-center gap-1 */}
+                <div className="d-flex flex-wrap align-items-center gap-1">
+                  <span className="small fw-bold text-muted me-2">Legend Range:</span>
 
-            <input
-              type="number"
-              placeholder="Max"
-              value={legendRange[mode].max ?? ""}
-              onChange={(e) =>
-                setLegendRange((r) => ({
-                  ...r,
-                  [mode]: {
-                    ...r[mode],
-                    max: e.target.value === "" ? null : +e.target.value,
-                  },
-                }))
-              }
-              className="form-control form-control-sm text-center"
-              style={{ width: "65px" }}
-            />
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={legendRange[mode].min ?? ""}
+                    onChange={(e) =>
+                      setLegendRange((r) => ({
+                        ...r,
+                        [mode]: {
+                          ...r[mode],
+                          min: e.target.value === "" ? null : +e.target.value,
+                        },
+                      }))
+                    }
+                    className="form-control form-control-sm text-center"
+                    style={{ width: "65px" }}
+                  />
+                  
+                  <span className="text-muted">-</span>
 
-            <button
-              className="btn btn-sm btn-outline-secondary ms-2"
-              onClick={() =>
-                setLegendRange((r) => ({
-                  ...r,
-                  [mode]: { min: null, max: null },
-                }))
-              }
-            >
-              Auto Fix
-            </button>
-          </div>
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={legendRange[mode].max ?? ""}
+                    onChange={(e) =>
+                      setLegendRange((r) => ({
+                        ...r,
+                        [mode]: {
+                          ...r[mode],
+                          max: e.target.value === "" ? null : +e.target.value,
+                        },
+                      }))
+                    }
+                    className="form-control form-control-sm text-center"
+                    style={{ width: "65px" }}
+                  />
+
+                  <button
+                    className="btn btn-sm btn-outline-secondary ms-2"
+                    onClick={() =>
+                      setLegendRange((r) => ({
+                        ...r,
+                        [mode]: { min: null, max: null },
+                      }))
+                    }
+                  >
+                    Auto Fix
+                  </button>
+                </div>
+            </>
+          )}
         </div>
 
         {/* d-flex justify-content-end gap-1 */}
-        <div 
-          className="d-flex align-items-center gap-1" 
-        >
-          <button
-            className={`btn btn-sm ${mapStyle === "grid" ? "btn-secondary" : "btn-outline-secondary"}`}
-            onClick={() => setMapStyle("grid")}
-            title="Show as Grid"
-            disabled={!!province}
+          <div 
+            className="d-flex align-items-center gap-1" 
           >
-            Grid
-          </button>
-          <button
-            className={`btn btn-sm ${mapStyle === "shapefile" ? "btn-secondary" : "btn-outline-secondary"}`}
-            onClick={() => setMapStyle("shapefile")}
-            title="Show as Shapefile Area Average"
-            disabled={!!province}
-          >
-            Shapefile
-          </button>
-        </div>
+            <button
+              className={`btn btn-sm ${mapStyle === "grid" ? "btn-secondary" : "btn-outline-secondary"}`}
+              onClick={() => setMapStyle("grid")}
+              title="Show as Grid"
+              disabled={!!province}
+            >
+              Grid
+            </button>
+            <button
+              className={`btn btn-sm ${mapStyle === "shapefile" ? "btn-secondary" : "btn-outline-secondary"}`}
+              onClick={() => setMapStyle("shapefile")}
+              title="Show as Shapefile Area Average"
+              disabled={!!province}
+            >
+              Shapefile
+            </button>
+          </div>
         </div>
       </div>
     </div>

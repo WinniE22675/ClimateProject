@@ -254,15 +254,28 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
   }, [allSPIData, startYear, endYear]);
 
 
-  // const formatTooltip = (value) =>
-  //   ["SPI3", "SPI6", "SPI9", "SPI12"].includes(indexName)
-  //     ? Number(value).toFixed(4)
-  //     : Number(value).toFixed(2);
+  // Calculate dynamic symmetric domain and ticks for SPI
+let spiDomain = ['auto', 'auto'];
+let spiTicks = undefined;
 
-  //flex-wrap >> if not enought space, will new line
-  //items-center >> align vertical center
-
-  //strokeDasharray="3 3" >> 3px line 3px space
+if (isSPI && monthlyData && monthlyData.length > 0) {
+  // Find the maximum absolute value in the current data
+  const maxAbs = Math.max(...monthlyData.map(d => Math.abs(d.value || 0)));
+  
+  // Add 10% padding so the line doesn't hit the very top/bottom edge of the chart
+  const maxLimit = maxAbs === 0 ? 1 : maxAbs * 1.1; 
+  
+  spiDomain = [-maxLimit, maxLimit];
+  
+  // Dynamically generate 5 ticks ensuring 0 is exactly in the middle
+  spiTicks = [
+    -maxLimit, 
+    -maxLimit / 2, 
+    0, 
+    maxLimit / 2, 
+    maxLimit
+  ];
+}
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div style={{ color: "red" }}>Error: {error}</div>;
@@ -376,7 +389,7 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
         </div>
       )}
 
-      {/* Monthly Graph 100%*/}
+      {/* Seasonal Cycle */}
       <ResponsiveContainer width="100%" height={240}>
         <LineChart data={monthlyData} margin={{ left: 5, right: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -417,9 +430,17 @@ export default function IndicesViewer({ indexName, datasetName, country, provinc
               return window.innerWidth < 450 ? short[v - 1] : full[v - 1]; // window.innerWidth is now width if less than 450px use short | v-1 because month start 1 but index start 0
             }}
           />
-          <YAxis width={70} tickFormatter={(v) => (isSPI ? v.toFixed(3): v)} label={{ value: unit, angle: -90, position: "insideLeft" }} />
-          <Tooltip formatter={(value) => value.toFixed(2)} />
+          <YAxis 
+            width={70} 
+            domain={spiDomain}
+            ticks={spiTicks}
+            tickFormatter={(v) => (isSPI ? v.toFixed(4): v)} 
+            label={{ value: unit, angle: -90, position: "insideLeft" }} 
+          />
+          {/* <Tooltip formatter={(value) => value.toFixed(2)} /> */}
+          <Tooltip formatter={(value) => (isSPI ? value.toFixed(4) : value.toFixed(2))} />
           <ReLegend />
+          {isSPI && <ReferenceLine y={0} stroke="#000" />}
           <Line
             dataKey="value"
             stroke="#0077cc"

@@ -36,7 +36,7 @@ const LoginPage = () => {
             login(data.access_token);
 
             // Redirect user to the main manipulation page or dashboard
-            navigate('/manipulate'); 
+            navigate('/'); // /manipulate
 
         } catch (err) {
             setErrorMsg(err.message);
