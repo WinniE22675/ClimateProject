@@ -93,6 +93,9 @@ def export_seasonal_cycle(index_data: xr.DataArray, index_name: str, output_base
 
     records = []
     for t, v in zip(monthly["time"].values, monthly.values):
+        # 1. Skip NaN values (this removes the W-1 starting months of SPI)
+        if np.isnan(v):
+            continue
         ts = pd.to_datetime(str(t))
         records.append({
             "year": int(ts.year),

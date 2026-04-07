@@ -1,6 +1,6 @@
 import xarray as xr
 import geopandas as gpd
-import regionmask
+# import regionmask
 from shapely.geometry import mapping
 
 COUNTRY_ALIAS = {
@@ -26,13 +26,18 @@ def prep_for_rio(da: xr.DataArray, lon: str = "longitude", lat: str = "latitude"
     da = da.rio.write_crs("EPSG:4326")
     return da
 
-def clip_to_shape(ds: xr.Dataset | xr.DataArray, shapefile_path: str) -> xr.Dataset | xr.DataArray:
+def clip_to_shape(ds: xr.Dataset | xr.DataArray, shape_input) -> xr.Dataset | xr.DataArray: # , shapefile_path: str
     """
     Clip dataset or dataarray to polygon shapefile.
     - If input is Dataset: clip each variable
     - If input is DataArray: clip directly
     """
-    shp = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
+    # shp = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
+    if isinstance(shape_input, str):
+        shp = gpd.read_file(shape_input).to_crs("EPSG:4326")
+    else:
+        # 2. Assume it is already a GeoDataFrame (like shp_boundary)
+        shp = shape_input.to_crs("EPSG:4326")
 
     if isinstance(ds, xr.DataArray):
         da_rio = prep_for_rio(ds)
@@ -117,41 +122,41 @@ def calc_weighted_mean(da: xr.DataArray, region_name: str, gdf_region: gpd.GeoDa
         print(f"Error processing region '{region_name}': {e}")
         return None
 
-def calculate_all_provincial_means(da: xr.DataArray, shapefile_path: str, target_col: str) -> dict:
-    """
-    Calculate area-weighted means for all provinces (or regions) within a shapefile.
+# def calculate_all_provincial_means(da: xr.DataArray, shapefile_path: str, target_col: str) -> dict:
+#     """
+#     Calculate area-weighted means for all provinces (or regions) within a shapefile.
     
-    Args:
-        da (xr.DataArray): The input climate data array (e.g., precipitation, temperature).
-        shapefile_path (str): Path to the regional shapefile.
-        target_col (str): The column name in the shapefile containing the region names (e.g., 'PROV_NAMT').
+#     Args:
+#         da (xr.DataArray): The input climate data array (e.g., precipitation, temperature).
+#         shapefile_path (str): Path to the regional shapefile.
+#         target_col (str): The column name in the shapefile containing the region names (e.g., 'PROV_NAMT').
         
-    Returns:
-        dict: A dictionary mapping region names to their calculated spatial mean DataArray.
-    """
-    # 1. Load shapefile and ensure correct CRS
-    gdf = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
+#     Returns:
+#         dict: A dictionary mapping region names to their calculated spatial mean DataArray.
+#     """
+#     # 1. Load shapefile and ensure correct CRS
+#     gdf = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
     
-    # 2. Verify that the target column exists
-    if target_col not in gdf.columns:
-        raise ValueError(f"Column '{target_col}' not found in shapefile columns: {list(gdf.columns)}")
+#     # 2. Verify that the target column exists
+#     if target_col not in gdf.columns:
+#         raise ValueError(f"Column '{target_col}' not found in shapefile columns: {list(gdf.columns)}")
         
-    provincial_data = {}
+#     provincial_data = {}
     
-    # 3. Iterate over each unique region in the shapefile
-    unique_regions = gdf[target_col].unique()
+#     # 3. Iterate over each unique region in the shapefile
+#     unique_regions = gdf[target_col].unique()
     
-    for region_name in unique_regions:
-        # print(f"Calculating spatial mean for: {region_name}...") # Uncomment for debugging
+#     for region_name in unique_regions:
+#         # print(f"Calculating spatial mean for: {region_name}...") # Uncomment for debugging
         
-        # Extract the specific region as a new GeoDataFrame
-        gdf_region = gdf[gdf[target_col] == region_name]
+#         # Extract the specific region as a new GeoDataFrame
+#         gdf_region = gdf[gdf[target_col] == region_name]
         
-        # Calculate the weighted mean using the existing function
-        mean_da = calc_weighted_mean(da, region_name, gdf_region, target_col)
+#         # Calculate the weighted mean using the existing function
+#         mean_da = calc_weighted_mean(da, region_name, gdf_region, target_col)
         
-        # Store the result if successful
-        if mean_da is not None:
-            provincial_data[region_name] = mean_da
+#         # Store the result if successful
+#         if mean_da is not None:
+#             provincial_data[region_name] = mean_da
             
-    return provincial_data
+#     return provincial_data

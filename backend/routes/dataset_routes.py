@@ -1,4 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
+# routes/dataset_routes.py
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, Query, Form
 from fastapi.responses import FileResponse
 from typing import List, Optional
 from pydantic import BaseModel
@@ -17,16 +18,20 @@ from services.dataset_service import (
 from services.dataset_metadata import get_dataset_metadata_merged
 
 from dependencies import get_current_user, require_analyst_role
+from services.dataset_paths import *
+
+import json
+import geopandas as gpd
 
 router = APIRouter()
 
 class SelectionScope(BaseModel):
-    startYear: int
-    endYear: int
-    minLat: float
-    maxLat: float
-    minLon: float
-    maxLon: float
+    startYear: Optional[int] = None
+    endYear: Optional[int] = None
+    minLat: Optional[float] = None
+    maxLat: Optional[float] = None
+    minLon: Optional[float] = None
+    maxLon: Optional[float] = None
 
 # Upload Route: get raw file into Folder follow Slot
 @router.post("/datasets/{slot_id}/upload")
@@ -60,6 +65,14 @@ def process_selection(
     current_user: dict = Depends(require_analyst_role)   
 ):
     try:
+        # Check for duplicate dataset name before processing
+        output_dir = os.path.join("output", req.dataset_name)
+        if os.path.exists(output_dir):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Dataset name '{req.dataset_name}' already exists. Please use a different name."
+            )
+        
         background_tasks.add_task(
             run_async_processing,
             current_user["id"],
@@ -98,6 +111,9 @@ class BaselinePeriod(BaseModel):
 
 class CalculateRequest(BaseModel):
     selected_indices: List[str]
+    shapefile_name: str
+    target_col: str
+    country: str
     baseline: Optional[BaselinePeriod] = None
     spi_threshold: Optional[float] = 1 # Add SPI threshold with a default value
 
@@ -112,8 +128,12 @@ async def calculate_indices_from_slot(
         # Schedule heavy calculation as background task (Level 2)
         background_tasks.add_task(
             run_async_calculation,
+            current_user["id"], # Need user_id to find shapefile folder
             dataset_name,
             req.selected_indices,
+            req.shapefile_name,
+            req.target_col,
+            req.country,
             req.baseline,
             req.spi_threshold
         )
@@ -208,11 +228,13 @@ class MapGenerateRequest(BaseModel):
     province: Optional[str] = None
     startYear: int
     endYear: int
+    shapefile_name: Optional[str] = None
+    target_col: Optional[str] = None
     supportsTrend: bool
     spi_threshold: Optional[float] = 1
 
 @router.post("/maps/generate")
-async def generate_map_endpoint(req: MapGenerateRequest):
+async def generate_map_endpoint(req: MapGenerateRequest, current_user: dict = Depends(require_analyst_role)):
     """
     Synchronous endpoint to generate specific map (Actual & Trend) on demand.
     Frontend will wait for this to finish before trying to fetch the files.
@@ -220,11 +242,14 @@ async def generate_map_endpoint(req: MapGenerateRequest):
     try:
         # Call the service function directly (blocks until finished)
         result = generate_on_demand_map(
+            user_id=current_user["id"],
             dataset_name=req.datasetName,
             index_name=req.indexName,
             start_year=req.startYear,
             end_year=req.endYear,
             country=req.country,
+            shapefile_name=req.shapefile_name,
+            target_col = req.target_col,
             province=req.province,
             supports_trend=req.supportsTrend,
             spi_threshold=req.spi_threshold
@@ -240,3 +265,105 @@ async def generate_map_endpoint(req: MapGenerateRequest):
         print(f"Error generating map: {e}")
         # Return 500 Internal Server Error so Frontend knows it failed
         raise HTTPException(status_code=500, detail=str(e))
+    
+from services.dataset_service import upload_and_validate_shapefile
+
+@router.post("/shapefiles/upload")
+async def upload_shapefile(
+    file: UploadFile = File(...),
+    custom_name: str = Form(None),
+    current_user: dict = Depends(require_analyst_role)
+):
+    # Validate file extension before processing
+    if not file.filename.lower().endswith('.zip'):
+        raise HTTPException(status_code=400, detail="Only .zip files are allowed")
+    
+    try:
+        result = await upload_and_validate_shapefile(current_user["id"], file, custom_name)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+from services.dataset_service import get_shapefile_columns
+
+@router.get("/shapefiles/{shapefile_name}/columns")
+def fetch_shapefile_columns(
+    shapefile_name: str,
+    current_user: dict = Depends(require_analyst_role)
+):
+    """
+    API endpoint to get available text columns and a default suggested column 
+    from a specific shapefile.
+    """
+    try:
+        result = get_shapefile_columns(current_user["id"], shapefile_name)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.get("/shapefiles")
+def list_available_shapefiles(
+    user_only: bool = Query(False),
+    current_user: dict = Depends(require_analyst_role)
+    ):
+    user_shape_dir = get_user_shapefile_dir(current_user["id"])
+    global_shape_dir = get_global_shapefile_dir()
+    
+    shapefiles = []
+    
+    # Read user's own shapefiles
+    if os.path.exists(user_shape_dir):
+        # shapefiles.extend([d for d in os.listdir(user_shape_dir) if os.path.isdir(os.path.join(user_shape_dir, d))])
+        user_dirs = [d for d in os.listdir(user_shape_dir) if os.path.isdir(os.path.join(user_shape_dir, d))]
+        for d in user_dirs:
+            shapefiles.append({"name": d, "is_global": False})
+        
+    # Read global shapefiles ONLY if user_only is False
+    if not user_only:
+        if os.path.exists(global_shape_dir):
+            global_files = [d for d in os.listdir(global_shape_dir) if os.path.isdir(os.path.join(global_shape_dir, d))]
+            # shapefiles.extend([f for f in global_files if f not in shapefiles])
+
+            # Avoid duplicates if user uploaded a file with the same name
+            existing_names = [s["name"] for s in shapefiles]
+            for f in global_files:
+                if f not in existing_names:
+                    shapefiles.append({"name": f, "is_global": True})
+            
+    return {"shapefiles": shapefiles}
+
+@router.delete("/shapefiles/{shapefile_name}")
+def delete_shapefile(shapefile_name: str, current_user: dict = Depends(require_analyst_role)):
+    """
+    Delete a user's uploaded shapefile directory.
+    """
+    user_shape_dir = get_user_shapefile_dir(current_user["id"])
+    target_dir = os.path.join(user_shape_dir, shapefile_name)
+    
+    # Check if the directory exists
+    if os.path.exists(target_dir):
+        try:
+            # Use shutil.rmtree to delete the entire directory and its contents
+            shutil.rmtree(target_dir)
+            return {"message": f"Deleted shapefile {shapefile_name} successfully"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to delete directory: {str(e)}")
+            
+    raise HTTPException(status_code=404, detail="Shapefile not found")
+
+# # The API acts as a smart middleman
+# @router.get("/shapefiles/{shapefile_name}/geojson")
+# def get_shapefile_geojson(shapefile_name: str, current_user: dict = Depends(require_analyst_role)):
+    
+#     # 1. Secures the file (Only this user can access their directory)
+#     shapefile_path = get_shapefile_path(current_user["id"], shapefile_name)
+#     shapefile_dir = os.path.dirname(shapefile_path)
+#     cached_geojson_path = os.path.join(shapefile_dir, "boundary.geojson")
+    
+#     # 2. Checks existence and handles errors gracefully
+#     if os.path.exists(cached_geojson_path):
+#         with open(cached_geojson_path, "r", encoding="utf-8") as f:
+#             return json.load(f)
+#     else:
+#         # 3. Returns meaningful error instead of just a dead link
+#         raise HTTPException(status_code=404, detail="Cache not found. Run Calculate first.")

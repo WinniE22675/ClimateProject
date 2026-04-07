@@ -42,15 +42,23 @@ def get_smart_slice(ds, coord_name, min_val, max_val):
         return slice(None) 
 
     data = ds[coord_name]
+
+    # Extract actual dataset boundaries
+    actual_min = float(data.min())
+    actual_max = float(data.max())
+
+    # Replace None with actual boundaries
+    final_min = min_val if min_val is not None else actual_min
+    final_max = max_val if max_val is not None else actual_max
     
     # Check direction : Look at the first and last values.
     # if first < last = Ascending -> slice(min, max)
     # if first > last = Descending -> slice(max, min)
     
     if data[0] < data[-1]:
-        return slice(min_val, max_val)
+        return slice(final_min, final_max)
     else:
-        return slice(max_val, min_val)
+        return slice(final_max, final_min)
 
 def core_process_file(raw_path, save_path, scope):
     try:
@@ -69,7 +77,13 @@ def core_process_file(raw_path, save_path, scope):
             min_year = int(file_years.min())
             max_year = int(file_years.max())
 
-            if not (min_year <= scope.endYear and max_year >= scope.startYear):
+            req_start_year = scope.startYear if scope.startYear is not None else min_year
+            req_end_year = scope.endYear if scope.endYear is not None else max_year
+
+            # if not (min_year <= scope.endYear and max_year >= scope.startYear):
+            #     ds.close()
+            #     return False
+            if not (min_year <= req_end_year and max_year >= req_start_year):
                 ds.close()
                 return False
 
@@ -89,8 +103,13 @@ def core_process_file(raw_path, save_path, scope):
             lat_slice = get_smart_slice(ds, 'latitude', scope.minLat, scope.maxLat)
             lon_slice = get_smart_slice(ds, 'longitude', scope.minLon, scope.maxLon)
 
+            # ds_subset = ds.sel(
+            #     time=slice(str(scope.startYear), str(scope.endYear)),
+            #     latitude=lat_slice,
+            #     longitude=lon_slice
+            # )
             ds_subset = ds.sel(
-                time=slice(str(scope.startYear), str(scope.endYear)),
+                time=slice(str(req_start_year), str(req_end_year)),
                 latitude=lat_slice,
                 longitude=lon_slice
             )
