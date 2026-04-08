@@ -445,7 +445,18 @@ if (isSPI && monthlyData && monthlyData.length > 0) {
             label={{ value: unit, angle: -90, position: "insideLeft" }} 
           />
           {/* <Tooltip formatter={(value) => value.toFixed(2)} /> */}
-          <Tooltip formatter={(value) => (isSPI ? value.toFixed(4) : value.toFixed(2))} />
+          {/* <Tooltip formatter={(value) => (isSPI ? value.toFixed(4) : value.toFixed(2))} /> */}
+          <Tooltip 
+            labelFormatter={(label) => {
+              const fullMonths = [
+                "JAN", "FEB", "MAR", "APR", "MAY", "JUN", 
+                "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+              ];
+              // label is the month number (1-12), so we subtract 1 for the array index
+              return fullMonths[label - 1] || label;
+            }}
+            formatter={(value) => (isSPI ? value.toFixed(4) : value.toFixed(2))} 
+          />
           <ReLegend />
           {isSPI && <ReferenceLine y={0} stroke="#000" />}
           <Line

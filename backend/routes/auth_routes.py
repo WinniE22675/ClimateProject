@@ -69,40 +69,40 @@ class TokenResponse(BaseModel):
 # ==========================================
 router = APIRouter()
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
-    """
-    Register a new user, save their role, and return an access token.
-    """
-    # Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email is already registered"
-        )
+# @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+# def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
+#     """
+#     Register a new user, save their role, and return an access token.
+#     """
+#     # Check if user already exists
+#     existing_user = db.query(User).filter(User.email == user_data.email).first()
+#     if existing_user:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Email is already registered"
+#         )
     
-    # Validate and assign role securely (prevent users from sending fake roles like 'admin_super')
-    valid_roles = ["viewer", "analyst"]
-    assigned_role = user_data.role if user_data.role in valid_roles else "viewer"
+#     # Validate and assign role securely (prevent users from sending fake roles like 'admin_super')
+#     valid_roles = ["viewer", "analyst"]
+#     assigned_role = user_data.role if user_data.role in valid_roles else "viewer"
     
-    # Create new user with hashed password
-    hashed_pw = get_password_hash(user_data.password)
-    new_user = User(email=user_data.email, hashed_password=hashed_pw, role=assigned_role)
+#     # Create new user with hashed password
+#     hashed_pw = get_password_hash(user_data.password)
+#     new_user = User(email=user_data.email, hashed_password=hashed_pw, role=assigned_role)
     
-    # Save to database
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+#     # Save to database
+#     db.add(new_user)
+#     db.commit()
+#     db.refresh(new_user)
     
-    # Generate token WITH role included in the payload
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": str(new_user.id), "role": new_user.role}, 
-        expires_delta=access_token_expires
-    )
+#     # Generate token WITH role included in the payload
+#     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+#     access_token = create_access_token(
+#         data={"sub": str(new_user.id), "role": new_user.role}, 
+#         expires_delta=access_token_expires
+#     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+#     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/login", response_model=TokenResponse)

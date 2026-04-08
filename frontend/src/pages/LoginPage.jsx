@@ -92,12 +92,12 @@ const LoginPage = () => {
                     </form>
 
                     {/* Link to Register Page */}
-                    <div className="mt-4 text-center">
+                    {/* <div className="mt-4 text-center">
                         <span className="text-muted">Don't have an account? </span>
                         <Link to="/register" className="text-decoration-none fw-bold text-primary">
                             Register here
                         </Link>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>

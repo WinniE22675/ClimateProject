@@ -17,7 +17,7 @@ function App() {
         <Navbar />
         <div className="content-container">
           <Routes>
-            {/* MODIFIED: Dashboard is now a protected route. 
+            {/* Dashboard is now a protected route. 
               Both 'viewer' and 'analyst' can access this page. 
             */}
             <Route 
@@ -31,9 +31,9 @@ function App() {
             
             {/* Public Routes: Anyone can access these to authenticate */}
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            {/* <Route path="/register" element={<RegisterPage />} /> */}
             
-            {/* MODIFIED: Manipulate page is restricted. 
+            {/* Manipulate page is restricted. 
               ONLY users with the 'analyst' role can access this page. 
             */}
             <Route
@@ -45,7 +45,7 @@ function App() {
               }
             />
             
-            {/* MODIFIED: Process page is restricted. 
+            {/* Process page is restricted. 
               ONLY users with the 'analyst' role can access this page. 
             */}
             <Route
