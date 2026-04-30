@@ -54,8 +54,10 @@ def get_shapefile_path(user_id: str, shapefile_name: str) -> str:
         if not os.path.exists(target_dir):
             raise Exception(f"Shapefile '{shapefile_name}' directory not found")
             
-    shp_files = [f for f in os.listdir(target_dir) if f.lower().endswith('.shp')]
-    if not shp_files:
+    # shp_files = [f for f in os.listdir(target_dir) if f.lower().endswith('.shp')]
+    valid_files = [f for f in os.listdir(target_dir) if f.lower().endswith(('.shp', '.geojson'))]
+
+    if not valid_files:
         raise Exception("No .shp file found inside the directory")
         
-    return os.path.join(target_dir, shp_files[0])
+    return os.path.join(target_dir, valid_files[0])

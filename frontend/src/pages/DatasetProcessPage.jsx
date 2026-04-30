@@ -41,6 +41,25 @@ export default function DatasetProcessPage() {
   // const location = useLocation();
   const pendingDataset = location.state?.datasetName || null;
 
+  const [workspaceList, setWorkspaceList] = useState([]);
+  const [activeWorkspace, setActiveWorkspace] = useState("");
+
+  useEffect(() => {
+    if (metadata && metadata.workspaces) {
+      const workspaces = Object.keys(metadata.workspaces);
+      setWorkspaceList(workspaces);
+      // Auto-select first workspace if available
+      if (workspaces.length > 0 && !activeWorkspace) {
+        setActiveWorkspace(workspaces[0]);
+      } else if (workspaces.length === 0) {
+        setActiveWorkspace("");
+      }
+    } else {
+      setWorkspaceList([]);
+      setActiveWorkspace("");
+    }
+  }, [metadata]);
+
   useEffect(() => {
     if (!activeDataset) return;
     // setPreviewReady(false);
@@ -274,6 +293,34 @@ export default function DatasetProcessPage() {
     }
   };
 
+  const handleDeleteWorkspace = async () => {
+    if (!activeWorkspace) return;
+    
+    const confirm = window.confirm(`Are you sure you want to delete workspace "${activeWorkspace}"?`);
+    if (!confirm) return;
+
+    try {
+      // Set loading state if you have a global one, or just wait
+      const res = await apiFetch(`/datasets/${activeDataset}/workspaces/${activeWorkspace}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Failed to delete workspace");
+      }
+
+      alert(`Workspace "${activeWorkspace}" deleted successfully`);
+      
+      // Reset active workspace and refresh metadata to update the UI
+      setActiveWorkspace("");
+      fetchData(activeDataset); // Re-fetch metadata to update dropdown
+      
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   return (
     <div className="container-fluid position-relative mt-4">
       
@@ -281,7 +328,7 @@ export default function DatasetProcessPage() {
       <div className="d-flex justify-content-between align-items-center mb-2 pb-3 border-bottom">
         <h2 className="h3 fw-bold mb-0 text-dark"> Dataset Processor</h2>
         
-        <div className="d-flex gap-2 align-items-center">
+        {/* <div className="d-flex gap-2 align-items-center">
           <div className="input-group input-group-sm shadow-sm">
             <span className="input-group-text bg-white fw-bold text-muted">Dataset:</span>
             <select
@@ -305,6 +352,65 @@ export default function DatasetProcessPage() {
           >
             Delete
           </button>
+        </div> */}
+        {/* Wrap in a flex container to hold both Dataset and Workspace groups */}
+        <div className="d-flex flex-wrap gap-3 align-items-center">
+          
+          {/* Dataset Selector Group */}
+          <div className="d-flex gap-2 align-items-center">
+            <div className="input-group input-group-sm shadow-sm">
+              <span className="input-group-text bg-white fw-bold text-muted">Dataset:</span>
+              <select
+                value={activeDataset}
+                onChange={(e) => setActiveDataset(e.target.value)}
+                className="form-select"
+              >
+                {datasetList.length === 0 && (
+                  <option value="">No dataset available</option>
+                )}
+                {datasetList.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <button
+              className="btn btn-sm btn-outline-danger shadow-sm"
+              disabled={!activeDataset || activeDataset === "default"}
+              onClick={handleDeleteDataset}
+            >
+              Delete
+            </button>
+          </div>
+
+          {/* Workspace Selector Group */}
+          <div className="d-flex gap-2 align-items-center">
+            <div className="input-group input-group-sm shadow-sm">
+              <span className="input-group-text bg-white fw-bold text-muted">Workspace:</span>
+              <select
+                value={activeWorkspace}
+                onChange={(e) => setActiveWorkspace(e.target.value)}
+                className="form-select"
+                disabled={workspaceList.length === 0}
+              >
+                {workspaceList.length === 0 && (
+                  <option value="">No workspace</option>
+                )}
+                {workspaceList.map((ws) => (
+                  <option key={ws} value={ws}>{ws}</option>
+                ))}
+              </select>
+            </div>
+            
+            <button
+              className="btn btn-sm btn-outline-danger shadow-sm"
+              disabled={!activeWorkspace}
+              onClick={handleDeleteWorkspace}
+            >
+              Delete
+            </button>
+          </div>
+
         </div>
       </div>
 

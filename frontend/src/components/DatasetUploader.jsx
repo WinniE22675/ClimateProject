@@ -83,7 +83,7 @@ export default function DatasetUploader({ slotId, isShapefileMode, datasetName, 
         id="ncFileInput"
         ref={fileInputRef} // ADDED ref
         multiple={!isShapefileMode} // Disable multiple for shapefile
-        accept={isShapefileMode ? ".zip" : ".nc"} // Change accept based on mode
+        accept={isShapefileMode ? ".zip,.geojson" : ".nc"} // Change accept based on mode
         onChange={(e) => setFiles(e.target.files)}
         className="form-control"
       />

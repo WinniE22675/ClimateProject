@@ -261,6 +261,9 @@ def run_async_calculation(
             # Load full shapefile and convert to standard GPS projection
             gdf_full = gpd.read_file(shapefile_path)
             gdf_full = gdf_full.to_crs("EPSG:4326")
+
+            print("Simplifying boundary geometry to optimize loading speed...")
+            gdf_full['geometry'] = gdf_full['geometry'].simplify(tolerance=0.001, preserve_topology=True)
             
             # Extract unique areas BEFORE dropping columns
             area_list = gdf_full[target_col].dropna().unique().tolist()
@@ -283,6 +286,10 @@ def run_async_calculation(
 
     except Exception as e:
         print(f"[Error] Failed to read shapefile for available_areas: {e}")
+        area_list = []
+
+    if len(area_list) <= 1:
+        print(f"Notice: '{target_col}' contains only 1 area. Setting available_areas to empty list.")
         area_list = []
 
     existing_meta = read_metadata_json(dataset_name)
@@ -574,28 +581,36 @@ async def upload_and_validate_shapefile(user_id: str, file, custom_name: str = N
                     status_code=413, 
                     detail="Upload failed: Shapefile zip exceeds the 500 MB limit."
                 )
+            
+    file_ext = os.path.splitext(file.filename)[1].lower()
+    
+    if file_ext == '.zip':
+        # 2. Extract the .zip file
+        try:
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(target_dir)
+        except zipfile.BadZipFile:
+            shutil.rmtree(target_dir)
+            raise Exception("Invalid or corrupted zip file")
+            
+        # Remove the .zip file after successful extraction
+        os.remove(zip_path)
         
-    # 2. Extract the .zip file
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(target_dir)
-    except zipfile.BadZipFile:
-        shutil.rmtree(target_dir)
-        raise Exception("Invalid or corrupted zip file")
+        # 3. Validate required shapefile components (.shp, .shx, .dbf, .prj)
+        extracted_files = os.listdir(target_dir)
+        extensions = [os.path.splitext(f)[1].lower() for f in extracted_files]
         
-    # Remove the .zip file after successful extraction
-    os.remove(zip_path)
-    
-    # 3. Validate required shapefile components (.shp, .shx, .dbf, .prj)
-    extracted_files = os.listdir(target_dir)
-    extensions = [os.path.splitext(f)[1].lower() for f in extracted_files]
-    
-    required_exts = ['.shp', '.shx', '.dbf', '.prj']
-    missing_exts = [ext for ext in required_exts if ext not in extensions]
-    
-    if missing_exts:
-        shutil.rmtree(target_dir)
-        raise Exception(f"Missing required files: {', '.join(missing_exts)}")
+        required_exts = ['.shp', '.shx', '.dbf', '.prj']
+        missing_exts = [ext for ext in required_exts if ext not in extensions]
+        
+        if missing_exts:
+            shutil.rmtree(target_dir)
+            raise Exception(f"Missing required files: {', '.join(missing_exts)}")
+        
+    elif file_ext == '.geojson':
+        # No extraction or multiple-file validation needed for GeoJSON. 
+        # The file is already saved as a single complete file.
+        pass
     
     # Return the folder_name to be used as the display name and ID in Frontend
     return {
@@ -621,13 +636,15 @@ def get_shapefile_columns(user_id: str, shapefile_name: str) -> dict:
             raise Exception("Shapefile directory not found")
             
     # Find the actual .shp file inside the directory
-    shp_files = [f for f in os.listdir(target_dir) if f.lower().endswith('.shp')]
+    # shp_files = [f for f in os.listdir(target_dir) if f.lower().endswith('.shp')]
+
+    valid_files = [f for f in os.listdir(target_dir) if f.lower().endswith(('.shp', '.geojson'))]
     
-    if not shp_files:
-        raise Exception("No .shp file found inside the directory")
+    if not valid_files:
+        raise Exception("No .shp or .geojson file found inside the directory")
         
     # Construct the full path to the .shp file
-    shp_path = os.path.join(target_dir, shp_files[0])
+    shp_path = os.path.join(target_dir, valid_files[0])
     
     # Call the utility function to read the columns
     return detect_region_columns(shp_path)

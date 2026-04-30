@@ -45,9 +45,9 @@ function assignSPIEventColors(data, threshold = 1) {
     const v = result[i].spi;
 
     // Drought
-    if (v <= -threshold) {
+    if (v < -threshold) {
       let start = i;
-      while (i < result.length && result[i].spi <= -threshold) i++;
+      while (i < result.length && result[i].spi < -threshold) i++;
       if (i - start >= 2) {
         for (let j = start; j < i; j++) {
           result[j].color = "#d62728"; // red
@@ -55,9 +55,9 @@ function assignSPIEventColors(data, threshold = 1) {
       }
     }
     // Wet
-    else if (v >= threshold) {
+    else if (v > threshold) {
       let start = i;
-      while (i < result.length && result[i].spi >= threshold) i++;
+      while (i < result.length && result[i].spi > threshold) i++;
       if (i - start >= 2) {
         for (let j = start; j < i; j++) {
           result[j].color = "#1f77b4"; // blue
@@ -354,14 +354,14 @@ if (isSPI && monthlyData && monthlyData.length > 0) {
             {!indexName.includes("Flood") && (
               <span className="d-flex align-items-center gap-2">
                 <span style={{ width: 12, height: 12, backgroundColor: "#d62728", display: "inline-block", borderRadius: "2px" }}></span>
-                Drought (≤ -{spiThreshold})
+                Drought (&lt; -{spiThreshold})
               </span>
             )}
             
             {!indexName.includes("Drought") && (
               <span className="d-flex align-items-center gap-2">
                 <span style={{ width: 12, height: 12, backgroundColor: "#1f77b4", display: "inline-block", borderRadius: "2px" }}></span>
-                Wet / Flood (≥ {spiThreshold})
+                Wet / Flood (&gt; {spiThreshold})
               </span>
             )}
           </div>

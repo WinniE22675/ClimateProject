@@ -15,7 +15,7 @@ from services.dataset_service import (
     generate_on_demand_map
 )
 
-from services.dataset_metadata import get_dataset_metadata_merged
+# from services.dataset_metadata import get_dataset_metadata_merged
 
 from dependencies import get_current_user, require_analyst_role
 from services.dataset_paths import *
@@ -97,12 +97,30 @@ def delete_file(slot_id: int, filename: str, current_user: dict = Depends(requir
     return {"message": f"Deleted {filename}"}
 
 # Get Merged Metadata (Left Panel)
+# @router.get("/datasets/{dataset_name}/metadata")
+# def get_dataset_metadata(dataset_name: str): # slot_id: int
+#     meta = get_dataset_metadata_merged(dataset_name)
+#     if not meta:
+#         raise HTTPException(status_code=404, detail="Dataset not found or empty")
+#     return meta
+# Get Metadata (Read directly from metadata.json for better performance and workspace data)
 @router.get("/datasets/{dataset_name}/metadata")
-def get_dataset_metadata(dataset_name: str): # slot_id: int
-    meta = get_dataset_metadata_merged(dataset_name)
-    if not meta:
-        raise HTTPException(status_code=404, detail="Dataset not found or empty")
-    return meta
+def get_dataset_metadata(dataset_name: str):
+    # Define path to the JSON file
+    dataset_dir = os.path.join("output", dataset_name)
+    metadata_path = os.path.join(dataset_dir, "metadata.json")
+
+    # Check if file exists
+    if not os.path.exists(metadata_path):
+        raise HTTPException(status_code=404, detail="Metadata not found or dataset empty")
+
+    try:
+        # Read and return JSON data directly
+        with open(metadata_path, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+        return meta
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read metadata: {str(e)}")
 
 # Route Calculate to Process
 class BaselinePeriod(BaseModel):
@@ -275,8 +293,11 @@ async def upload_shapefile(
     current_user: dict = Depends(require_analyst_role)
 ):
     # Validate file extension before processing
-    if not file.filename.lower().endswith('.zip'):
-        raise HTTPException(status_code=400, detail="Only .zip files are allowed")
+    # if not file.filename.lower().endswith('.zip'):
+    #     raise HTTPException(status_code=400, detail="Only .zip files are allowed")
+    file_ext = file.filename.lower()
+    if not (file_ext.endswith('.zip') or file_ext.endswith('.geojson')):
+        raise HTTPException(status_code=400, detail="Only .zip or .geojson files are allowed")
     
     try:
         result = await upload_and_validate_shapefile(current_user["id"], file, custom_name)
@@ -367,3 +388,48 @@ def delete_shapefile(shapefile_name: str, current_user: dict = Depends(require_a
 #     else:
 #         # 3. Returns meaningful error instead of just a dead link
 #         raise HTTPException(status_code=404, detail="Cache not found. Run Calculate first.")
+
+@router.delete("/datasets/{dataset_name}/workspaces/{workspace_name}")
+def delete_workspace(dataset_name: str, workspace_name: str, current_user: dict = Depends(require_analyst_role)):
+    # Define paths
+    dataset_dir = os.path.join("output", dataset_name)
+    metadata_path = os.path.join(dataset_dir, "metadata.json")
+    
+    # 1. Check if metadata exists
+    if not os.path.exists(metadata_path):
+        raise HTTPException(status_code=404, detail="Metadata not found for this dataset")
+        
+    # 2. Read existing metadata
+    with open(metadata_path, "r", encoding="utf-8") as f:
+        metadata = json.load(f)
+        
+    # 3. Check if workspace exists in metadata
+    if "workspaces" not in metadata or workspace_name not in metadata["workspaces"]:
+        raise HTTPException(status_code=404, detail=f"Workspace '{workspace_name}' not found in metadata")
+        
+    # 4. Delete workspace directory and its calculated files
+    workspace_path = os.path.join(dataset_dir, workspace_name)
+    deleted_files = False
+    if os.path.exists(workspace_path):
+        try:
+            shutil.rmtree(workspace_path)
+            deleted_files = True
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to delete workspace files: {str(e)}"
+            )
+            
+    # 5. Remove workspace from metadata and save
+    del metadata["workspaces"][workspace_name]
+    
+    with open(metadata_path, "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2)
+        
+    return {
+        "status": "success",
+        "dataset": dataset_name,
+        "deleted_workspace": workspace_name,
+        "files_deleted": deleted_files,
+        "deleted_by": current_user["email"]
+    }

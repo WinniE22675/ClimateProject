@@ -85,6 +85,9 @@ def generate_all(
         print(f"Loading shapefile from: {shapefile_path}")
         # Load the user's shapefile
         shp_areas = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
+
+        shp_areas_simplified = shp_areas.copy()
+        shp_areas_simplified['geometry'] = shp_areas_simplified['geometry'].simplify(tolerance=0.001, preserve_topology=True)
         
         # Check if target column exists
         if target_col not in shp_areas.columns:
@@ -204,7 +207,7 @@ def generate_all(
 
             provincial_ts_dict = {}
             
-            # '''
+            '''
             # Annual Timeseries Overview
             if not is_spi_event:
                 print(f"Start Timeseries Thailand")
@@ -229,9 +232,9 @@ def generate_all(
                         )
                     else:
                         print(f"Skipping Thailand Overview timeseries for {var}")
-            # '''
+            '''
 
-            # '''
+            '''
             for province in area_list: # THAILAND_PROVINCES_LIST
                 print(f"Start {province}")
 
@@ -274,9 +277,7 @@ def generate_all(
                     # Overlay Map 
                     if shp_areas is not None: # shp_thai_provinces
                         overlay_with_shapefile(actual_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
-                        overlay_with_shapefile(trend_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
-                # """
-                
+                        overlay_with_shapefile(trend_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces  
                 
                 # print(f"Calculate Weight Provinces: {var}")
                 weighted_da = calc_weighted_mean(
@@ -305,8 +306,6 @@ def generate_all(
                     # """
                 else:
                     print(f"Skipping {province} for {var} (No data coverage or error)")
-            # '''
-            # '''
 
             #  Shapefile Mode Maps Overview
             if shp_areas is not None and provincial_ts_dict: # shp_thai_provinces
@@ -315,7 +314,7 @@ def generate_all(
                     provincial_ts_dict=provincial_ts_dict,
                     index_name=var,
                     output_base_dir=output_base_dir,
-                    gdf_provinces=shp_areas, # shp_thai_provinces,
+                    gdf_provinces=shp_areas_simplified, # shp_areas, # shp_thai_provinces,
                     target_col=target_col, # "ADM1_EN",
                     region_name=country, # region_name="Thailand",
                     spi_threshold=spi_threshold if is_spi_event else None
@@ -326,15 +325,15 @@ def generate_all(
                     provincial_ts_dict=provincial_ts_dict,
                     index_name=var,
                     output_base_dir=output_base_dir,
-                    gdf_provinces=shp_areas, # shp_thai_provinces,
+                    gdf_provinces=shp_areas_simplified, # shp_areas, # shp_thai_provinces,
                     target_col=target_col, #"ADM1_EN",
                     region_name=country, # region_name="Thailand",
                     spi_threshold=spi_threshold if is_spi_event else None
                 )
             # ==========================================
-            # '''
+            '''
+        '''
         # --- Monthly Export ---
-        # '''
         for var in indices_monthly.data_vars:
             print(f"Exporting monthly: {var}")
 
@@ -406,7 +405,7 @@ def generate_all(
                     print(f"Skipping {province} for {var} (No data coverage or error)")
         
     
-        # '''
+        '''
     except Exception as e:
         print(f"Pipeline Error: {e}")
         raise e
@@ -466,6 +465,12 @@ def generate_custom_map_pipeline(
     need_grid = not os.path.exists(grid_file)
     # need_shp = not os.path.exists(shp_file)
 
+
+######################
+    # need_shp = False # for calculate show please delete ##############################################################
+#####################
+
+
     # If both files already exist, exit early to save CPU time
     if not need_grid and not need_shp:
         print(f"Maps already exist for {index_name} ({start_year}-{end_year}). Skipping computation.")
@@ -479,6 +484,9 @@ def generate_custom_map_pipeline(
         print(f"Loading shapefile from: {shapefile_path}")
         # Load the user's shapefile
         shp_areas = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
+
+        shp_areas_simplified = shp_areas.copy()
+        shp_areas_simplified['geometry'] = shp_areas_simplified['geometry'].simplify(tolerance=0.001, preserve_topology=True)
         
         # Check if target column exists
         if target_col not in shp_areas.columns:
@@ -608,7 +616,7 @@ def generate_custom_map_pipeline(
                         provincial_ts_dict=provincial_ts_dict,
                         index_name=index_name,
                         output_base_dir=output_base_dir,
-                        gdf_provinces=shp_areas, # shp_thai_provinces
+                        gdf_provinces=shp_areas_simplified, # shp_areas, # shp_thai_provinces
                         target_col=target_col, # "ADM1_EN"
                         region_name=country,
                         spi_threshold=spi_threshold if is_spi_event else None
@@ -620,7 +628,7 @@ def generate_custom_map_pipeline(
                             provincial_ts_dict=provincial_ts_dict,
                             index_name=index_name,
                             output_base_dir=output_base_dir,
-                            gdf_provinces=shp_areas, # shp_thai_provinces
+                            gdf_provinces=shp_areas_simplified, # shp_areas, # shp_thai_provinces
                             target_col=target_col, #"ADM1_EN",
                             region_name=country,
                             spi_threshold=spi_threshold if is_spi_event else None

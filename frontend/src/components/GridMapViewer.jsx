@@ -344,6 +344,17 @@ export default function GridMapViewer({
 
   const isSPIEvent = indexName.startsWith("SPI") && (indexName.includes("_Drought_") || indexName.includes("_Flood_"));
 
+  // Check if the current shapefile has multiple sub-areas (e.g., provinces)
+  const hasSubAreas = allProvincesData?.features?.length > 1;
+
+  // Auto-switch back to "grid" mode if the selected country has no sub-areas
+  // but the user was previously in "shapefile" mode
+  useEffect(() => {
+    if (allProvincesData && !hasSubAreas && mapStyle === "shapefile") {
+      setMapStyle("grid");
+    }
+  }, [allProvincesData, hasSubAreas, mapStyle]);
+
   useEffect(() => {
     setLoading(true);
     setError(null);
@@ -385,7 +396,18 @@ export default function GridMapViewer({
       setIsGenerating(false);
 
       // Check SPI event and add thresholdPart for fetch
-      const thresholdPart = isSPIEvent ? `_${spiThreshold}` : "";
+      // const thresholdPart = isSPIEvent ? `_${spiThreshold}` : "";
+      // const thresholdPart = isSPIEvent ? `_${Number(spiThreshold).toFixed(1)}` : "";
+      // 1. Convert the value to a floating-point number
+      const num = parseFloat(spiThreshold);
+
+      // 2. Check if it's an integer (e.g., 1) or has decimals (e.g., 1.15)
+      // - Number.isInteger(num) returns true if num is 1 -> we use .toFixed(1) to get "1.0"
+      // - If it's false (e.g., 1.15) -> we convert it directly to String("1.15") to keep all decimals
+      const formatThreshold = Number.isInteger(num) ? num.toFixed(1) : String(num);
+
+      // 3. Append to the string
+      const thresholdPart = isSPIEvent && !isNaN(num) ? `_${formatThreshold}` : "";
 
       const apiBase = "http://localhost:8000";
       // Determine base path based on dataset type
@@ -955,7 +977,7 @@ export default function GridMapViewer({
           // zoom={mapView.zoom}
           zoomSnap={0.25}  // Enable fractional zoom snapping to 0.25 increments
           zoomDelta={0.25} // Set zoom step for +/- buttons to 0.25
-          style={{ height: "450px", width: "100%", zIndex: 0 }} //450px
+          style={{ height: "750px", width: "100%", zIndex: 0 }} //450px
           // preferCanvas={true} //  Use Canvas instead of SVG for crisp vector edges
         >
           {/* Boundary always on top */}
@@ -1161,8 +1183,12 @@ export default function GridMapViewer({
             <button
               className={`btn btn-sm ${mapStyle === "shapefile" ? "btn-secondary" : "btn-outline-secondary"}`}
               onClick={() => setMapStyle("shapefile")}
-              title="Show as Shapefile Area Average"
-              disabled={!!province}
+              // title="Show as Shapefile Area Average"
+              // disabled={!!province}
+              // Dynamic title based on availability
+              title={!hasSubAreas ? "Shapefile mode requires multiple sub-areas" : "Show as Shapefile Area Average"}
+              // Disable if a province is selected OR if there are no sub-areas
+              disabled={!!province || !hasSubAreas}
             >
               Shapefile
             </button>
