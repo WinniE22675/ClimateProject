@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from "react";
 
 export default function DatasetPreview({ metadata, selectedFile, onSelectFile }) {
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    setLoading(false);
+  // useEffect(() => {
+  //   setLoading(false);
 
-    if (metadata?.status === "error") {
-      setError(metadata.errors || "Failed to load metadata");
-    }
-  }, [metadata]);
+  //   if (metadata?.status === "error") {
+  //     setError(metadata.errors || "Failed to load metadata");
+  //   }
+  // }, [metadata]);
 
-  if (loading) return <p>Loading metadata...</p>;
+  // if (loading) return <p>Loading metadata...</p>;
   if (error)
     return <p style={{ color: "red" }}>Error: {JSON.stringify(error)}</p>;
   if (!metadata) return <p>No metadata available.</p>;
@@ -103,8 +103,8 @@ export default function DatasetPreview({ metadata, selectedFile, onSelectFile })
           <div className="col-12 col-md-6">
             <h6 className="fw-bold text-primary mb-2">Spatial Coverage</h6>
             <ul className="list-unstyled text-muted mb-0">
-              <li className="mb-1"><span className="fw-bold text-dark">Latitude:</span> {lat_min} → {lat_max}</li>
-              <li className="mb-1"><span className="fw-bold text-dark">Longitude:</span> {lon_min} → {lon_max}</li>
+              <li className="mb-1"><span className="fw-bold text-dark">Latitude:</span> {lat_min ?? "-"} → {lat_max ?? "-"}</li>
+              <li className="mb-1"><span className="fw-bold text-dark">Longitude:</span> {lon_min ?? "-"} → {lon_max ?? "-"}</li>
               {spatial_resolution && (
                 <li><span className="fw-bold text-dark">Resolution:</span> {spatial_resolution}</li>
               )}
@@ -118,7 +118,7 @@ export default function DatasetPreview({ metadata, selectedFile, onSelectFile })
         <h6 className="fw-bold text-primary mb-2">Temporal Coverage</h6>
         <ul className="list-unstyled text-muted mb-0">
           <li className="mb-1">
-            <span className="fw-bold text-dark">Time Range:</span> {time_start} → {time_end}
+            <span className="fw-bold text-dark">Time Range:</span> {time_start ?? "-"} → {time_end ?? "-"}
           </li>
           {time_years && (
             <li className="mb-1">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { datasetAPI } from "../services/api";
 
-export default function IndicesSelector({ availableVars, onCalculate }) {
+export default function IndicesSelector({ availableVars, activeWorkspace, workspaceConfig, onCalculate }) {
   const [availableIndices, setAvailableIndices] = useState({});
   const [selected, setSelected] = useState([]);
 
@@ -22,6 +22,14 @@ export default function IndicesSelector({ availableVars, onCalculate }) {
 
   // State to hold the list of available shapefiles for the dropdown
   const [shapefileList, setShapefileList] = useState([]);
+
+  // Check if user is using an existing workspace
+  const isExistingWorkspace = activeWorkspace && activeWorkspace !== "__NEW__";
+
+  // Validation logic for the Calculate button
+  const isFormValid = isExistingWorkspace 
+    ? selected.length > 0 // If existing workspace, only require indices selection
+    : selected.length > 0 && shapefileName && selectedCol && countryName; // If new, require all config
 
   useEffect(() => {
     const fetchShapefiles = async () => {
@@ -173,16 +181,25 @@ return (
             <label className="form-label small fw-bold text-muted mb-1">Select Shapefile</label>
             <select 
               className="form-select form-select-sm shadow-sm"
-              value={shapefileName}
+              // value={shapefileName}
+              value={isExistingWorkspace ? (workspaceConfig?.shapefile_name || "") : shapefileName}
               onChange={(e) => setShapefileName(e.target.value)}
+              disabled={isExistingWorkspace} // Disable if existing
             >
-              <option value="" disabled>-- Choose Shapefile --</option>
-              {shapefileList.map((sf) => (
-                // Handle object structure {name: "...", is_global: true/false}
-                <option key={sf.name} value={sf.name}>
-                  {sf.name} {sf.is_global ? "(Default)" : ""}
+              {isExistingWorkspace ? (
+                <option value={workspaceConfig?.shapefile_name || ""}>
+                  {workspaceConfig?.shapefile_name || "Unknown"}
                 </option>
-              ))}
+              ) : (
+                <>
+                  <option value="" disabled>-- Choose Shapefile --</option>
+                  {shapefileList.map((sf) => (
+                    <option key={sf.name} value={sf.name}>
+                      {sf.name} {sf.is_global ? "(Default)" : ""}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
           
@@ -195,17 +212,26 @@ return (
             </label>
             <select 
               className="form-select form-select-sm shadow-sm"
-              value={selectedCol}
+              // value={selectedCol}
+              value={isExistingWorkspace ? (workspaceConfig?.target_col || "") : selectedCol}
               onChange={(e) => setSelectedCol(e.target.value)}
-              disabled={availableCols.length === 0 || loadingCols}
+              // disabled={availableCols.length === 0 || loadingCols}
+              disabled={isExistingWorkspace || availableCols.length === 0 || loadingCols} // Disable if existing
             >
-              <option value="">Select Column...</option>
-              {availableCols.map(col => (
-                // Append (Recommend) if it matches the defaultCol state
-                <option key={col} value={col}>
-                  {col} {col === defaultCol ? "(Recommend)" : ""}
+              {isExistingWorkspace ? (
+                <option value={workspaceConfig?.target_col || ""}>
+                  {workspaceConfig?.target_col || "Unknown"}
                 </option>
-              ))}
+              ) : (
+                <>
+                  <option value="">Select Column...</option>
+                  {availableCols.map(col => (
+                    <option key={col} value={col}>
+                      {col} {col === defaultCol ? "(Recommend)" : ""}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
         </div>
@@ -217,8 +243,11 @@ return (
               type="text" 
               className="form-control form-control-sm shadow-sm" 
               placeholder="e.g. Thailand, MyProject (Used for grouping files)"
-              value={countryName}
+              // value={countryName}
+              // value={isExistingWorkspace ? activeWorkspace : countryName}
+              value={isExistingWorkspace ? `${activeWorkspace} (Current)` : countryName}
               onChange={(e) => setCountryName(e.target.value)}
+              disabled={isExistingWorkspace} // Disable if existing
             />
           </div>
         </div>
@@ -341,13 +370,18 @@ return (
               }, 
               parseFloat(spiThreshold),
               {
-                name: shapefileName.trim(),
-                targetCol: selectedCol,
-                country: countryName.trim()
+                // name: shapefileName.trim(),
+                // targetCol: selectedCol,
+                // country: countryName.trim()
+                name: isExistingWorkspace ? "" : shapefileName.trim(),
+                targetCol: isExistingWorkspace ? "" : selectedCol,
+                country: isExistingWorkspace ? activeWorkspace : countryName.trim(),
+                is_existing: isExistingWorkspace // Optional flag for backend
               }
             )
           }
-          disabled={selected.length === 0 || !shapefileName || !selectedCol || !countryName}
+          // disabled={selected.length === 0 || !shapefileName || !selectedCol || !countryName}
+          disabled={!isFormValid}
         >
           <i className="bi bi-calculator me-2"></i>
           Calculate Selected Indices ({selected.length})

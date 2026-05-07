@@ -794,11 +794,14 @@ export default function GridMapViewer({
         cellColor = "#dddddd"; // Gray color for no trend (or slope = 0)
       }
     }
-    return {
+        return {
       fillColor: cellColor,
-      stroke: false,
-      weight: 0,
-      color: "none",
+      // stroke: false,
+      // weight: 0,
+      // color: "none",
+      stroke: true,         
+      color: cellColor,     
+      weight: 0.5,
       fillOpacity: 0.8,
       interactive: true,
     };

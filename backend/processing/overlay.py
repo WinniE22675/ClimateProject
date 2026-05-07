@@ -1,6 +1,7 @@
 import os
 import geopandas as gpd
 import json
+import shapely
 
 # --- Load Thailand shapefile once ---
 # geojson_path = "data/geoBoundaries-THA-ADM0.geojson"
@@ -32,6 +33,8 @@ def overlay_with_shapefile(input_path: str, shapefile: gpd.GeoDataFrame):
 
     clipped = gpd.overlay(gdf, shapefile, how="intersection")
 
+    clipped['geometry'] = shapely.set_precision(clipped['geometry'].values, grid_size=0.001)
+
     for col in clipped.select_dtypes(include=['datetime', 'datetimetz']).columns:
         clipped[col] = clipped[col].astype(str)
 
@@ -51,7 +54,8 @@ def overlay_with_shapefile(input_path: str, shapefile: gpd.GeoDataFrame):
     # except Exception as e:
     #     print(f"Failed overlay for {input_path}: {e}")
     with open(input_path, "w") as f:
-        json.dump(out, f, indent=2)
+        # json.dump(out, f, indent=2)
+        json.dump(out, f, separators=(',', ':'))
 
     print(f"Overlay applied (metadata preserved) to {input_path}")
     return input_path

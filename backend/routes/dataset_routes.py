@@ -134,6 +134,8 @@ class CalculateRequest(BaseModel):
     country: str
     baseline: Optional[BaselinePeriod] = None
     spi_threshold: Optional[float] = 1 # Add SPI threshold with a default value
+    is_existing: Optional[bool] = False
+    # is_existing: bool = False
 
 @router.post("/datasets/{dataset_name}/calculate_indices")
 async def calculate_indices_from_slot(
@@ -153,7 +155,8 @@ async def calculate_indices_from_slot(
             req.target_col,
             req.country,
             req.baseline,
-            req.spi_threshold
+            req.spi_threshold,
+            req.is_existing
         )
 
         # Return immediately (do NOT wait for calculation)

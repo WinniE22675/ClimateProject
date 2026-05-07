@@ -74,6 +74,10 @@ def export_preview_all(
 
     print(f"[Preview] Loading dynamic shapefile for preview: {shapefile_path}")
     shp_areas = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
+
+    # shp_areas_simplified = shp_areas.copy()
+    # shp_areas_simplified['geometry'] = shp_areas_simplified['geometry'].simplify(tolerance=0.001, preserve_topology=True)
+    
     area_list = shp_areas[target_col].dropna().unique().tolist()
     
     shp_boundary = shp_areas.dissolve()

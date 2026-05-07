@@ -44,7 +44,7 @@ export default function DatasetProcessPage() {
   const [workspaceList, setWorkspaceList] = useState([]);
   const [activeWorkspace, setActiveWorkspace] = useState("");
 
-  useEffect(() => {
+    useEffect(() => {
     if (metadata && metadata.workspaces) {
       const workspaces = Object.keys(metadata.workspaces);
       setWorkspaceList(workspaces);
@@ -52,11 +52,11 @@ export default function DatasetProcessPage() {
       if (workspaces.length > 0 && !activeWorkspace) {
         setActiveWorkspace(workspaces[0]);
       } else if (workspaces.length === 0) {
-        setActiveWorkspace("");
+        setActiveWorkspace("__NEW__"); // Special flag for new workspace
       }
     } else {
       setWorkspaceList([]);
-      setActiveWorkspace("");
+      setActiveWorkspace("__NEW__");
     }
   }, [metadata]);
 
@@ -130,7 +130,8 @@ export default function DatasetProcessPage() {
           spi_threshold: spiThreshold,
           shapefile_name: shapefileConfig.name, 
           target_col: shapefileConfig.targetCol,
-          country: shapefileConfig.country || "custom_workspace"
+          country: shapefileConfig.country || "custom_workspace",
+          is_existing: shapefileConfig.is_existing
         }),
       });
 
@@ -391,11 +392,14 @@ export default function DatasetProcessPage() {
                 value={activeWorkspace}
                 onChange={(e) => setActiveWorkspace(e.target.value)}
                 className="form-select"
-                disabled={workspaceList.length === 0}
+                // disabled={workspaceList.length === 0}
               >
-                {workspaceList.length === 0 && (
+                <option value="__NEW__" >
+                  -- New Workspace --
+                </option>
+                {/* {workspaceList.length === 0 && (
                   <option value="">No workspace</option>
-                )}
+                )} */}
                 {workspaceList.map((ws) => (
                   <option key={ws} value={ws}>{ws}</option>
                 ))}
@@ -404,7 +408,8 @@ export default function DatasetProcessPage() {
             
             <button
               className="btn btn-sm btn-outline-danger shadow-sm"
-              disabled={!activeWorkspace}
+              // disabled={!activeWorkspace}
+              disabled={!activeWorkspace || activeWorkspace === "__NEW__"}
               onClick={handleDeleteWorkspace}
             >
               Delete
@@ -440,7 +445,7 @@ export default function DatasetProcessPage() {
         
         {/* LEFT: Metadata */}
         <div className="col-12 col-lg-6">
-          {metadata ? (
+          {metadata && metadata.variables ? (
             <DatasetPreview
               metadata={[metadata]}
               selectedFile={0}
@@ -460,6 +465,8 @@ export default function DatasetProcessPage() {
           {metadata && metadata.variables ? (
             <IndicesSelector
               availableVars={metadata.variables}
+              activeWorkspace={activeWorkspace}
+              workspaceConfig={metadata?.workspaces?.[activeWorkspace] || null}
               onCalculate={handleCalculateIndices}
             />
           ) : (

@@ -2,6 +2,7 @@ import os
 import shutil
 import json
 import geopandas as gpd
+import shapely
 
 from services.dataset_paths import *
 from services.dataset_merge import prepare_merged_file_for_calculation
@@ -214,12 +215,16 @@ def run_async_calculation(
         target_col: str,
         country: str,
         baseline=None,
-        spi_threshold: float = 1
+        spi_threshold: float = 1,
+        is_existing: bool = False
 ): # slot_id: int
     """
     Run indices calculation using already-merged dataset.
     No merge or clip is performed here.
     """
+
+    # print(f"--- DEBUG: is_existing = {is_existing} ---")
+    # print(f"--- DEBUG: frontend sent shapefile_name = '{shapefile_name}' ---")
 
     # Expand selected_indices to automatically include all 8 SPI events if a base SPI is selected
     extended_indices = []
@@ -235,8 +240,31 @@ def run_async_calculation(
     # Remove duplicates while preserving order
     extended_indices = list(dict.fromkeys(extended_indices))
 
-        # RESOLVE SHAPEFILE PATH
-    shapefile_path = get_shapefile_path(user_id, shapefile_name)
+    existing_meta = read_metadata_json(dataset_name)
+    workspaces = existing_meta.get("workspaces", {})
+    existing_workspace = workspaces.get(country, {})
+    existing_indices = existing_workspace.get("available_indices", [])
+
+    if is_existing:
+        # if Workspace can load Metadata in file
+        final_shapefile_name = existing_workspace.get("shapefile_name")
+        final_target_col = existing_workspace.get("target_col")
+        area_list = existing_workspace.get("available_areas", [])
+        
+        # prevent if Metadata don't have 
+        if not final_shapefile_name or not final_target_col:
+            raise Exception(f"Cannot find existing shapefile config for workspace '{country}'.")
+            
+        print(f"Using existing shapefile config: {final_shapefile_name} / {final_target_col}")
+        
+    else:
+        # if new use value from Frontend
+        final_shapefile_name = shapefile_name
+        final_target_col = target_col
+
+    # RESOLVE SHAPEFILE PATH
+    # shapefile_path = get_shapefile_path(user_id, shapefile_name)
+    shapefile_path = get_shapefile_path(user_id, final_shapefile_name)
     
     # try:
     #     # Load limited rows to save memory
@@ -263,13 +291,16 @@ def run_async_calculation(
             gdf_full = gdf_full.to_crs("EPSG:4326")
 
             print("Simplifying boundary geometry to optimize loading speed...")
-            gdf_full['geometry'] = gdf_full['geometry'].simplify(tolerance=0.001, preserve_topology=True)
+
+            # gdf_full['geometry'] = gdf_full['geometry'].simplify(tolerance=0.001, preserve_topology=True)
             
+            gdf_full['geometry'] = shapely.set_precision(gdf_full['geometry'].values, grid_size=0.001)
+
             # Extract unique areas BEFORE dropping columns
-            area_list = gdf_full[target_col].dropna().unique().tolist()
+            area_list = gdf_full[final_target_col].dropna().unique().tolist()
             
-            # KEEP ONLY target_col AND geometry to prevent Datetime JSON serialization errors
-            gdf_minimal = gdf_full[[target_col, 'geometry']]
+            # KEEP ONLY final_target_coll AND geometry to prevent Datetime JSON serialization errors
+            gdf_minimal = gdf_full[[final_target_col, 'geometry']]
             
             # Save as GeoJSON directly to the public output directory
             geojson_string = gdf_minimal.to_json()
@@ -282,18 +313,21 @@ def run_async_calculation(
         # Case 2: GeoJSON already exists and is not empty
         else:
             shp_areas = gpd.read_file(cached_geojson_path, rows=1000)
-            area_list = shp_areas[target_col].dropna().unique().tolist()
+            area_list = shp_areas[final_target_col].dropna().unique().tolist()
 
     except Exception as e:
         print(f"[Error] Failed to read shapefile for available_areas: {e}")
         area_list = []
 
     if len(area_list) <= 1:
-        print(f"Notice: '{target_col}' contains only 1 area. Setting available_areas to empty list.")
+        print(f"Notice: '{final_target_col}' contains only 1 area. Setting available_areas to empty list.")
         area_list = []
 
-    existing_meta = read_metadata_json(dataset_name)
-    workspaces = existing_meta.get("workspaces", {})
+    # Combine old indices with newly calculated ones
+    combined_indices = existing_indices + extended_indices
+
+    # Remove duplicates while preserving order
+    unique_indices = list(dict.fromkeys(combined_indices))
 
     # Format the baseline dictionary
     baseline_dict = None
@@ -302,11 +336,11 @@ def run_async_calculation(
 
     # Create or update the configuration for THIS specific country
     workspaces[country] = {
-        "shapefile_name": shapefile_name,
-        "target_col": target_col,
+        "shapefile_name": final_shapefile_name, # shapefile_name,
+        "target_col": final_target_col, #target_col,
         "available_areas": area_list,
         "baseline": baseline_dict,
-        "available_indices": extended_indices # Store calculated indices per workspace
+        "available_indices": unique_indices # extended_indices # Store calculated indices per workspace
     }
 
     # Save the nested workspaces object back to metadata.json
@@ -335,7 +369,8 @@ def run_async_calculation(
     
     # save_metadata_json(dataset_name, {"status": "processing", "step": "previewing", "message": "Generating raw data previews..."})
     
-    run_preview_visualization(dataset_name, user_id)
+    # run_preview_visualization(dataset_name, user_id)
+    run_preview_visualization(dataset_name, user_id, country)
 
     # save_metadata_json(dataset_name, {"status": "processing", "step": "calculating", "message": "Calculating climate indices..."})
 
@@ -344,13 +379,13 @@ def run_async_calculation(
         selected_indices=selected_indices,
         dataset_name=dataset_name,
         shapefile_path=shapefile_path,
-        target_col=target_col,
+        target_col=final_target_col, # target_col,
         country=country,
         baseline=baseline,
         spi_threshold=spi_threshold
     )
 
-    update_metadata_json(dataset_name, {"available_indices": extended_indices, "status": "ready", "step": "ready"})
+    update_metadata_json(dataset_name, {"available_indices": unique_indices, "status": "ready", "step": "ready"})
 
     return {
         "status": "success",
@@ -453,8 +488,14 @@ def check_processing_status(dataset_name: str):
     out_dir = get_dataset_output_dir(dataset_name)
     meta_path = os.path.join(out_dir, "metadata.json")
     if os.path.exists(meta_path):
-        with open(meta_path, "r") as f:
-            return json.load(f)
+        try :
+            with open(meta_path, "r") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {
+            "status": "error", 
+            "message": "Status file not found."
+        }
     return {"status": "idle"} 
 
 def generate_on_demand_map(

@@ -460,11 +460,18 @@ export default function ClimateDashboard() {
             {datasetList.length === 0 && (
               <option disabled>No uploaded dataset</option>
             )}
-            {datasetList.map((name) => (
+            {[...datasetList] 
+              .sort((a, b) => a.localeCompare(b))
+              .map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+            ))}
+            {/* {datasetList.map((name) => (
               <option key={name} value={name}>
                 {name}
               </option>
-            ))}
+            ))} */}
           </select>
         </div>
 
@@ -480,11 +487,18 @@ export default function ClimateDashboard() {
             {availableWorkspaces.length === 0 && (
               <option value="">No calculations yet</option>
             )}
-            {availableWorkspaces.map((ws) => (
+            {[...availableWorkspaces]
+              .sort((a, b) => a.localeCompare(b))
+              .map((ws) => (
+                <option key={ws} value={ws}>
+                  {ws}
+                </option>
+            ))}
+            {/* {availableWorkspaces.map((ws) => (
               <option key={ws} value={ws}>
                 {ws}
               </option>
-            ))}
+            ))} */}
           </select>
         </div>
 

@@ -86,8 +86,8 @@ def generate_all(
         # Load the user's shapefile
         shp_areas = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
 
-        shp_areas_simplified = shp_areas.copy()
-        shp_areas_simplified['geometry'] = shp_areas_simplified['geometry'].simplify(tolerance=0.001, preserve_topology=True)
+        # shp_areas_simplified = shp_areas.copy()
+        # shp_areas_simplified['geometry'] = shp_areas_simplified['geometry'].simplify(tolerance=0.001, preserve_topology=True)
         
         # Check if target column exists
         if target_col not in shp_areas.columns:
@@ -314,7 +314,7 @@ def generate_all(
                     provincial_ts_dict=provincial_ts_dict,
                     index_name=var,
                     output_base_dir=output_base_dir,
-                    gdf_provinces=shp_areas_simplified, # shp_areas, # shp_thai_provinces,
+                    gdf_provinces=shp_areas, # shp_thai_provinces,
                     target_col=target_col, # "ADM1_EN",
                     region_name=country, # region_name="Thailand",
                     spi_threshold=spi_threshold if is_spi_event else None
@@ -325,7 +325,7 @@ def generate_all(
                     provincial_ts_dict=provincial_ts_dict,
                     index_name=var,
                     output_base_dir=output_base_dir,
-                    gdf_provinces=shp_areas_simplified, # shp_areas, # shp_thai_provinces,
+                    gdf_provinces=shp_areas, # shp_thai_provinces,
                     target_col=target_col, #"ADM1_EN",
                     region_name=country, # region_name="Thailand",
                     spi_threshold=spi_threshold if is_spi_event else None
@@ -485,8 +485,8 @@ def generate_custom_map_pipeline(
         # Load the user's shapefile
         shp_areas = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
 
-        shp_areas_simplified = shp_areas.copy()
-        shp_areas_simplified['geometry'] = shp_areas_simplified['geometry'].simplify(tolerance=0.001, preserve_topology=True)
+        # shp_areas_simplified = shp_areas.copy()
+        # shp_areas_simplified['geometry'] = shp_areas_simplified['geometry'].simplify(tolerance=0.001, preserve_topology=True)
         
         # Check if target column exists
         if target_col not in shp_areas.columns:
@@ -616,7 +616,7 @@ def generate_custom_map_pipeline(
                         provincial_ts_dict=provincial_ts_dict,
                         index_name=index_name,
                         output_base_dir=output_base_dir,
-                        gdf_provinces=shp_areas_simplified, # shp_areas, # shp_thai_provinces
+                        gdf_provinces=shp_areas, # shp_thai_provinces
                         target_col=target_col, # "ADM1_EN"
                         region_name=country,
                         spi_threshold=spi_threshold if is_spi_event else None
@@ -628,7 +628,7 @@ def generate_custom_map_pipeline(
                             provincial_ts_dict=provincial_ts_dict,
                             index_name=index_name,
                             output_base_dir=output_base_dir,
-                            gdf_provinces=shp_areas_simplified, # shp_areas, # shp_thai_provinces
+                            gdf_provinces=shp_areas, # shp_thai_provinces
                             target_col=target_col, #"ADM1_EN",
                             region_name=country,
                             spi_threshold=spi_threshold if is_spi_event else None

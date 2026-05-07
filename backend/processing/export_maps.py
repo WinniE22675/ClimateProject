@@ -2,6 +2,7 @@ import os
 import json
 import numpy as np
 import xarray as xr
+import shapely
 from shapely.geometry import Polygon
 # from cf_xarray import vertices_to_bounds
 import pymannkendall as mk
@@ -197,7 +198,8 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
     out_path = os.path.join(out_dir, filename)
 
     with open(out_path, "w") as f:
-        json.dump(out, f, indent=2) 
+        # json.dump(out, f, indent=2) 
+        json.dump(out, f, separators=(',', ':'))
         
     print(f"  Saved actual map to {out_path}")
     return out_path
@@ -375,7 +377,8 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
     out_path = os.path.join(out_dir, filename)
 
     with open(out_path, "w") as f:
-        json.dump(out, f, indent=2) 
+        # json.dump(out, f, indent=2) 
+        json.dump(out, f, separators=(',', ':'))
         
     print(f"  Saved trend map to {out_path}")
     return out_path
@@ -427,7 +430,7 @@ def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, outpu
             if not np.isnan(val):
                 features.append({
                     "type": "Feature",
-                    "geometry": row.geometry.__geo_interface__,
+                    "geometry": shapely.set_precision(row.geometry, grid_size=0.001).__geo_interface__, # "geometry": row.geometry.__geo_interface__,
                     "properties": {
                         "name": prov_name,
                         "value": round(val, decimals)
@@ -462,7 +465,8 @@ def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, outpu
     out_path = os.path.join(out_dir, filename)
 
     with open(out_path, "w") as f:
-        json.dump(out, f, indent=2) 
+        # json.dump(out, f, indent=2) 
+        json.dump(out, f, separators=(',', ':'))
         
     print(f"  Saved actual shapefile map to {out_path}")
     return out_path
@@ -537,7 +541,7 @@ def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output
                     
                     features.append({
                         "type": "Feature",
-                        "geometry": row.geometry.__geo_interface__,
+                        "geometry": shapely.set_precision(row.geometry, grid_size=0.001).__geo_interface__, # "geometry": row.geometry.__geo_interface__,
                         "properties": props
                     })
                 except Exception as e:
@@ -572,7 +576,8 @@ def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output
     out_path = os.path.join(out_dir, filename)
 
     with open(out_path, "w") as f:
-        json.dump(out, f, indent=2) 
+        # json.dump(out, f, indent=2)
+        json.dump(out, f, separators=(',', ':'))
         
     print(f"  Saved trend shapefile map to {out_path}")
     return out_path

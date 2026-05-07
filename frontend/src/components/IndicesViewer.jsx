@@ -369,7 +369,7 @@ if (isSPI && monthlyData && monthlyData.length > 0) {
       ) : (
         <div className="mb-3">
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={mergedData} margin={{ left: 5, right: 20 }}>
+          <LineChart data={mergedData} margin={{ top: 5, left: 5, right: 20 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="year" interval="preserveStartEnd" minTickGap={0} allowDecimals={false} />
             <YAxis
@@ -398,7 +398,7 @@ if (isSPI && monthlyData && monthlyData.length > 0) {
 
       {/* Seasonal Cycle */}
       <ResponsiveContainer width="100%" height={240}>
-        <LineChart data={monthlyData} margin={{ left: 5, right: 20 }}>
+        <LineChart data={monthlyData} margin={{ top: 5, left: 5, right: 20 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="month"
