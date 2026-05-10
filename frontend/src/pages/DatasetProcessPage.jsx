@@ -369,9 +369,14 @@ export default function DatasetProcessPage() {
                 {datasetList.length === 0 && (
                   <option value="">No dataset available</option>
                 )}
-                {datasetList.map((name) => (
-                  <option key={name} value={name}>{name}</option>
+                {[...datasetList]
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((name) => (
+                    <option key={name} value={name}>{name}</option>
                 ))}
+                {/* {datasetList.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))} */}
               </select>
             </div>
             
@@ -400,9 +405,14 @@ export default function DatasetProcessPage() {
                 {/* {workspaceList.length === 0 && (
                   <option value="">No workspace</option>
                 )} */}
-                {workspaceList.map((ws) => (
-                  <option key={ws} value={ws}>{ws}</option>
+                {[...workspaceList]
+                  .sort((a, b) => a.localeCompare(b))
+                  .map((ws) => (
+                    <option key={ws} value={ws}>{ws}</option>
                 ))}
+                {/* {workspaceList.map((ws) => (
+                  <option key={ws} value={ws}>{ws}</option>
+                ))} */}
               </select>
             </div>
             

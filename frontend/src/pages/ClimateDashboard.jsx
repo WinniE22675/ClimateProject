@@ -452,6 +452,8 @@ export default function ClimateDashboard() {
             value={activeDataset}
             onChange={(e) => {
               setActiveDataset(e.target.value)
+              setCountry(""); 
+              setProvince("");
               setAvailableIndices([]);
             }
             }

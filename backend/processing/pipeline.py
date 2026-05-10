@@ -178,6 +178,10 @@ def generate_all(
 
             current_da = prep_for_rio(indices_annual[var]).load()
 
+            if current_da.sizes.get('latitude', 0) == 0 or current_da.sizes.get('longitude', 0) == 0:
+                print(f"Skipping overview for '{country}': The area is too small for the current grid resolution.")
+                continue
+
             is_spi_event = var.startswith("SPI") and any(evt in var for evt in ["_Drought_", "_Flood_"])
             
             # '''
@@ -252,6 +256,14 @@ def generate_all(
                     print(f"Skipping maps for {province} (No data in boundary or clipping error): {e}")
                     da_province = None
                 # """
+                
+                if da_province is not None:
+                    # --- Check (Province / City) ---
+                    if da_province.sizes.get('latitude', 0) == 0 or da_province.sizes.get('longitude', 0) == 0:
+                        print(f"⚠️ Skipping area '{province}': The area is too small for the current grid resolution.")
+                        # Skip to the next province
+                        continue
+                        
                 if da_province is not None:
                     # print(f"Export Actual Map : {province}")
                     
@@ -276,8 +288,10 @@ def generate_all(
                     
                     # Overlay Map 
                     if shp_areas is not None: # shp_thai_provinces
-                        overlay_with_shapefile(actual_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
-                        overlay_with_shapefile(trend_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces  
+                        if actual_json_path:
+                            overlay_with_shapefile(actual_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
+                        if trend_json_path:
+                            overlay_with_shapefile(trend_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces 
                 
                 # print(f"Calculate Weight Provinces: {var}")
                 weighted_da = calc_weighted_mean(

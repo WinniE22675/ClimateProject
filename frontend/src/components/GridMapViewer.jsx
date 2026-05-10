@@ -218,6 +218,8 @@ export default function GridMapViewer({
     trend: "RdBu",
   });
 
+  const [errorType, setErrorType] = useState(null);
+
   useEffect(() => {
     if (!indexName) return;
 
@@ -488,7 +490,9 @@ export default function GridMapViewer({
           });
 
           if (!generateRes.ok) {
-            throw new Error("Backend failed to generate map data.");
+            // throw new Error("Backend failed to generate map data.");
+            // throw new Error(`Map generation API failed with status: ${generateRes.status}`);
+            console.warn(`Map generation API returned status: ${generateRes.status}. Continuing to check if files exist...`);
           }
 
           // Re-fetch after generation ---
@@ -506,12 +510,19 @@ export default function GridMapViewer({
           trendRes = supportsTrend ? retryResults[1] : { status: 200, data: null };
 
           if (actualRes.status === 404 || (supportsTrend && trendRes.status === 404)) {
-            throw new Error("Map generation succeeded, but files are still missing on the server.");
+            // throw new Error("Map generation succeeded, but files are still missing on the server.");
+            if (isMounted) {
+              setErrorType("DATA_UNAVAILABLE");
+              setIsGenerating(false);
+              setLoading(false);
+              return; 
+            }
           }
         }
 
         // Update State ---
         if (isMounted) {
+          setErrorType(null);
           const actualData = actualRes.data;
           const trendData = trendRes.data;
 
@@ -535,6 +546,7 @@ export default function GridMapViewer({
       } catch (err) {
         if (isMounted) {
           console.error("Map Load Error:", err);
+          setErrorType("GENERAL_ERROR");
           setError(err.message);
         }
       } finally {
@@ -974,71 +986,115 @@ export default function GridMapViewer({
 
       {/* 3. Map Container */}
       <div className="card-body p-0 position-relative">
-        <MapContainer
-          key={`map-container-${country}`} // Force re-mount of map ONLY when country changes
-          // center={mapView.center}
-          // zoom={mapView.zoom}
-          zoomSnap={0.25}  // Enable fractional zoom snapping to 0.25 increments
-          zoomDelta={0.25} // Set zoom step for +/- buttons to 0.25
-          style={{ height: "750px", width: "100%", zIndex: 0 }} //450px
-          // preferCanvas={true} //  Use Canvas instead of SVG for crisp vector edges
-        >
-          {/* Boundary always on top */}
-          {/* {allProvincesData && <BoundaryLayer data={allProvincesData} weight={1.0} />} */}
-          {displayProvinceBoundary && (
-            <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
-          )}
+        {errorType === "DATA_UNAVAILABLE" ? (
+          
+          <div className="d-flex justify-content-center align-items-center w-100" style={{ height: "450px" }}>
+            <div className="p-4 rounded bg-white border border-secondary mx-3" style={{ maxWidth: "550px" }}>
+              <div className="d-flex align-items-center mb-3">
+                <i className="bi bi-info-circle text-dark me-3" style={{ fontSize: "2rem" }}></i>
+                <h5 className="text-dark fw-bold mb-0">Map Visualization Unavailable</h5>
+              </div>
+              <p className="text-muted small mb-3">
+                The system could not generate a map for <strong>{province || country}</strong>. This typically happens due to one of the following reasons:
+              </p>
+              <ul className="text-muted small mb-3">
+                <li className="mb-1"><strong>Resolution Limit:</strong> The selected area is too small (less than 1 grid cell).</li>
+                <li className="mb-1"><strong>Spatial Mismatch:</strong> The dataset does not cover this geographic area.</li>
+                <li><strong>Missing Values:</strong> The area contains only invalid or No-Data values (NaN).</li>
+              </ul>
+              <div className="text-muted small d-flex align-items-start mt-4">
+                <i className="bi bi-lightbulb text-dark me-2 fs-6"></i>
+                <span><strong>Tip:</strong> If the <em>Timeseries charts</em> on the left are also empty, it confirms a <strong>Spatial Mismatch</strong> or <strong>Missing Values</strong>.</span>
+              </div>
+            </div>
+          </div>
 
-          {/* <MapViewUpdater center={mapView.center} zoom={mapView.zoom} /> */}
-          <MapBoundsController 
-            province={province} 
-            allProvincesData={allProvincesData} // geojsonData={displayProvinceBoundary} 
-            targetCol={targetCol} // fallbackView={mapView} 
-          />
+        ) : errorType === "GENERAL_ERROR" || error ? (
 
-          {/* Mask first */}
-          {/* {maskData && <BoundaryMaskLayer mask={maskData} />} */}
+          <div className="d-flex justify-content-center align-items-center w-100 text-dark" style={{ height: "450px" }}>
+            <div className="text-center bg-white p-4 rounded border border-secondary mx-3" style={{ maxWidth: "500px" }}>
+               <i className="bi bi-exclamation-octagon fs-1 d-block mb-3 text-dark"></i>
+               <h5 className="fw-bold mb-2">System Error Encountered</h5>
+               <p className="small text-muted mb-3">
+                 An unexpected error has occurred while processing the map data. <br/>
+                 Please contact the system administrator for assistance.
+               </p>
+               
+               {error && (
+                 <div className="bg-light p-2 rounded border small text-start text-break text-secondary">
+                   <strong>Details:</strong> {error}
+                 </div>
+               )}
+            </div>
+          </div>
 
+        ) : (
+          <MapContainer
+            key={`map-container-${country}`} // Force re-mount of map ONLY when country changes
+            // center={mapView.center}
+            // zoom={mapView.zoom}
+            zoomSnap={0.25}  // Enable fractional zoom snapping to 0.25 increments
+            zoomDelta={0.25} // Set zoom step for +/- buttons to 0.25
+            style={{ height: "750px", width: "100%", zIndex: 0 }} //450px
+            // preferCanvas={true} //  Use Canvas instead of SVG for crisp vector edges
+          >
+            {/* Boundary always on top */}
+            {/* {allProvincesData && <BoundaryLayer data={allProvincesData} weight={1.0} />} */}
+            {displayProvinceBoundary && (
+              <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
+            )}
 
-          {/* Province Boundaries */}
-          {/* {displayProvinceBoundary && (
-            <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
-          )} */}
-
-          {allProvincesData && (
-            <CountryContextLayer 
-              data={allProvincesData} 
-              selectedProvince={province} 
+            {/* <MapViewUpdater center={mapView.center} zoom={mapView.zoom} /> */}
+            <MapBoundsController 
+              province={province} 
+              allProvincesData={allProvincesData} // geojsonData={displayProvinceBoundary} 
+              targetCol={targetCol} // fallbackView={mapView} 
             />
-          )}
 
-          {/* Map Data Layers */}
-          {mode === "trend" && gridData.trend && (
-            <GeoJSON
-              // key={`trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
-              // key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
-              key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
-              data={gridData.trend}
-              style={style("trend")}
-              onEachFeature={onEachFeature("trend")}
-              ref={(ref) => (layersRef.current.trend = ref)}
-            />
-          )}
-          {mode === "actual" && gridData.actual && (
-            <GeoJSON
-              // key={`actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
-              // key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
-              key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
-              data={gridData.actual}
-              style={style("actual")}
-              onEachFeature={onEachFeature("actual")}
-              ref={(ref) => (layersRef.current.actual = ref)}
-            />
-          )}
+            {/* Mask first */}
+            {/* {maskData && <BoundaryMaskLayer mask={maskData} />} */}
 
-          {showSig &&
-            significantPoints.map((f, i) => <SigPoint key={i} feature={f} />)}
-        </MapContainer>
+
+            {/* Province Boundaries */}
+            {/* {displayProvinceBoundary && (
+              <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
+            )} */}
+
+            {allProvincesData && (
+              <CountryContextLayer 
+                data={allProvincesData} 
+                selectedProvince={province} 
+              />
+            )}
+
+            {/* Map Data Layers */}
+            {mode === "trend" && gridData.trend && (
+              <GeoJSON
+                // key={`trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
+                // key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
+                key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
+                data={gridData.trend}
+                style={style("trend")}
+                onEachFeature={onEachFeature("trend")}
+                ref={(ref) => (layersRef.current.trend = ref)}
+              />
+            )}
+            {mode === "actual" && gridData.actual && (
+              <GeoJSON
+                // key={`actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
+                // key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
+                key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
+                data={gridData.actual}
+                style={style("actual")}
+                onEachFeature={onEachFeature("actual")}
+                ref={(ref) => (layersRef.current.actual = ref)}
+              />
+            )}
+
+            {showSig &&
+              significantPoints.map((f, i) => <SigPoint key={i} feature={f} />)}
+          </MapContainer>
+        )}
       </div>
 
       {/* 4. Legend & Controls Footer */}
