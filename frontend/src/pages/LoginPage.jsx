@@ -46,19 +46,79 @@ const LoginPage = () => {
     };
 
     // 4. UI Rendering
+    // return (
+    //     <div className="d-flex justify-content-center align-items-center mt-5">
+    //         {/* Card UI */}
+    //         <div className="card shadow-lg border-0 rounded-4" style={{ width: '100%', maxWidth: '450px' }}>
+    //             <div className="card-body p-5">
+    //                 {/* <h2 className="mb-4 text-center">Login</h2> */}
+    //                 <div className="text-center mb-4">
+    //                     <h2 className="fw-bold">Sign in</h2>
+    //                     <p className="text-muted">Sign in to access your climate workspace</p>
+    //                 </div>
+                    
+    //                 {/* Error Message */}
+    //                 {errorMsg && <div className="alert alert-danger mb-3">{errorMsg}</div>}
+
+    //                 <form onSubmit={handleLogin}>
+    //                     <div className="custom-outlined-input">
+    //                         <input 
+    //                             type="email" 
+    //                             id="emailInput" 
+    //                             placeholder=" " /* MUST BE A SPACE for CSS to detect empty state */
+    //                             value={email} 
+    //                             onChange={(e) => setEmail(e.target.value)} 
+    //                             required 
+    //                         />
+    //                         <label htmlFor="emailInput">Email address</label>
+    //                     </div>
+
+    //                     {/* Custom Outlined Password Input */}
+    //                     <div className="custom-outlined-input">
+    //                         <input 
+    //                             type="password" 
+    //                             id="passwordInput" 
+    //                             placeholder=" " /* MUST BE A SPACE */
+    //                             value={password} 
+    //                             onChange={(e) => setPassword(e.target.value)} 
+    //                             required 
+    //                         />
+    //                         <label htmlFor="passwordInput">Password</label>
+    //                     </div>
+
+    //                     <button type="submit" className="btn btn-primary w-100" disabled={isLoading}>
+    //                         {isLoading ? 'Signing In...' : 'Sign in'}
+    //                     </button>
+    //                 </form>
+
+    //                 {/* Link to Register Page */}
+    //                 {/* <div className="mt-4 text-center">
+    //                     <span className="text-muted">Don't have an account? </span>
+    //                     <Link to="/register" className="text-decoration-none fw-bold text-primary">
+    //                         Register here
+    //                     </Link>
+    //                 </div> */}
+    //             </div>
+    //         </div>
+    //     </div>
+    // );
     return (
-        <div className="d-flex justify-content-center align-items-center mt-5">
+        <div className="flex justify-center items-center mt-12">
             {/* Card UI */}
-            <div className="card shadow-lg border-0 rounded-4" style={{ width: '100%', maxWidth: '450px' }}>
-                <div className="card-body p-5">
-                    {/* <h2 className="mb-4 text-center">Login</h2> */}
-                    <div className="text-center mb-4">
-                        <h2 className="fw-bold">Sign in</h2>
-                        <p className="text-muted">Sign in to access your climate workspace</p>
+            <div className="bg-white shadow-lg rounded-2xl w-full max-w-[450px]">
+                <div className="p-12">
+                    {/* <h2 className="mb-6 text-center font-bold">Login</h2> */}
+                    <div className="text-center mb-6">
+                        <h2 className="text-3xl font-bold text-gray-800">Sign in</h2>
+                        <p className="text-gray-500 mt-2">Sign in to access your climate workspace</p>
                     </div>
                     
                     {/* Error Message */}
-                    {errorMsg && <div className="alert alert-danger mb-3">{errorMsg}</div>}
+                    {errorMsg && (
+                        <div className="bg-red-100 text-red-700 border border-red-200 px-4 py-3 rounded-md mb-4">
+                            {errorMsg}
+                        </div>
+                    )}
 
                     <form onSubmit={handleLogin}>
                         <div className="custom-outlined-input">
@@ -86,15 +146,19 @@ const LoginPage = () => {
                             <label htmlFor="passwordInput">Password</label>
                         </div>
 
-                        <button type="submit" className="btn btn-primary w-100" disabled={isLoading}>
+                        <button 
+                            type="submit" 
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed" 
+                            disabled={isLoading}
+                        >
                             {isLoading ? 'Signing In...' : 'Sign in'}
                         </button>
                     </form>
 
                     {/* Link to Register Page */}
-                    {/* <div className="mt-4 text-center">
-                        <span className="text-muted">Don't have an account? </span>
-                        <Link to="/register" className="text-decoration-none fw-bold text-primary">
+                    {/* <div className="mt-6 text-center">
+                        <span className="text-gray-500">Don't have an account? </span>
+                        <Link to="/register" className="font-bold text-blue-600 hover:text-blue-800 no-underline">
                             Register here
                         </Link>
                     </div> */}

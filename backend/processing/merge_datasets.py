@@ -26,7 +26,7 @@ Each function returns:
 
 def save_dataset_to_netcdf(ds: xr.Dataset, merged_dir: str, prefix: str = "merged") -> str:
     """
-    Save dataset to temporary netCDF (or in PREVIEW_MERGED_DIR) and return path.
+    Save dataset to temporary netCDF and return path.
     """
     out_path = os.path.join(merged_dir, f"{prefix}_{next(tempfile._get_candidate_names())}.nc")
     # choose NETCDF4 format
@@ -68,7 +68,6 @@ def merge_attribute_mode(paths: List[str], merged_dir: str) -> Tuple[bool, Any, 
                 # if vars_to_drop:
                 #     ds = ds.drop_vars(vars_to_drop)
                 ds = filter_dataset_vars(ds)
-
                 datasets.append(ds)
             except Exception as sub_e:
                 errors.append(f"Failed to open {os.path.basename(p)}: {sub_e}")
@@ -111,12 +110,13 @@ def merge_attribute_mode(paths: List[str], merged_dir: str) -> Tuple[bool, Any, 
 
         out_path = save_dataset_to_netcdf(merged, merged_dir, prefix="attribute")
         
-        # Explicit cleanup
+        # Explicit cleanup to release file locks
         merged.close()
         for ds in datasets:
             ds.close()
         gc.collect()
         
+        # return path only, dataset is closed
         return True, {"dataset": None, "path": out_path}, []
 
     except Exception as e:
@@ -183,7 +183,9 @@ def merge_time_mode(paths: List[str], merged_dir: str) -> Tuple[bool, Any, List[
         ds_to_save = ds.to_dataset() if isinstance(ds, xr.DataArray) else ds
         out_path = save_dataset_to_netcdf(ds_to_save, merged_dir, prefix="time")
         
-        return True, {"dataset": ds, "path": out_path}, []
+        ds.close()
+        # Do not return the dataset object since it is closed. Just return the path.
+        return True, {"dataset": None, "path": out_path}, []
 
     except Exception as e:
         if ds is not None:
@@ -210,7 +212,7 @@ def merge_mixed_mode(paths: List[str], groups: Dict[str, List[int]], metas: List
             # pull path of group file
             var_paths = [temp_paths[i] for i in idxs]
             
-            # call merge_time_mode
+            # This calls merge_time_mode which creates a time_*.nc file and returns its path
             ok, res, errs = merge_time_mode(var_paths, merged_dir)
             
             if not ok:
@@ -221,19 +223,21 @@ def merge_mixed_mode(paths: List[str], groups: Dict[str, List[int]], metas: List
             # Save intermediate per-variable file, then close the dataset
             # Peak RAM per iteration = 1 variable's worth of chunks
             
-            ds_var = res["dataset"]
+            # ds_var = res["dataset"]
                 
             # vars_to_drop = [v for v in ds_var.data_vars if v in SKIP_VARS]
             # if vars_to_drop:
             #     ds_var = ds_var.drop_vars(vars_to_drop)
-            ds_var = filter_dataset_vars(ds_var)
+            # ds_var = filter_dataset_vars(ds_var)
             # per_var_ds[var] = ds_var
-            var_temp_path = save_dataset_to_netcdf(
-                ds_var, merged_dir, prefix=f"var_{var}"
-            )
-            var_temp_paths[var] = var_temp_path
-            ds_var.close()  # ✅ Release memory before opening next variable
-            gc.collect()
+            # var_temp_path = save_dataset_to_netcdf(
+                # ds_var, merged_dir, prefix=f"var_{var}"
+            # )
+            # var_temp_paths[var] = var_temp_path
+            # ds_var.close()  # Release memory before opening next variable
+            # gc.collect()
+
+            var_temp_paths[var] = res["path"]
 
         if errors:
             raise Exception(f"Errors occurred during variable grouping: {errors}")
@@ -298,8 +302,8 @@ def merge_mixed_mode(paths: List[str], groups: Dict[str, List[int]], metas: List
         for vpath in var_temp_paths.values():
             try:
                 os.remove(vpath)
-            except OSError:
-                pass
+            except OSError as e:
+                print(f"Warning: Failed to delete intermediate file {vpath}: {e}")
 
         gc.collect()
 

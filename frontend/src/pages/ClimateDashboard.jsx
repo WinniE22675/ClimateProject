@@ -437,22 +437,261 @@ export default function ClimateDashboard() {
 
 // useEffect(() => { fetchShapefiles(); }, []);
 
+  // return (
+  //   <div className="container-fluid mt-4">
+  //     {/* Controls Container */}
+  //     <div className="d-flex align-items-end gap-3 flex-wrap mb-3">
+
+  //       {/* 1. Dataset Selector */}
+  //       <div>
+  //         <label className="form-label small fw-bold text-muted">
+  //           Dataset Source
+  //         </label>
+  //         <select
+  //           className="form-select form-select-sm"
+  //           value={activeDataset}
+  //           onChange={(e) => {
+  //             setActiveDataset(e.target.value)
+  //             setCountry(""); 
+  //             setProvince("");
+  //             setAvailableIndices([]);
+  //           }
+  //           }
+  //         >
+  //           {/* <option value="default">Default Dataset</option> */}
+  //           {datasetList.length === 0 && (
+  //             <option disabled>No uploaded dataset</option>
+  //           )}
+  //           {[...datasetList] 
+  //             .sort((a, b) => a.localeCompare(b))
+  //             .map((name) => (
+  //               <option key={name} value={name}>
+  //                 {name}
+  //               </option>
+  //           ))}
+  //           {/* {datasetList.map((name) => (
+  //             <option key={name} value={name}>
+  //               {name}
+  //             </option>
+  //           ))} */}
+  //         </select>
+  //       </div>
+
+  //       {/* 2. Workspace / Country */}
+  //       <div>
+  //         <label className="form-label small fw-bold text-muted">Workspace / Country</label>
+  //         <select
+  //           className="form-select form-select-sm"
+  //           value={country}
+  //           onChange={(e) => setCountry(e.target.value)}
+  //           disabled={availableWorkspaces.length === 0}
+  //         >
+  //           {availableWorkspaces.length === 0 && (
+  //             <option value="">No calculations yet</option>
+  //           )}
+  //           {[...availableWorkspaces]
+  //             .sort((a, b) => a.localeCompare(b))
+  //             .map((ws) => (
+  //               <option key={ws} value={ws}>
+  //                 {ws}
+  //               </option>
+  //           ))}
+  //           {/* {availableWorkspaces.map((ws) => (
+  //             <option key={ws} value={ws}>
+  //               {ws}
+  //             </option>
+  //           ))} */}
+  //         </select>
+  //       </div>
+
+  //       {/* 2. Country Selector */}
+  //       {/* <div>
+  //         <label className="form-label small fw-bold text-muted">Country</label>
+  //         <select
+  //           className="form-select form-select-sm"
+  //           value={country}
+  //           onChange={(e) => {
+  //             setCountry(e.target.value);
+  //             setProvince("");
+  //           }}
+  //         >
+  //           {countries.map((c) => (
+  //             <option key={c} value={c}>
+  //               {c}
+  //             </option>
+  //           ))}
+  //         </select>
+  //       </div> */}
+
+  //       {/* 3. Province Selector (Conditional) */}
+  //       {/* {country === "Thailand" && (
+  //         <div>
+  //           <label className="form-label small fw-bold text-muted">Province</label>
+  //           <select
+  //             className="form-select form-select-sm"
+  //             value={province}
+  //             onChange={(e) => setProvince(e.target.value)}
+  //           >
+  //             <option value="">Whole Country</option>
+  //             {provinces.map((p) => (
+  //               <option key={p} value={p}>
+  //                 {p}
+  //               </option>
+  //             ))}
+  //           </select>
+  //         </div>
+  //       )} */}
+  //       <div>
+  //         <label className="form-label small fw-bold text-muted">Select Area</label>
+  //         <select
+  //           className="form-select form-select-sm"
+  //           value={province}
+  //           onChange={(e) => setProvince(e.target.value)}
+  //           disabled={availableAreas.length === 0}
+  //         >
+  //           <option value="">Whole Country</option>
+  //           {availableAreas.map((area) => (
+  //             <option key={area} value={area}>
+  //               {area}
+  //             </option>
+  //           ))}
+  //         </select>
+  //       </div>
+
+  //       {/* 4. Index Selector (Moved here & formatted to match) */}
+  //       <div>
+  //         <label className="form-label small fw-bold text-muted">Index</label>
+  //         <select
+  //           className="form-select form-select-sm"
+  //           value={indexName}
+  //           onChange={(e) => setIndexName(e.target.value)}
+  //         >
+  //           {/* ALL_INDICES.map((idx) => ( */}
+  //           {availableIndices.map((idx) => (
+  //             <option key={idx} value={idx}>
+  //               {idx}
+  //             </option>
+  //           ))}
+  //         </select>
+  //       </div>
+
+  //       {/* Override Shapefile Selector */}
+  //       {/* <div>
+  //         <label className="form-label small fw-bold text-muted">Shapefile</label>
+  //         <select
+  //           className="form-select form-select-sm"
+  //           style={{ width: "150px" }}
+  //           value={shapefileName}
+  //           onChange={(e) => setShapefileName(e.target.value)}
+  //           title="Select a different shapefile boundary for map rendering"
+  //         >
+  //           {shapefileList.map((name) => (
+  //             <option key={name} value={name}>{name}</option>
+  //           ))}
+  //         </select>
+  //       </div> */}
+
+  //       {/* 5. Start Year Input (Moved here & formatted to match) */}
+  //       <div className="d-flex align-items-end gap-3">
+  //         <div>
+  //           <label className="form-label small fw-bold text-muted">Start Year</label>
+  //           <input
+  //             type="number"
+  //             className="form-control form-control-sm"
+  //             style={{ width: "85px" }}
+  //             value={inputStartYear}
+  //             onChange={(e) => setInputStartYear(e.target.value)}
+  //           />
+  //         </div>
+
+  //         {/* 6. End Year Input (Moved here & formatted to match) */}
+  //         <div>
+  //           <label className="form-label small fw-bold text-muted">End Year</label>
+  //           <input
+  //             type="number"
+  //             className="form-control form-control-sm"
+  //             style={{ width: "85px" }}
+  //             value={inputEndYear}
+  //             onChange={(e) => setInputEndYear(e.target.value)}
+  //           />
+  //         </div>
+  //       </div>
+
+  //       {/* 7. Apply Button (Moved here) */}
+  //       <div>
+  //         <button 
+  //           className="btn btn-sm btn-primary" 
+  //           onClick={handleApplyYearRange}
+  //         >
+  //           {/* {indexName.startsWith("SPI") ? "Apply Years & Threshold for Maps" : "Apply Years for Maps"} */}
+  //           {indexName.startsWith("SPI") && (indexName.includes("Drought") || indexName.includes("Flood"))
+  //             ? "Apply Years Threshold and Config for Maps" 
+  //             : "Apply config for Maps"}
+  //         </button>
+  //       </div>
+
+  //       {/* 8. Upload New Data Button (Moved to the end of the line) */}
+  //       <div className="ms-lg-auto mt-3 mt-lg-0 flex-grow-1 flex-lg-grow-0 text-center text-lg-end"> {/* 'ms-auto' pushes this button to the far right if there is extra space */}
+  //         <Link to="/manipulate">
+  //           <button className="btn btn-sm btn-primary p-2">Upload New Data</button>
+  //         </Link>
+  //       </div>
+
+  //     </div>
+
+  //     {/* Map and Chart Section */}
+  //     <div className="row">
+  //       <div className="col-12 col-lg-6">
+  //         <IndicesViewer
+  //           indexName={indexName}
+  //           datasetName={activeDataset}
+  //           country={country}
+  //           province={province}   
+  //           startYear={inputStartYear}
+  //           endYear={inputEndYear}
+  //           availableIndices={availableIndices}
+  //           spiThreshold={spiThreshold} //
+  //           setSpiThreshold={setSpiThreshold} //
+  //           // shapefileName={shapefileName}
+  //           // targetCol={targetCol}
+  //         />
+  //       </div>
+  //       <div className="col-12 col-lg-6">
+  //         <GridMapViewer
+  //           indexName={indexName}
+  //           mode={mode}
+  //           setMode={setMode}
+  //           datasetName={activeDataset}
+  //           country={country}
+  //           province={province}   
+  //           startYear={startYear}
+  //           endYear={endYear}
+  //           availableIndices={availableIndices}
+  //           spiThreshold={appliedSpiThreshold} //
+  //           shapefileName={shapefileName}
+  //           targetCol={targetCol}
+  //         />
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
+
   return (
-    <div className="container-fluid mt-4">
+    <div className="w-full px-4 mt-4">
       {/* Controls Container */}
-      <div className="d-flex align-items-end gap-3 flex-wrap mb-3">
+      <div className="flex items-end gap-4 flex-wrap mb-2">
 
         {/* 1. Dataset Selector */}
         <div>
-          <label className="form-label small fw-bold text-muted">
+          <label className="block text-base font-bold text-gray-500 mb-1">
             Dataset Source
           </label>
           <select
-            className="form-select form-select-sm"
+            className="block h-[36px] text-base border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
             value={activeDataset}
             onChange={(e) => {
               setActiveDataset(e.target.value)
-              setCountry(""); 
+              setCountry("");
               setProvince("");
               setAvailableIndices([]);
             }
@@ -462,26 +701,21 @@ export default function ClimateDashboard() {
             {datasetList.length === 0 && (
               <option disabled>No uploaded dataset</option>
             )}
-            {[...datasetList] 
+            {[...datasetList]
               .sort((a, b) => a.localeCompare(b))
               .map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
             ))}
-            {/* {datasetList.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))} */}
           </select>
         </div>
 
         {/* 2. Workspace / Country */}
         <div>
-          <label className="form-label small fw-bold text-muted">Workspace / Country</label>
+          <label className="block text-base font-bold text-gray-500 mb-1">Workspace / Country</label>
           <select
-            className="form-select form-select-sm"
+            className="block h-[36px] text-base min-w-[160px] border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             disabled={availableWorkspaces.length === 0}
@@ -496,55 +730,15 @@ export default function ClimateDashboard() {
                   {ws}
                 </option>
             ))}
-            {/* {availableWorkspaces.map((ws) => (
-              <option key={ws} value={ws}>
-                {ws}
-              </option>
-            ))} */}
           </select>
         </div>
 
-        {/* 2. Country Selector */}
-        {/* <div>
-          <label className="form-label small fw-bold text-muted">Country</label>
-          <select
-            className="form-select form-select-sm"
-            value={country}
-            onChange={(e) => {
-              setCountry(e.target.value);
-              setProvince("");
-            }}
-          >
-            {countries.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div> */}
-
         {/* 3. Province Selector (Conditional) */}
-        {/* {country === "Thailand" && (
-          <div>
-            <label className="form-label small fw-bold text-muted">Province</label>
-            <select
-              className="form-select form-select-sm"
-              value={province}
-              onChange={(e) => setProvince(e.target.value)}
-            >
-              <option value="">Whole Country</option>
-              {provinces.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
-        )} */}
         <div>
-          <label className="form-label small fw-bold text-muted">Select Area</label>
+          <label className="block text-base font-bold text-gray-500 mb-1">Select Area</label>
           <select
-            className="form-select form-select-sm"
+            /* Added h-[38px] for equal height, max-w-[200px] and truncate to prevent long names from breaking layout */
+            className="block h-[36px] max-w-[200px] truncate text-base border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
             value={province}
             onChange={(e) => setProvince(e.target.value)}
             disabled={availableAreas.length === 0}
@@ -558,15 +752,15 @@ export default function ClimateDashboard() {
           </select>
         </div>
 
-        {/* 4. Index Selector (Moved here & formatted to match) */}
+        {/* 4. Index Selector */}
         <div>
-          <label className="form-label small fw-bold text-muted">Index</label>
+          <label className="block text-base font-bold text-gray-500 mb-1">Index</label>
           <select
-            className="form-select form-select-sm"
+            /* Added h-[38px] */
+            className="block h-[36px] text-base border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
             value={indexName}
             onChange={(e) => setIndexName(e.target.value)}
           >
-            {/* ALL_INDICES.map((idx) => ( */}
             {availableIndices.map((idx) => (
               <option key={idx} value={idx}>
                 {idx}
@@ -575,73 +769,60 @@ export default function ClimateDashboard() {
           </select>
         </div>
 
-        {/* Override Shapefile Selector */}
-        {/* <div>
-          <label className="form-label small fw-bold text-muted">Shapefile</label>
-          <select
-            className="form-select form-select-sm"
-            style={{ width: "150px" }}
-            value={shapefileName}
-            onChange={(e) => setShapefileName(e.target.value)}
-            title="Select a different shapefile boundary for map rendering"
-          >
-            {shapefileList.map((name) => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
-        </div> */}
-
-        {/* 5. Start Year Input (Moved here & formatted to match) */}
-        <div className="d-flex align-items-end gap-3">
+        {/* 5. Start Year Input */}
+        <div className="flex items-end gap-3">
           <div>
-            <label className="form-label small fw-bold text-muted">Start Year</label>
+            <label className="block text-base font-bold text-gray-500 mb-1">Start Year</label>
             <input
               type="number"
-              className="form-control form-control-sm"
-              style={{ width: "85px" }}
+              /* Added h-[38px] to perfectly match select boxes, removed style inline */
+              className="block h-[36px] w-[85px] text-base border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
               value={inputStartYear}
               onChange={(e) => setInputStartYear(e.target.value)}
             />
           </div>
 
-          {/* 6. End Year Input (Moved here & formatted to match) */}
+          {/* 6. End Year Input */}
           <div>
-            <label className="form-label small fw-bold text-muted">End Year</label>
+            <label className="block text-base font-bold text-gray-500 mb-1">End Year</label>
             <input
               type="number"
-              className="form-control form-control-sm"
-              style={{ width: "85px" }}
+              /* Added h-[38px] to perfectly match select boxes, removed style inline */
+              className="block h-[36px] w-[85px] text-base border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
               value={inputEndYear}
               onChange={(e) => setInputEndYear(e.target.value)}
             />
           </div>
         </div>
 
-        {/* 7. Apply Button (Moved here) */}
+        {/* 7. Apply Button */}
         <div>
           <button 
-            className="btn btn-sm btn-primary" 
+            /* Added h-[38px] so the button aligns perfectly with inputs */
+            className="h-[36px] bg-blue-600 hover:bg-blue-700 text-white text-base font-medium px-4 rounded-md transition-colors whitespace-nowrap" 
             onClick={handleApplyYearRange}
           >
-            {/* {indexName.startsWith("SPI") ? "Apply Years & Threshold for Maps" : "Apply Years for Maps"} */}
+            {/* Shortened text to save horizontal space */}
             {indexName.startsWith("SPI") && (indexName.includes("Drought") || indexName.includes("Flood"))
-              ? "Apply Years Threshold and Config for Maps" 
-              : "Apply config for Maps"}
+              ? "Apply SPI & Update Map" 
+              : "Apply Update Map"}
           </button>
         </div>
 
-        {/* 8. Upload New Data Button (Moved to the end of the line) */}
-        <div className="ms-lg-auto mt-3 mt-lg-0 flex-grow-1 flex-lg-grow-0 text-center text-lg-end"> {/* 'ms-auto' pushes this button to the far right if there is extra space */}
+        {/* 8. Upload New Data Button */}
+        <div className="lg:ml-auto mt-4 lg:mt-0 flex-grow lg:flex-grow-0 text-center lg:text-right"> 
           <Link to="/manipulate">
-            <button className="btn btn-sm btn-primary p-2">Upload New Data</button>
+            <button className="h-[36px] bg-blue-600 hover:bg-blue-700 text-white text-base font-medium px-4 rounded-md transition-colors shadow-sm whitespace-nowrap">
+              Upload New Data
+            </button>
           </Link>
         </div>
 
       </div>
 
-      {/* Map and Chart Section */}
-      <div className="row">
-        <div className="col-12 col-lg-6">
+      {/* Map and Chart Section using Tailwind Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="w-full">
           <IndicesViewer
             indexName={indexName}
             datasetName={activeDataset}
@@ -650,13 +831,11 @@ export default function ClimateDashboard() {
             startYear={inputStartYear}
             endYear={inputEndYear}
             availableIndices={availableIndices}
-            spiThreshold={spiThreshold} //
-            setSpiThreshold={setSpiThreshold} //
-            // shapefileName={shapefileName}
-            // targetCol={targetCol}
+            spiThreshold={spiThreshold} 
+            setSpiThreshold={setSpiThreshold} 
           />
         </div>
-        <div className="col-12 col-lg-6">
+        <div className="w-full">
           <GridMapViewer
             indexName={indexName}
             mode={mode}
@@ -667,7 +846,7 @@ export default function ClimateDashboard() {
             startYear={startYear}
             endYear={endYear}
             availableIndices={availableIndices}
-            spiThreshold={appliedSpiThreshold} //
+            spiThreshold={appliedSpiThreshold} 
             shapefileName={shapefileName}
             targetCol={targetCol}
           />

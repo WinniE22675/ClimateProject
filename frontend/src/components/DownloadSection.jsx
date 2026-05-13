@@ -46,14 +46,31 @@ export default function DownloadSection({ datasetName, datasetStatus }) {
     }
   };
 
+  // return (
+  //   <button
+  //     onClick={handleDownload}
+  //     disabled={isDisabled}
+  //     className={`btn w-100 fw-bold shadow-sm ${
+  //       isReady && !downloading
+  //         ? "btn-primary"
+  //         : "btn-secondary"
+  //     }`}
+  //   >
+  //     {downloading
+  //       ? "Downloading..."
+  //       : isReady
+  //       ? "Download Merged Dataset"
+  //       : "Wait for Dataset"} 
+  //   </button>
+  // );
   return (
     <button
       onClick={handleDownload}
       disabled={isDisabled}
-      className={`btn w-100 fw-bold shadow-sm ${
+      className={`w-full font-bold shadow-sm py-2 px-4 rounded-md transition-colors ${
         isReady && !downloading
-          ? "btn-primary"
-          : "btn-secondary"
+          ? "bg-blue-600 hover:bg-blue-700 text-white"
+          : "bg-gray-400 text-white cursor-not-allowed"
       }`}
     >
       {downloading

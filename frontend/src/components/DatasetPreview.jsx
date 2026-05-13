@@ -46,16 +46,105 @@ export default function DatasetPreview({ metadata, selectedFile, onSelectFile })
     // error,
   } = current;
 
+  // return (
+  //   <div className="card shadow-sm border-0 h-100">
+      
+  //     {/* Header of Preview */}
+  //     <div className="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center" style={{ minHeight: "60px" }}>
+  //       <h5 className="mb-0 fw-bold text-dark">Dataset Preview</h5>
+        
+  //       {metaList.length > 1 && (
+  //         <select
+  //           className="form-select form-select-sm w-auto shadow-sm"
+  //           value={selectedFile}
+  //           onChange={(e) => onSelectFile(parseInt(e.target.value))}
+  //         >
+  //           {metaList.map((m, i) => (
+  //             <option key={i} value={i}>
+  //               {m.filename || `File ${i + 1}`}
+  //             </option>
+  //           ))}
+  //         </select>
+  //       )}
+  //     </div>
+
+  //     <div className="card-body p-3" style={{ fontSize: "0.9rem" }}>
+        
+  //       {/* VARIABLES */}
+  //       <h6 className="fw-bold text-primary mb-3">Variables</h6>
+  //       <div className="list-group list-group-flush border rounded mb-4 shadow-sm">
+  //         {variables.map((v) => {
+  //           const std = standard_names?.[v] || null;
+  //           const unit = variable_units?.[v] || null;
+  //           return (
+  //             <div key={v} className="list-group-item bg-light p-2">
+  //               <span className="fw-bold text-dark">{std || v}</span>
+  //               {unit && <span className="badge bg-secondary ms-2">{unit}</span>}
+  //               {!std && unit && <div className="text-muted small mt-1">({v})</div>}
+  //             </div>
+  //           );
+  //         })}
+  //       </div>
+
+  //       <div className="row g-4">
+  //         {/* DIMENSIONS */}
+  //         <div className="col-12 col-md-6">
+  //           <h6 className="fw-bold text-primary mb-2">Dimensions</h6>
+  //           <ul className="list-unstyled text-muted mb-0">
+  //             {Object.entries(shape).map(([key, value]) => (
+  //               <li key={key} className="mb-1">
+  //                 <span className="fw-bold text-dark text-capitalize">{key}:</span> {value}
+  //               </li>
+  //             ))}
+  //           </ul>
+  //         </div>
+
+  //         {/* SPATIAL INFO */}
+  //         <div className="col-12 col-md-6">
+  //           <h6 className="fw-bold text-primary mb-2">Spatial Coverage</h6>
+  //           <ul className="list-unstyled text-muted mb-0">
+  //             <li className="mb-1"><span className="fw-bold text-dark">Latitude:</span> {lat_min ?? "-"} → {lat_max ?? "-"}</li>
+  //             <li className="mb-1"><span className="fw-bold text-dark">Longitude:</span> {lon_min ?? "-"} → {lon_max ?? "-"}</li>
+  //             {spatial_resolution && (
+  //               <li><span className="fw-bold text-dark">Resolution:</span> {spatial_resolution}</li>
+  //             )}
+  //           </ul>
+  //         </div>
+  //       </div>
+
+  //       <hr className="my-3 text-muted" />
+
+  //       {/* TEMPORAL INFO */}
+  //       <h6 className="fw-bold text-primary mb-2">Temporal Coverage</h6>
+  //       <ul className="list-unstyled text-muted mb-0">
+  //         <li className="mb-1">
+  //           <span className="fw-bold text-dark">Time Range:</span> {time_start ?? "-"} → {time_end ?? "-"}
+  //         </li>
+  //         {time_years && (
+  //           <li className="mb-1">
+  //             <span className="fw-bold text-dark">Time Span:</span> {time_years} years
+  //           </li>
+  //         )}
+  //         {calendar && (
+  //           <li className="mb-1">
+  //             <span className="fw-bold text-dark">Calendar:</span> {calendar}
+  //           </li>
+  //         )}
+  //       </ul>
+
+  //     </div>
+  //   </div>
+  // );
   return (
-    <div className="card shadow-sm border-0 h-100">
+    <div className="bg-white rounded-lg border border-gray-200 h-full overflow-hidden">
       
       {/* Header of Preview */}
-      <div className="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center" style={{ minHeight: "60px" }}>
-        <h5 className="mb-0 fw-bold text-dark">Dataset Preview</h5>
+      <div className="bg-white border-b border-gray-200 py-3 px-4 flex justify-between items-center min-h-[60px]">
+        <h5 className="m-0 font-bold text-gray-900 text-lg">Dataset Preview</h5>
         
         {metaList.length > 1 && (
           <select
-            className="form-select form-select-sm w-auto shadow-sm"
+            className="block w-auto text-sm border border-gray-300 rounded-md px-2 py-1 shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
             value={selectedFile}
             onChange={(e) => onSelectFile(parseInt(e.target.value))}
           >
@@ -68,66 +157,67 @@ export default function DatasetPreview({ metadata, selectedFile, onSelectFile })
         )}
       </div>
 
-      <div className="card-body p-3" style={{ fontSize: "0.9rem" }}>
+      <div className="p-4 text-[0.9rem]">
         
         {/* VARIABLES */}
-        <h6 className="fw-bold text-primary mb-3">Variables</h6>
-        <div className="list-group list-group-flush border rounded mb-4 shadow-sm">
+        <h6 className="font-bold text-blue-600 mb-3 text-base">Variables</h6>
+        <div className="flex flex-col border border-gray-200 rounded-md mb-4 shadow-sm divide-y divide-gray-200">
           {variables.map((v) => {
             const std = standard_names?.[v] || null;
             const unit = variable_units?.[v] || null;
             return (
-              <div key={v} className="list-group-item bg-light p-2">
-                <span className="fw-bold text-dark">{std || v}</span>
-                {unit && <span className="badge bg-secondary ms-2">{unit}</span>}
-                {!std && unit && <div className="text-muted small mt-1">({v})</div>}
+              <div key={v} className="bg-gray-50 p-3">
+                <span className="font-bold text-gray-900">{std || v}</span>
+                {unit && <span className="inline-block bg-gray-500 text-white text-xs font-bold px-2 py-0.5 rounded-full ml-2">{unit}</span>}
+                {!std && unit && <div className="text-gray-500 text-sm mt-1">({v})</div>}
               </div>
             );
           })}
         </div>
 
-        <div className="row g-4">
+        {/* Tailwind Grid replaces Bootstrap Row/Col */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* DIMENSIONS */}
-          <div className="col-12 col-md-6">
-            <h6 className="fw-bold text-primary mb-2">Dimensions</h6>
-            <ul className="list-unstyled text-muted mb-0">
+          <div>
+            <h6 className="font-bold text-blue-600 mb-2 text-base">Dimensions</h6>
+            <ul className="list-none text-gray-500 m-0 p-0">
               {Object.entries(shape).map(([key, value]) => (
                 <li key={key} className="mb-1">
-                  <span className="fw-bold text-dark text-capitalize">{key}:</span> {value}
+                  <span className="font-bold text-gray-900 capitalize">{key}:</span> {value}
                 </li>
               ))}
             </ul>
           </div>
 
           {/* SPATIAL INFO */}
-          <div className="col-12 col-md-6">
-            <h6 className="fw-bold text-primary mb-2">Spatial Coverage</h6>
-            <ul className="list-unstyled text-muted mb-0">
-              <li className="mb-1"><span className="fw-bold text-dark">Latitude:</span> {lat_min ?? "-"} → {lat_max ?? "-"}</li>
-              <li className="mb-1"><span className="fw-bold text-dark">Longitude:</span> {lon_min ?? "-"} → {lon_max ?? "-"}</li>
+          <div>
+            <h6 className="font-bold text-blue-600 mb-2 text-base">Spatial Coverage</h6>
+            <ul className="list-none text-gray-500 m-0 p-0">
+              <li className="mb-1"><span className="font-bold text-gray-900">Latitude:</span> {lat_min ?? "-"} → {lat_max ?? "-"}</li>
+              <li className="mb-1"><span className="font-bold text-gray-900">Longitude:</span> {lon_min ?? "-"} → {lon_max ?? "-"}</li>
               {spatial_resolution && (
-                <li><span className="fw-bold text-dark">Resolution:</span> {spatial_resolution}</li>
+                <li><span className="font-bold text-gray-900">Resolution:</span> {spatial_resolution}</li>
               )}
             </ul>
           </div>
         </div>
 
-        <hr className="my-3 text-muted" />
+        <hr className="my-4 border-gray-200" />
 
         {/* TEMPORAL INFO */}
-        <h6 className="fw-bold text-primary mb-2">Temporal Coverage</h6>
-        <ul className="list-unstyled text-muted mb-0">
+        <h6 className="font-bold text-blue-600 mb-2 text-base">Temporal Coverage</h6>
+        <ul className="list-none text-gray-500 m-0 p-0">
           <li className="mb-1">
-            <span className="fw-bold text-dark">Time Range:</span> {time_start ?? "-"} → {time_end ?? "-"}
+            <span className="font-bold text-gray-900">Time Range:</span> {time_start ?? "-"} → {time_end ?? "-"}
           </li>
           {time_years && (
             <li className="mb-1">
-              <span className="fw-bold text-dark">Time Span:</span> {time_years} years
+              <span className="font-bold text-gray-900">Time Span:</span> {time_years} years
             </li>
           )}
           {calendar && (
             <li className="mb-1">
-              <span className="fw-bold text-dark">Calendar:</span> {calendar}
+              <span className="font-bold text-gray-900">Calendar:</span> {calendar}
             </li>
           )}
         </ul>

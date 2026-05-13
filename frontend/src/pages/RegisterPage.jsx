@@ -66,17 +66,115 @@ const RegisterPage = () => {
     };
 
     // UI Rendering
+    // return (
+    //     <div className="d-flex justify-content-center align-items-center mt-5">
+    //         {/* Card UI */}
+    //         <div className="card shadow-lg border-0 rounded-4" style={{ width: '100%', maxWidth: '450px' }}>
+    //             <div className="card-body p-5">
+    //                 {/* <h2 className="mb-4 text-center fw-bold">Create an Account</h2> */}
+    //                 <div className="text-center mb-4">
+    //                     <h2 className="fw-bold">Create an Account</h2>
+    //                     <p className="text-muted">Join the climate data services platform</p>
+    //                 </div>
+    //                 {errorMsg && <div className="alert alert-danger mb-3">{errorMsg}</div>}
+
+    //                 <form onSubmit={handleRegister}>
+    //                     <div className="custom-outlined-input">
+    //                         <input 
+    //                             type="email" 
+    //                             id="regEmailInput" 
+    //                             placeholder=" " /* MUST BE A SPACE */
+    //                             value={email} 
+    //                             onChange={(e) => setEmail(e.target.value)} 
+    //                             required 
+    //                         />
+    //                         <label htmlFor="regEmailInput">Email address</label>
+    //                     </div>
+
+    //                     <div className="custom-outlined-input">
+    //                         <input 
+    //                             type="password" 
+    //                             id="regPasswordInput" 
+    //                             placeholder=" " 
+    //                             value={password} 
+    //                             onChange={(e) => setPassword(e.target.value)} 
+    //                             required 
+    //                         />
+    //                         <label htmlFor="regPasswordInput">Password</label>
+    //                     </div>
+
+    //                     <div className="custom-outlined-input">
+    //                         <input 
+    //                             type="password" 
+    //                             id="regConfirmInput" 
+    //                             placeholder=" " 
+    //                             value={confirmPassword} 
+    //                             onChange={(e) => setConfirmPassword(e.target.value)} 
+    //                             required 
+    //                         />
+    //                         <label htmlFor="regConfirmInput">Confirm Password</label>
+    //                     </div>
+
+    //                     <div className="custom-outlined-input">
+    //                         <select 
+    //                             id="regRoleInput" 
+    //                             value={role} 
+    //                             onChange={(e) => setRole(e.target.value)} 
+    //                             required
+    //                         >
+    //                             <option value="viewer">Viewer (Dashboard Only)</option>
+    //                             <option value="analyst">Analyst (Full Access)</option>
+    //                         </select>
+    //                         <label htmlFor="regRoleInput">Account Role</label>
+    //                     </div>
+
+    //                     {role === 'analyst' && (
+    //                         <div className="custom-outlined-input">
+    //                             <input 
+    //                                 type="text" 
+    //                                 id="regAdminCode" 
+    //                                 placeholder=" " 
+    //                                 value={adminCode} 
+    //                                 onChange={(e) => setAdminCode(e.target.value)} 
+    //                                 required={role === 'analyst'} 
+    //                             />
+    //                             <label htmlFor="regAdminCode">Administrator Code</label>
+    //                         </div>
+    //                     )}
+
+    //                     <button type="submit" className="btn btn-primary w-100" disabled={isLoading}>
+    //                         {isLoading ? 'Creating Account...' : 'Sign up'}
+    //                     </button>
+    //                 </form>
+
+    //                 {/* Link back to Login Page */}
+    //                 <div className="mt-4 text-center">
+    //                     <span className="text-muted">Already have an account? </span>
+    //                     <Link to="/login" className="text-decoration-none fw-bold text-primary" >
+    //                         Sign in here
+    //                     </Link>
+    //                 </div>
+    //             </div>
+    //         </div>
+    //     </div>
+    // );
     return (
-        <div className="d-flex justify-content-center align-items-center mt-5">
+        <div className="flex justify-center items-center mt-12 mb-12">
             {/* Card UI */}
-            <div className="card shadow-lg border-0 rounded-4" style={{ width: '100%', maxWidth: '450px' }}>
-                <div className="card-body p-5">
-                    {/* <h2 className="mb-4 text-center fw-bold">Create an Account</h2> */}
-                    <div className="text-center mb-4">
-                        <h2 className="fw-bold">Create an Account</h2>
-                        <p className="text-muted">Join the climate data services platform</p>
+            <div className="bg-white shadow-lg rounded-2xl w-full max-w-[450px]">
+                <div className="p-12">
+                    {/* <h2 className="mb-6 text-center font-bold">Create an Account</h2> */}
+                    <div className="text-center mb-6">
+                        <h2 className="text-3xl font-bold text-gray-800">Create an Account</h2>
+                        <p className="text-gray-500 mt-2">Join the climate data services platform</p>
                     </div>
-                    {errorMsg && <div className="alert alert-danger mb-3">{errorMsg}</div>}
+                    
+                    {/* Error Message */}
+                    {errorMsg && (
+                        <div className="bg-red-100 text-red-700 border border-red-200 px-4 py-3 rounded-md mb-4">
+                            {errorMsg}
+                        </div>
+                    )}
 
                     <form onSubmit={handleRegister}>
                         <div className="custom-outlined-input">
@@ -142,15 +240,19 @@ const RegisterPage = () => {
                             </div>
                         )}
 
-                        <button type="submit" className="btn btn-primary w-100" disabled={isLoading}>
+                        <button 
+                            type="submit" 
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed" 
+                            disabled={isLoading}
+                        >
                             {isLoading ? 'Creating Account...' : 'Sign up'}
                         </button>
                     </form>
 
                     {/* Link back to Login Page */}
-                    <div className="mt-4 text-center">
-                        <span className="text-muted">Already have an account? </span>
-                        <Link to="/login" className="text-decoration-none fw-bold text-primary" >
+                    <div className="mt-6 text-center">
+                        <span className="text-gray-500">Already have an account? </span>
+                        <Link to="/login" className="font-bold text-blue-600 hover:text-blue-800 no-underline">
                             Sign in here
                         </Link>
                     </div>

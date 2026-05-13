@@ -75,9 +75,34 @@ export default function DatasetUploader({ slotId, isShapefileMode, datasetName, 
     }
   };
 
+  // return (
+  //   // Converted to Bootstrap Input Group for a seamless, attached button look
+  //   <div className="input-group input-group-sm shadow-sm">
+  //     <input
+  //       type="file"
+  //       id="ncFileInput"
+  //       ref={fileInputRef} // ADDED ref
+  //       multiple={!isShapefileMode} // Disable multiple for shapefile
+  //       accept={isShapefileMode ? ".zip,.geojson" : ".nc"} // Change accept based on mode
+  //       onChange={(e) => setFiles(e.target.files)}
+  //       className="form-control"
+  //     />
+  //     <button 
+  //       onClick={handleUpload} 
+  //       disabled={uploading || files.length === 0}
+  //       className="btn btn-primary px-3"
+  //     >
+  //       {uploading ? (
+  //         <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></>
+  //       ) : (
+  //         isShapefileMode ? "Upload Shapefile" : "Upload Raw" // Dynamic button text
+  //       )}
+  //     </button>
+  //   </div>
+  // );
   return (
-    // Converted to Bootstrap Input Group for a seamless, attached button look
-    <div className="input-group input-group-sm shadow-sm">
+    // Simulated Bootstrap Input Group using Flexbox
+    <div className="flex shadow-sm text-sm rounded-md overflow-hidden border border-gray-300">
       <input
         type="file"
         id="ncFileInput"
@@ -85,15 +110,19 @@ export default function DatasetUploader({ slotId, isShapefileMode, datasetName, 
         multiple={!isShapefileMode} // Disable multiple for shapefile
         accept={isShapefileMode ? ".zip,.geojson" : ".nc"} // Change accept based on mode
         onChange={(e) => setFiles(e.target.files)}
-        className="form-control"
+        className="block w-full text-sm text-gray-500 bg-white cursor-pointer focus:outline-none file:cursor-pointer file:mr-3 file:py-1.5 file:px-4 file:rounded-none file:border-0 file:border-r file:border-gray-300 file:text-sm file:font-medium file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100"
       />
       <button 
         onClick={handleUpload} 
         disabled={uploading || files.length === 0}
-        className="btn btn-primary px-3"
+        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center"
       >
         {uploading ? (
-          <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></>
+          // Tailwind custom SVG Spinner
+          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
         ) : (
           isShapefileMode ? "Upload Shapefile" : "Upload Raw" // Dynamic button text
         )}

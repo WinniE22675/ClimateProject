@@ -897,11 +897,25 @@ export default function GridMapViewer({
     layer.bindPopup(html);
   };
 
-  if (loading || isGenerating) {
+  // if (loading || isGenerating) {
+  //   return (
+  //     <div className="d-flex flex-column justify-content-center align-items-center" style={{ height: "450px", border: "1px solid #ddd", borderRadius: "8px", background: "#f8f9fa" }}>
+  //       <div className="spinner-border text-primary mb-2" role="status"></div>
+  //       <span className="fw-bold text-primary">
+  //         {isGenerating ? `Calculating map data for ${startYear} - ${endYear}...` : "Loading maps..."}
+  //       </span>
+  //     </div>
+  //   );
+  // }
+if (loading || isGenerating) {
     return (
-      <div className="d-flex flex-column justify-content-center align-items-center" style={{ height: "450px", border: "1px solid #ddd", borderRadius: "8px", background: "#f8f9fa" }}>
-        <div className="spinner-border text-primary mb-2" role="status"></div>
-        <span className="fw-bold text-primary">
+      /* Added mt-[60px] to align with left side, and changed h-[450px] to h-[500px] */
+      <div className="flex flex-col items-center justify-center w-full h-[500px] mt-[60px] bg-gray-50 border border-gray-200 rounded-lg">
+        <svg className="animate-spin h-10 w-10 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span className="font-bold text-blue-600 animate-pulse text-base">
           {isGenerating ? `Calculating map data for ${startYear} - ${endYear}...` : "Loading maps..."}
         </span>
       </div>
@@ -911,23 +925,376 @@ export default function GridMapViewer({
   if (error) return <div className="p-3 text-danger border rounded">Error: {error}</div>;
   if (noData) return <div className="p-3 text-warning border rounded">No map data available for the selected parameters.</div>;
 
+  // return (
+  //   <div className="card border-0">
+      
+  //     {/* 1. Header Section: Mode Buttons & Map Title */}
+  //     <div className="card-header bg-white d-flex justify-content-between align-items-center p-3 border-bottom">
+        
+  //       {/* Left: Mode Buttons (Grouped for better UI) */}
+  //       <div className="btn-group" role="group">
+  //         <button
+  //           onClick={() => setMode("actual")}
+  //           className={`btn btn-sm ${mode === "actual" ? "btn-primary shadow-sm" : "btn-outline-secondary"}`}
+  //         >
+  //           Actual Map
+  //         </button>
+  //         <button
+  //           onClick={() => setMode("trend")}
+  //           className={`btn btn-sm ${mode === "trend" ? "btn-primary shadow-sm" : "btn-outline-secondary"}`}
+  //           title={!supportsTrend ? "Trend map is not available for raw variables" : "View Trend Map"}
+  //           disabled={!supportsTrend}
+  //         >
+  //           Trend Map
+  //         </button>
+  //       </div>
+
+  //       {/* Center: Checkbox for Significant Points (Only in Trend mode) */}
+  //       {mode === "trend" && (
+  //         <div className="form-check form-switch mb-0 ms-3 me-auto">
+  //           <input
+  //             className="form-check-input"
+  //             type="checkbox"
+  //             id="sigPointsToggle"
+  //             checked={showSig}
+  //             onChange={() => setShowSig((s) => !s)}
+  //           />
+  //           <label className="form-check-label small text-muted fw-bold" htmlFor="sigPointsToggle">
+  //             Significant Points (p &lt; 0.05)
+  //           </label>
+  //         </div>
+  //       )}
+
+  //       {/* Right: Dynamic Map Title */}
+  //       <div className="text-end">
+  //         <h6 className="mb-0 fw-bold text-secondary">
+  //           {indexName} {
+  //             mode === "actual" 
+  //               ? (indexName.includes("Frequency") ? "Sum" : "Average") 
+  //               : "Trend"
+  //           } Map
+  //         </h6>
+  //         <small className="text-muted">
+  //           {startYear} - {endYear} {isSPIEvent && `| Threshold ${spiThreshold}`} {province ? `| ${province}` : "| Whole Country"}
+  //         </small>
+  //       </div>
+  //     </div>
+
+  //     {/* 2. Checkbox for Significant Points (Only in Trend mode) */}
+  //     {/* {mode === "trend" && (
+  //       <div className="px-3 pt-2">
+  //         <div className="form-check form-switch">
+  //           <input
+  //             className="form-check-input"
+  //             type="checkbox"
+  //             id="sigPointsToggle"
+  //             checked={showSig}
+  //             onChange={() => setShowSig((s) => !s)}
+  //           />
+  //           <label className="form-check-label small text-muted" htmlFor="sigPointsToggle">
+  //             Show Significant Points (p &lt; 0.05)
+  //           </label>
+  //         </div>
+  //       </div>
+  //     )} */}
+
+  //     {/* 3. Map Container */}
+  //     <div className="card-body p-0 position-relative">
+  //       {errorType === "DATA_UNAVAILABLE" ? (
+          
+  //         <div className="d-flex justify-content-center align-items-center w-100" style={{ height: "450px" }}>
+  //           <div className="p-4 rounded bg-white border border-secondary mx-3" style={{ maxWidth: "550px" }}>
+  //             <div className="d-flex align-items-center mb-3">
+  //               <i className="bi bi-info-circle text-dark me-3" style={{ fontSize: "2rem" }}></i>
+  //               <h5 className="text-dark fw-bold mb-0">Map Visualization Unavailable</h5>
+  //             </div>
+  //             <p className="text-muted small mb-3">
+  //               The system could not generate a map for <strong>{province || country}</strong>. This typically happens due to one of the following reasons:
+  //             </p>
+  //             <ul className="text-muted small mb-3">
+  //               <li className="mb-1"><strong>Resolution Limit:</strong> The selected area is too small (less than 1 grid cell).</li>
+  //               <li className="mb-1"><strong>Spatial Mismatch:</strong> The dataset does not cover this geographic area.</li>
+  //               <li><strong>Missing Values:</strong> The area contains only invalid or No-Data values (NaN).</li>
+  //             </ul>
+  //             <div className="text-muted small d-flex align-items-start mt-4">
+  //               <i className="bi bi-lightbulb text-dark me-2 fs-6"></i>
+  //               <span><strong>Tip:</strong> If the <em>Timeseries charts</em> on the left are also empty, it confirms a <strong>Spatial Mismatch</strong> or <strong>Missing Values</strong>.</span>
+  //             </div>
+  //           </div>
+  //         </div>
+
+  //       ) : errorType === "GENERAL_ERROR" || error ? (
+
+  //         <div className="d-flex justify-content-center align-items-center w-100 text-dark" style={{ height: "450px" }}>
+  //           <div className="text-center bg-white p-4 rounded border border-secondary mx-3" style={{ maxWidth: "500px" }}>
+  //              <i className="bi bi-exclamation-octagon fs-1 d-block mb-3 text-dark"></i>
+  //              <h5 className="fw-bold mb-2">System Error Encountered</h5>
+  //              <p className="small text-muted mb-3">
+  //                An unexpected error has occurred while processing the map data. <br/>
+  //                Please contact the system administrator for assistance.
+  //              </p>
+               
+  //              {error && (
+  //                <div className="bg-light p-2 rounded border small text-start text-break text-secondary">
+  //                  <strong>Details:</strong> {error}
+  //                </div>
+  //              )}
+  //           </div>
+  //         </div>
+
+  //       ) : (
+  //         <MapContainer
+  //           key={`map-container-${country}`} // Force re-mount of map ONLY when country changes
+  //           // center={mapView.center}
+  //           // zoom={mapView.zoom}
+  //           zoomSnap={0.25}  // Enable fractional zoom snapping to 0.25 increments
+  //           zoomDelta={0.25} // Set zoom step for +/- buttons to 0.25
+  //           style={{ height: "450px", width: "100%", zIndex: 0 }} //450px
+  //           // preferCanvas={true} //  Use Canvas instead of SVG for crisp vector edges
+  //         >
+  //           {/* Boundary always on top */}
+  //           {/* {allProvincesData && <BoundaryLayer data={allProvincesData} weight={1.0} />} */}
+  //           {displayProvinceBoundary && (
+  //             <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
+  //           )}
+
+  //           {/* <MapViewUpdater center={mapView.center} zoom={mapView.zoom} /> */}
+  //           <MapBoundsController 
+  //             province={province} 
+  //             allProvincesData={allProvincesData} // geojsonData={displayProvinceBoundary} 
+  //             targetCol={targetCol} // fallbackView={mapView} 
+  //           />
+
+  //           {/* Mask first */}
+  //           {/* {maskData && <BoundaryMaskLayer mask={maskData} />} */}
+
+
+  //           {/* Province Boundaries */}
+  //           {/* {displayProvinceBoundary && (
+  //             <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
+  //           )} */}
+
+  //           {allProvincesData && (
+  //             <CountryContextLayer 
+  //               data={allProvincesData} 
+  //               selectedProvince={province} 
+  //             />
+  //           )}
+
+  //           {/* Map Data Layers */}
+  //           {mode === "trend" && gridData.trend && (
+  //             <GeoJSON
+  //               // key={`trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
+  //               // key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
+  //               key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
+  //               data={gridData.trend}
+  //               style={style("trend")}
+  //               onEachFeature={onEachFeature("trend")}
+  //               ref={(ref) => (layersRef.current.trend = ref)}
+  //             />
+  //           )}
+  //           {mode === "actual" && gridData.actual && (
+  //             <GeoJSON
+  //               // key={`actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
+  //               // key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
+  //               key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
+  //               data={gridData.actual}
+  //               style={style("actual")}
+  //               onEachFeature={onEachFeature("actual")}
+  //               ref={(ref) => (layersRef.current.actual = ref)}
+  //             />
+  //           )}
+
+  //           {showSig &&
+  //             significantPoints.map((f, i) => <SigPoint key={i} feature={f} />)}
+  //         </MapContainer>
+  //       )}
+  //     </div>
+
+  //     {/* 4. Legend & Controls Footer */}
+  //     <div className="card-footer bg-white border-top pt-2 pb-3 px-0">
+        
+  //       {/* Color Bar */}
+  //       {/* {scales[mode] && binsAll[mode]?.length > 0 && (
+  //         <div className="mb-2">
+  //           <Legend
+  //             bins={binsAll[mode]}
+  //             scale={scales[mode]}
+  //             mode={mode}
+  //             unit={unit}
+  //             indexName={indexName}
+  //             isSPIEvent={isSPIEvent}
+  //           />
+  //         </div>
+  //       )} */}
+  //       {((scales[mode] && binsAll[mode]?.length > 0) || (mode === "trend" && isSPIEvent && gridData[mode])) && (
+  //         <div className="mb-2">
+  //           <Legend
+  //             key={`legend-${indexName}-${mode}-${isSPIEvent}`} 
+  //             bins={binsAll[mode]}
+  //             scale={scales[mode]}
+  //             mode={mode}
+  //             unit={unit}
+  //             indexName={indexName}
+  //             isSPIEvent={isSPIEvent}
+  //           />
+  //         </div>
+  //       )}
+  //       {/* d-flex justify-content-between align-items-center px-3 */}
+  //       <div className="d-flex flex-wrap justify-content-between align-items-center px-3 gap-3">
+
+  //       {/* d-flex align-items-center gap-3 */}
+  //       <div className=" d-flex flex-wrap align-items-center gap-3">
+
+  //         {!(mode === "trend" && isSPIEvent) && (
+  //           <>
+
+  //               {/* 1. Color Palette Selector */}
+  //               <div className="d-flex align-items-center gap-2">
+  //                 <span className="small fw-bold text-muted">Color:</span>
+  //                 <select
+  //                   className="form-select form-select-sm"
+  //                   style={{ width: "140px" }}
+  //                   value={colorSchemes[mode]}
+  //                   onChange={(e) =>
+  //                     setColorSchemes((prev) => ({ ...prev, [mode]: e.target.value }))
+  //                   }
+  //                 >
+  //                   {mode === "actual" ? (
+  //                     <>
+  //                       <optgroup label="Temperature">
+  //                         <option value="YlOrRd">Yellow-Orange-Red</option>
+  //                         <option value="OrRd">Orange-Red</option>
+  //                         <option value="Reds">Reds</option>
+  //                       </optgroup>
+  //                       <optgroup label="Precipitation">
+  //                         <option value="Blues">Blues</option>
+  //                         <option value="YlGnBu">Yellow-Green-Blue</option>
+  //                         <option value="GnBu">Green-Blue</option>
+  //                       </optgroup>
+  //                     </>
+  //                   ) : (
+  //                     <>
+  //                         {/* Note: -RdBu means we will reverse it in the logic */}
+  //                         <option value="RdBu">Red-Blue</option>
+  //                         <option value="-RdBu">Blue-Red</option>
+  //                         <option value="BrBG">Brown-Green</option>
+  //                     </>
+  //                   )}
+  //                 </select>
+  //               </div>
+
+  //             {/* Legend Range Controls */}
+  //             {/* d-flex justify-content-center align-items-center gap-1 */}
+  //               <div className="d-flex flex-wrap align-items-center gap-1">
+  //                 <span className="small fw-bold text-muted me-2">Legend Range:</span>
+
+  //                 <input
+  //                   type="number"
+  //                   placeholder="Min"
+  //                   value={legendRange[mode].min ?? ""}
+  //                   onChange={(e) =>
+  //                     setLegendRange((r) => ({
+  //                       ...r,
+  //                       [mode]: {
+  //                         ...r[mode],
+  //                         min: e.target.value === "" ? null : +e.target.value,
+  //                       },
+  //                     }))
+  //                   }
+  //                   className="form-control form-control-sm text-center"
+  //                   style={{ width: "65px" }}
+  //                 />
+                  
+  //                 <span className="text-muted">-</span>
+
+  //                 <input
+  //                   type="number"
+  //                   placeholder="Max"
+  //                   value={legendRange[mode].max ?? ""}
+  //                   onChange={(e) =>
+  //                     setLegendRange((r) => ({
+  //                       ...r,
+  //                       [mode]: {
+  //                         ...r[mode],
+  //                         max: e.target.value === "" ? null : +e.target.value,
+  //                       },
+  //                     }))
+  //                   }
+  //                   className="form-control form-control-sm text-center"
+  //                   style={{ width: "65px" }}
+  //                 />
+
+  //                 <button
+  //                   className="btn btn-sm btn-outline-secondary ms-2"
+  //                   onClick={() =>
+  //                     setLegendRange((r) => ({
+  //                       ...r,
+  //                       [mode]: { min: null, max: null },
+  //                     }))
+  //                   }
+  //                 >
+  //                   Auto Fix
+  //                 </button>
+  //               </div>
+  //           </>
+  //         )}
+  //       </div>
+
+  //       {/* d-flex justify-content-end gap-1 */}
+  //         <div 
+  //           className="d-flex align-items-center gap-1" 
+  //         >
+  //           <button
+  //             className={`btn btn-sm ${mapStyle === "grid" ? "btn-secondary" : "btn-outline-secondary"}`}
+  //             onClick={() => setMapStyle("grid")}
+  //             title="Show as Grid"
+  //             disabled={!!province}
+  //           >
+  //             Grid
+  //           </button>
+  //           <button
+  //             className={`btn btn-sm ${mapStyle === "shapefile" ? "btn-secondary" : "btn-outline-secondary"}`}
+  //             onClick={() => setMapStyle("shapefile")}
+  //             // title="Show as Shapefile Area Average"
+  //             // disabled={!!province}
+  //             // Dynamic title based on availability
+  //             title={!hasSubAreas ? "Shapefile mode requires multiple sub-areas" : "Show as Shapefile Area Average"}
+  //             // Disable if a province is selected OR if there are no sub-areas
+  //             disabled={!!province || !hasSubAreas}
+  //           >
+  //             Shapefile
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   </div>
+  // );
   return (
-    <div className="card border-0">
+    <div className="w-full overflow-hidden">
       
       {/* 1. Header Section: Mode Buttons & Map Title */}
-      <div className="card-header bg-white d-flex justify-content-between align-items-center p-3 border-bottom">
+      <div className="flex flex-wrap justify-between items-center py-2 gap-4">
         
         {/* Left: Mode Buttons (Grouped for better UI) */}
-        <div className="btn-group" role="group">
+        <div className="flex rounded-md shadow-sm" role="group">
           <button
             onClick={() => setMode("actual")}
-            className={`btn btn-sm ${mode === "actual" ? "btn-primary shadow-sm" : "btn-outline-secondary"}`}
+            className={`px-4 py-1.5 text-base font-medium border transition-colors rounded-l-md ${
+              mode === "actual" 
+                ? "bg-blue-600 text-white border-blue-600 z-10" 
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            }`}
           >
             Actual Map
           </button>
           <button
             onClick={() => setMode("trend")}
-            className={`btn btn-sm ${mode === "trend" ? "btn-primary shadow-sm" : "btn-outline-secondary"}`}
+            className={`px-4 py-1.5 text-base font-medium border-y border-r transition-colors rounded-r-md disabled:opacity-60 disabled:cursor-not-allowed ${
+              mode === "trend" 
+                ? "bg-blue-600 text-white border-blue-600 z-10" 
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            }`}
             title={!supportsTrend ? "Trend map is not available for raw variables" : "View Trend Map"}
             disabled={!supportsTrend}
           >
@@ -937,73 +1304,64 @@ export default function GridMapViewer({
 
         {/* Center: Checkbox for Significant Points (Only in Trend mode) */}
         {mode === "trend" && (
-          <div className="form-check form-switch mb-0 ms-3 me-auto">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="sigPointsToggle"
-              checked={showSig}
-              onChange={() => setShowSig((s) => !s)}
-            />
-            <label className="form-check-label small text-muted fw-bold" htmlFor="sigPointsToggle">
-              Significant Points (p &lt; 0.05)
+          <div className="flex items-center ml-4 mr-auto">
+            <label className="flex items-center cursor-pointer relative" htmlFor="sigPointsToggle">
+              <input
+                type="checkbox"
+                id="sigPointsToggle"
+                className="sr-only peer"
+                checked={showSig}
+                onChange={() => setShowSig((s) => !s)}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <span className="ml-3 text-base font-bold text-gray-500">
+                Significant Points (p &lt; 0.05)
+              </span>
             </label>
           </div>
         )}
 
         {/* Right: Dynamic Map Title */}
-        <div className="text-end">
-          <h6 className="mb-0 fw-bold text-secondary">
+        <div className="text-right ml-auto">
+          <h6 className="m-0 font-bold text-gray-700 text-base">
             {indexName} {
               mode === "actual" 
                 ? (indexName.includes("Frequency") ? "Sum" : "Average") 
                 : "Trend"
             } Map
           </h6>
-          <small className="text-muted">
+          <small className="text-gray-500">
             {startYear} - {endYear} {isSPIEvent && `| Threshold ${spiThreshold}`} {province ? `| ${province}` : "| Whole Country"}
           </small>
         </div>
       </div>
 
-      {/* 2. Checkbox for Significant Points (Only in Trend mode) */}
-      {/* {mode === "trend" && (
-        <div className="px-3 pt-2">
-          <div className="form-check form-switch">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="sigPointsToggle"
-              checked={showSig}
-              onChange={() => setShowSig((s) => !s)}
-            />
-            <label className="form-check-label small text-muted" htmlFor="sigPointsToggle">
-              Show Significant Points (p &lt; 0.05)
-            </label>
-          </div>
-        </div>
-      )} */}
-
       {/* 3. Map Container */}
-      <div className="card-body p-0 position-relative">
+      <div className="p-0 relative">
         {errorType === "DATA_UNAVAILABLE" ? (
           
-          <div className="d-flex justify-content-center align-items-center w-100" style={{ height: "450px" }}>
-            <div className="p-4 rounded bg-white border border-secondary mx-3" style={{ maxWidth: "550px" }}>
-              <div className="d-flex align-items-center mb-3">
-                <i className="bi bi-info-circle text-dark me-3" style={{ fontSize: "2rem" }}></i>
-                <h5 className="text-dark fw-bold mb-0">Map Visualization Unavailable</h5>
+          <div className="flex justify-center items-center w-full h-[450px]">
+            <div className="p-6 rounded-lg bg-white border border-gray-300 mx-4 max-w-[550px] shadow-sm">
+              <div className="flex items-center mb-4">
+                {/* Custom Info Icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-800 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h5 className="text-gray-900 font-bold m-0 text-lg">Map Visualization Unavailable</h5>
               </div>
-              <p className="text-muted small mb-3">
+              <p className="text-gray-500 text-base mb-4">
                 The system could not generate a map for <strong>{province || country}</strong>. This typically happens due to one of the following reasons:
               </p>
-              <ul className="text-muted small mb-3">
+              <ul className="text-gray-500 text-base mb-4 list-disc pl-5">
                 <li className="mb-1"><strong>Resolution Limit:</strong> The selected area is too small (less than 1 grid cell).</li>
                 <li className="mb-1"><strong>Spatial Mismatch:</strong> The dataset does not cover this geographic area.</li>
                 <li><strong>Missing Values:</strong> The area contains only invalid or No-Data values (NaN).</li>
               </ul>
-              <div className="text-muted small d-flex align-items-start mt-4">
-                <i className="bi bi-lightbulb text-dark me-2 fs-6"></i>
+              <div className="text-gray-500 text-base flex items-start mt-6 bg-gray-50 p-3 rounded-md">
+                {/* Custom Lightbulb Icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-800 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
                 <span><strong>Tip:</strong> If the <em>Timeseries charts</em> on the left are also empty, it confirms a <strong>Spatial Mismatch</strong> or <strong>Missing Values</strong>.</span>
               </div>
             </div>
@@ -1011,17 +1369,20 @@ export default function GridMapViewer({
 
         ) : errorType === "GENERAL_ERROR" || error ? (
 
-          <div className="d-flex justify-content-center align-items-center w-100 text-dark" style={{ height: "450px" }}>
-            <div className="text-center bg-white p-4 rounded border border-secondary mx-3" style={{ maxWidth: "500px" }}>
-               <i className="bi bi-exclamation-octagon fs-1 d-block mb-3 text-dark"></i>
-               <h5 className="fw-bold mb-2">System Error Encountered</h5>
-               <p className="small text-muted mb-3">
+          <div className="flex justify-center items-center w-full h-[450px] text-gray-900">
+            <div className="text-center bg-white p-6 rounded-lg border border-gray-300 mx-4 max-w-[500px] shadow-sm">
+                {/* Custom Exclamation Icon */}
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-800 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+               </svg>
+               <h5 className="font-bold mb-3 text-lg">System Error Encountered</h5>
+               <p className="text-base text-gray-500 mb-4">
                  An unexpected error has occurred while processing the map data. <br/>
                  Please contact the system administrator for assistance.
                </p>
                
                {error && (
-                 <div className="bg-light p-2 rounded border small text-start text-break text-secondary">
+                 <div className="bg-gray-50 p-3 rounded-md border border-gray-200 text-base text-left break-words text-gray-600">
                    <strong>Details:</strong> {error}
                  </div>
                )}
@@ -1031,34 +1392,20 @@ export default function GridMapViewer({
         ) : (
           <MapContainer
             key={`map-container-${country}`} // Force re-mount of map ONLY when country changes
-            // center={mapView.center}
-            // zoom={mapView.zoom}
             zoomSnap={0.25}  // Enable fractional zoom snapping to 0.25 increments
             zoomDelta={0.25} // Set zoom step for +/- buttons to 0.25
-            style={{ height: "750px", width: "100%", zIndex: 0 }} //450px
-            // preferCanvas={true} //  Use Canvas instead of SVG for crisp vector edges
+            style={{ height: "450px", width: "100%", zIndex: 0 }} // inline styles are kept for react-leaflet
           >
             {/* Boundary always on top */}
-            {/* {allProvincesData && <BoundaryLayer data={allProvincesData} weight={1.0} />} */}
             {displayProvinceBoundary && (
               <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
             )}
 
-            {/* <MapViewUpdater center={mapView.center} zoom={mapView.zoom} /> */}
             <MapBoundsController 
               province={province} 
-              allProvincesData={allProvincesData} // geojsonData={displayProvinceBoundary} 
-              targetCol={targetCol} // fallbackView={mapView} 
+              allProvincesData={allProvincesData} 
+              targetCol={targetCol} 
             />
-
-            {/* Mask first */}
-            {/* {maskData && <BoundaryMaskLayer mask={maskData} />} */}
-
-
-            {/* Province Boundaries */}
-            {/* {displayProvinceBoundary && (
-              <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
-            )} */}
 
             {allProvincesData && (
               <CountryContextLayer 
@@ -1070,8 +1417,6 @@ export default function GridMapViewer({
             {/* Map Data Layers */}
             {mode === "trend" && gridData.trend && (
               <GeoJSON
-                // key={`trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
-                // key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
                 key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
                 data={gridData.trend}
                 style={style("trend")}
@@ -1081,8 +1426,6 @@ export default function GridMapViewer({
             )}
             {mode === "actual" && gridData.actual && (
               <GeoJSON
-                // key={`actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
-                // key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
                 key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
                 data={gridData.actual}
                 style={style("actual")}
@@ -1098,23 +1441,11 @@ export default function GridMapViewer({
       </div>
 
       {/* 4. Legend & Controls Footer */}
-      <div className="card-footer bg-white border-top pt-2 pb-3 px-0">
+      <div className="bg-white border-t border-gray-200 pt-3 pb-4 px-0">
         
         {/* Color Bar */}
-        {/* {scales[mode] && binsAll[mode]?.length > 0 && (
-          <div className="mb-2">
-            <Legend
-              bins={binsAll[mode]}
-              scale={scales[mode]}
-              mode={mode}
-              unit={unit}
-              indexName={indexName}
-              isSPIEvent={isSPIEvent}
-            />
-          </div>
-        )} */}
         {((scales[mode] && binsAll[mode]?.length > 0) || (mode === "trend" && isSPIEvent && gridData[mode])) && (
-          <div className="mb-2">
+          <div className="mb-3">
             <Legend
               key={`legend-${indexName}-${mode}-${isSPIEvent}`} 
               bins={binsAll[mode]}
@@ -1126,113 +1457,111 @@ export default function GridMapViewer({
             />
           </div>
         )}
-        {/* d-flex justify-content-between align-items-center px-3 */}
-        <div className="d-flex flex-wrap justify-content-between align-items-center px-3 gap-3">
+        
+        <div className="flex flex-wrap justify-between items-center gap-y-3 gap-x-4">
 
-        {/* d-flex align-items-center gap-3 */}
-        <div className=" d-flex flex-wrap align-items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
 
-          {!(mode === "trend" && isSPIEvent) && (
-            <>
+            {!(mode === "trend" && isSPIEvent) && (
+              <>
+                  {/* 1. Color Palette Selector */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-bold text-gray-500">Color</span>
+                    <select
+                      className="block text-base border border-gray-300 rounded-md px-1 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      style={{ width: "140px" }}
+                      value={colorSchemes[mode]}
+                      onChange={(e) =>
+                        setColorSchemes((prev) => ({ ...prev, [mode]: e.target.value }))
+                      }
+                    >
+                      {mode === "actual" ? (
+                        <>
+                          <optgroup label="Temperature">
+                            <option value="YlOrRd">Yellow-Orange-Red</option>
+                            <option value="OrRd">Orange-Red</option>
+                            <option value="Reds">Reds</option>
+                          </optgroup>
+                          <optgroup label="Precipitation">
+                            <option value="Blues">Blues</option>
+                            <option value="YlGnBu">Yellow-Green-Blue</option>
+                            <option value="GnBu">Green-Blue</option>
+                          </optgroup>
+                        </>
+                      ) : (
+                        <>
+                            {/* Note: -RdBu means we will reverse it in the logic */}
+                            <option value="RdBu">Red-Blue</option>
+                            <option value="-RdBu">Blue-Red</option>
+                            <option value="BrBG">Brown-Green</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
 
-                {/* 1. Color Palette Selector */}
-                <div className="d-flex align-items-center gap-2">
-                  <span className="small fw-bold text-muted">Color:</span>
-                  <select
-                    className="form-select form-select-sm"
-                    style={{ width: "140px" }}
-                    value={colorSchemes[mode]}
-                    onChange={(e) =>
-                      setColorSchemes((prev) => ({ ...prev, [mode]: e.target.value }))
-                    }
-                  >
-                    {mode === "actual" ? (
-                      <>
-                        <optgroup label="Temperature">
-                          <option value="YlOrRd">Yellow-Orange-Red</option>
-                          <option value="OrRd">Orange-Red</option>
-                          <option value="Reds">Reds</option>
-                        </optgroup>
-                        <optgroup label="Precipitation">
-                          <option value="Blues">Blues</option>
-                          <option value="YlGnBu">Yellow-Green-Blue</option>
-                          <option value="GnBu">Green-Blue</option>
-                        </optgroup>
-                      </>
-                    ) : (
-                      <>
-                          {/* Note: -RdBu means we will reverse it in the logic */}
-                          <option value="RdBu">Red-Blue</option>
-                          <option value="-RdBu">Blue-Red</option>
-                          <option value="BrBG">Brown-Green</option>
-                      </>
-                    )}
-                  </select>
-                </div>
+                  {/* Legend Range Controls */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-base font-bold text-gray-500 mr-1">Legend Range</span>
 
-              {/* Legend Range Controls */}
-              {/* d-flex justify-content-center align-items-center gap-1 */}
-                <div className="d-flex flex-wrap align-items-center gap-1">
-                  <span className="small fw-bold text-muted me-2">Legend Range:</span>
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={legendRange[mode].min ?? ""}
+                      onChange={(e) =>
+                        setLegendRange((r) => ({
+                          ...r,
+                          [mode]: {
+                            ...r[mode],
+                            min: e.target.value === "" ? null : +e.target.value,
+                          },
+                        }))
+                      }
+                      className="block text-center text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white w-16"
+                      // style={{ width: "65px" }}
+                    />
+                    
+                    <span className="text-gray-400">-</span>
 
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    value={legendRange[mode].min ?? ""}
-                    onChange={(e) =>
-                      setLegendRange((r) => ({
-                        ...r,
-                        [mode]: {
-                          ...r[mode],
-                          min: e.target.value === "" ? null : +e.target.value,
-                        },
-                      }))
-                    }
-                    className="form-control form-control-sm text-center"
-                    style={{ width: "65px" }}
-                  />
-                  
-                  <span className="text-muted">-</span>
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={legendRange[mode].max ?? ""}
+                      onChange={(e) =>
+                        setLegendRange((r) => ({
+                          ...r,
+                          [mode]: {
+                            ...r[mode],
+                            max: e.target.value === "" ? null : +e.target.value,
+                          },
+                        }))
+                      }
+                      className="block text-center text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white w-16"
+                      // style={{ width: "65px" }}
+                    />
 
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    value={legendRange[mode].max ?? ""}
-                    onChange={(e) =>
-                      setLegendRange((r) => ({
-                        ...r,
-                        [mode]: {
-                          ...r[mode],
-                          max: e.target.value === "" ? null : +e.target.value,
-                        },
-                      }))
-                    }
-                    className="form-control form-control-sm text-center"
-                    style={{ width: "65px" }}
-                  />
+                    <button
+                      className="ml-1 px-3 py-1.5 text-sm font-medium bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                      onClick={() =>
+                        setLegendRange((r) => ({
+                          ...r,
+                          [mode]: { min: null, max: null },
+                        }))
+                      }
+                    >
+                      Auto Fix
+                    </button>
+                  </div>
+              </>
+            )}
+          </div>
 
-                  <button
-                    className="btn btn-sm btn-outline-secondary ms-2"
-                    onClick={() =>
-                      setLegendRange((r) => ({
-                        ...r,
-                        [mode]: { min: null, max: null },
-                      }))
-                    }
-                  >
-                    Auto Fix
-                  </button>
-                </div>
-            </>
-          )}
-        </div>
-
-        {/* d-flex justify-content-end gap-1 */}
-          <div 
-            className="d-flex align-items-center gap-1" 
-          >
+          <div className="inline-flex items-center rounded-md shadow-sm">
             <button
-              className={`btn btn-sm ${mapStyle === "grid" ? "btn-secondary" : "btn-outline-secondary"}`}
+              className={`px-3 py-1.5 text-base font-medium border transition-colors disabled:opacity-60 disabled:cursor-not-allowed rounded-l-md ${
+                mapStyle === "grid" 
+                  ? "bg-gray-400 text-white border-gray-400 z-10" /* Lighter gray for active state */
+                  : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+              }`}
               onClick={() => setMapStyle("grid")}
               title="Show as Grid"
               disabled={!!province}
@@ -1240,13 +1569,13 @@ export default function GridMapViewer({
               Grid
             </button>
             <button
-              className={`btn btn-sm ${mapStyle === "shapefile" ? "btn-secondary" : "btn-outline-secondary"}`}
+              className={`px-3 py-1.5 text-base font-medium border-y border-r transition-colors disabled:opacity-60 disabled:cursor-not-allowed rounded-r-md -ml-px ${
+                mapStyle === "shapefile" 
+                  ? "bg-gray-400 text-white border-gray-400 z-10" /* Lighter gray for active state */
+                  : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+              }`}
               onClick={() => setMapStyle("shapefile")}
-              // title="Show as Shapefile Area Average"
-              // disabled={!!province}
-              // Dynamic title based on availability
               title={!hasSubAreas ? "Shapefile mode requires multiple sub-areas" : "Show as Shapefile Area Average"}
-              // Disable if a province is selected OR if there are no sub-areas
               disabled={!!province || !hasSubAreas}
             >
               Shapefile

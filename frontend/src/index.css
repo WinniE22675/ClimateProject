@@ -67,6 +67,17 @@ button:focus-visible {
   }
 } */
 
+/* Inject Tailwind's base, components, and utilities styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* @layer base {
+  html, body {
+    font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+  }
+} */
+
 /* Custom Material-style Outlined Input */
 .custom-outlined-input {
   position: relative;

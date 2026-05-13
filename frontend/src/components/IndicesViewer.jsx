@@ -288,185 +288,344 @@ if (isSPI && monthlyData && monthlyData.length > 0) {
   if (error) return <div style={{ color: "red" }}>Error: {error}</div>;
   if (noData) return <div>No data available for this index.</div>;
 
-  return (
-    <div className="flex flex-wrap gap-2 items-center">
+  // return (
+  //   <div className="flex flex-wrap gap-2 items-center">
       
-      {/* Select average window size */}
-      {!isSPI && (
-      <div className="flex gap-2 items-center mb-2">
-        <label>Year Average Window:</label>
-        <input
-          type="number"
-          value={windowSize}
-          onChange={(e) => setWindowSize(parseInt(e.target.value))}
-          className="border p-1 w-20 rounded"
-        />
-      </div>
-      )}
+  //     {/* Select average window size */}
+  //     {!isSPI && (
+  //     <div className="flex gap-2 items-center mb-2">
+  //       <label>Year Average Window:</label>
+  //       <input
+  //         type="number"
+  //         value={windowSize}
+  //         onChange={(e) => setWindowSize(parseInt(e.target.value))}
+  //         className="border p-1 w-20 rounded"
+  //       />
+  //     </div>
+  //     )}
 
-      {isSPI && (
-        <div className="flex gap-2 items-center mb-2">
-          <label>SPI Threshold (for event):</label>
+  //     {isSPI && (
+  //       <div className="flex gap-2 items-center mb-2">
+  //         <label>SPI Threshold (for event):</label>
+  //         <input
+  //           type="number"
+  //           step="0.1"
+  //           value={spiThreshold}
+  //           onChange={(e) => setSpiThreshold(parseFloat(e.target.value))}
+  //           className="border p-1 w-20 rounded"
+  //         />
+  //       </div>
+  //     )}
+
+  //     {isSPI ? (
+  //       // <SPIBarChart data={spiMonthlyData} />
+  //       <>
+  //         <ResponsiveContainer width="100%" height={250}>
+  //           {/* Added margin left to align nicely */}
+  //           <BarChart data={spiSeries}>
+  //             <XAxis dataKey="date" interval="preserveStartEnd" minTickGap={0} tick={{ fontSize: 11 }} />
+  //             <YAxis
+  //               width={70}
+  //               domain={[-3, 3]}
+  //               label={{
+  //                 value: unit,
+  //                 angle: -90,
+  //                 position: "insideLeft",
+  //               }}
+  //             />
+  //             <Tooltip formatter={safeFormat} />
+  //             <ReferenceLine y={0} stroke="#000" />
+  //             <ReferenceLine y={spiThreshold} stroke="#1f77b4" strokeDasharray="4 4" />
+  //             <ReferenceLine y={-spiThreshold} stroke="#d62728" strokeDasharray="4 4" />
+  //             <Bar dataKey="spi">
+  //               {spiSeries.map((d, i) => (
+  //                 <Cell key={i} fill={resolveSPIColor(d, indexName)} />
+  //               ))}
+  //             </Bar>
+  //           </BarChart>
+  //         </ResponsiveContainer>
+
+  //         <div className="d-flex justify-content-center align-items-center gap-3 mb-3 small text-muted w-100">
+  //           <span className="d-flex align-items-center gap-2">
+  //             <span style={{ width: 12, height: 12, backgroundColor: "#bdbdbd", display: "inline-block", borderRadius: "2px" }}></span>
+  //             Normal
+  //           </span>
+            
+  //           {!indexName.includes("Flood") && (
+  //             <span className="d-flex align-items-center gap-2">
+  //               <span style={{ width: 12, height: 12, backgroundColor: "#d62728", display: "inline-block", borderRadius: "2px" }}></span>
+  //               Drought (&lt; -{spiThreshold})
+  //             </span>
+  //           )}
+            
+  //           {!indexName.includes("Drought") && (
+  //             <span className="d-flex align-items-center gap-2">
+  //               <span style={{ width: 12, height: 12, backgroundColor: "#1f77b4", display: "inline-block", borderRadius: "2px" }}></span>
+  //               Wet / Flood (&gt; {spiThreshold})
+  //             </span>
+  //           )}
+  //         </div>
+  //       </>
+  //     ) : (
+  //       <div className="mb-3">
+  //       <ResponsiveContainer width="100%" height={250}>
+  //         <LineChart data={mergedData} margin={{ top: 5, left: 5, right: 20 }}>
+  //           <CartesianGrid strokeDasharray="3 3" />
+  //           <XAxis dataKey="year" interval="preserveStartEnd" minTickGap={0} allowDecimals={false} />
+  //           <YAxis
+  //             width={70}
+  //             label={{ value: unit, angle: -90, position: "insideLeft" }}
+  //             // padding={{ top: 35 }}
+  //           />
+  //           <Tooltip formatter={(value) => value.toFixed(2)} />
+  //           <ReLegend />
+  //           <Line
+  //             dataKey="annual"
+  //             stroke="#000"
+  //             name={`${baseIndexName} Annual Avg`}
+  //             dot={false}
+  //           />
+  //           <Line
+  //             dataKey="yearAvg"
+  //             stroke="#800080"
+  //             name={`${windowSize}-Year Avg`}
+  //             dot={false}
+  //           />
+  //         </LineChart>
+  //       </ResponsiveContainer>
+  //       </div>
+  //     )}
+
+  //     {/* Seasonal Cycle */}
+  //     <ResponsiveContainer width="100%" height={240}>
+  //       <LineChart data={monthlyData} margin={{ top: 5, left: 5, right: 20 }}>
+  //         <CartesianGrid strokeDasharray="3 3" />
+  //         <XAxis
+  //           dataKey="month"
+  //           ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
+  //           interval={0}
+  //           tick={{ textAnchor: "end" }}
+  //           tickFormatter={(v) => {
+  //             const short = [
+  //               "J",
+  //               "F",
+  //               "M",
+  //               "A",
+  //               "M",
+  //               "J",
+  //               "J",
+  //               "A",
+  //               "S",
+  //               "O",
+  //               "N",
+  //               "D",
+  //             ];
+  //             const full = [
+  //               "JAN",
+  //               "FEB",
+  //               "MAR",
+  //               "APR",
+  //               "MAY",
+  //               "JUN",
+  //               "JUL",
+  //               "AUG",
+  //               "SEP",
+  //               "OCT",
+  //               "NOV",
+  //               "DEC",
+  //             ];
+  //             return window.innerWidth < 450 ? short[v - 1] : full[v - 1]; // window.innerWidth is now width if less than 450px use short | v-1 because month start 1 but index start 0
+  //           }}
+  //         />
+  //         <YAxis 
+  //           width={70} 
+  //           domain={spiDomain}
+  //           ticks={spiTicks}
+  //           tickFormatter={(v) => (isSPI ? v.toFixed(4): v)} 
+  //           label={{ value: unit, angle: -90, position: "insideLeft" }} 
+  //         />
+  //         {/* <Tooltip formatter={(value) => value.toFixed(2)} /> */}
+  //         {/* <Tooltip formatter={(value) => (isSPI ? value.toFixed(4) : value.toFixed(2))} /> */}
+  //         <Tooltip 
+  //           labelFormatter={(label) => {
+  //             const fullMonths = [
+  //               "JAN", "FEB", "MAR", "APR", "MAY", "JUN", 
+  //               "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+  //             ];
+  //             // label is the month number (1-12), so we subtract 1 for the array index
+  //             return fullMonths[label - 1] || label;
+  //           }}
+  //           formatter={(value) => (isSPI ? value.toFixed(4) : value.toFixed(2))} 
+  //         />
+  //         <ReLegend />
+  //         {isSPI && <ReferenceLine y={0} stroke="#000" />}
+  //         <Line
+  //           dataKey="value"
+  //           stroke="#0077cc"
+  //           name={`${baseIndexName} Seasonal Cycle (${startYear}-${endYear})`}
+  //           dot
+  //         />
+  //       </LineChart>
+  //     </ResponsiveContainer>
+  //   </div>
+  // );
+  return (
+    <div className="w-full overflow-hidden"> {/* Wrapped in w-full for consistent block layout */}
+      
+      {/* Settings Flexbox Container */}
+      <div className="flex flex-wrap gap-4 items-center mt-[10px] mb-4 pl-2">
+        {/* Select average window size */}
+        {!isSPI && (
+        <div className="flex gap-2 items-center">
+          <label className="text-base font-medium text-gray-700">Year Average Window</label>
           <input
             type="number"
-            step="0.1"
-            value={spiThreshold}
-            onChange={(e) => setSpiThreshold(parseFloat(e.target.value))}
-            className="border p-1 w-20 rounded"
+            value={windowSize}
+            onChange={(e) => setWindowSize(parseInt(e.target.value))}
+            className="border border-gray-300 px-2 py-1 w-20 rounded text-base focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
-      )}
+        )}
+
+        {isSPI && (
+          <div className="flex gap-2 items-center">
+            <label className="text-base font-medium text-gray-700">SPI Threshold (for event):</label>
+            <input
+              type="number"
+              step="0.1"
+              value={spiThreshold}
+              onChange={(e) => setSpiThreshold(parseFloat(e.target.value))}
+              className="border border-gray-300 px-2 py-1 w-20 rounded text-base focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        )}
+      </div>
 
       {isSPI ? (
-        // <SPIBarChart data={spiMonthlyData} />
         <>
-          <ResponsiveContainer width="100%" height={250}>
-            {/* Added margin left to align nicely */}
-            <BarChart data={spiSeries}>
-              <XAxis dataKey="date" interval="preserveStartEnd" minTickGap={0} tick={{ fontSize: 11 }} />
-              <YAxis
-                width={70}
-                domain={[-3, 3]}
-                label={{
-                  value: unit,
-                  angle: -90,
-                  position: "insideLeft",
-                }}
-              />
-              <Tooltip formatter={safeFormat} />
-              <ReferenceLine y={0} stroke="#000" />
-              <ReferenceLine y={spiThreshold} stroke="#1f77b4" strokeDasharray="4 4" />
-              <ReferenceLine y={-spiThreshold} stroke="#d62728" strokeDasharray="4 4" />
-              <Bar dataKey="spi">
-                {spiSeries.map((d, i) => (
-                  <Cell key={i} fill={resolveSPIColor(d, indexName)} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="w-full mb-4">
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={spiSeries}>
+                <XAxis dataKey="date" interval="preserveStartEnd" minTickGap={0} tick={{ fontSize: 11 }} />
+                <YAxis
+                  width={70}
+                  domain={[-3, 3]}
+                  label={{
+                    value: unit,
+                    angle: -90,
+                    position: "insideLeft",
+                  }}
+                />
+                <Tooltip formatter={safeFormat} />
+                <ReferenceLine y={0} stroke="#000" />
+                <ReferenceLine y={spiThreshold} stroke="#1f77b4" strokeDasharray="4 4" />
+                <ReferenceLine y={-spiThreshold} stroke="#d62728" strokeDasharray="4 4" />
+                <Bar dataKey="spi">
+                  {spiSeries.map((d, i) => (
+                    <Cell key={i} fill={resolveSPIColor(d, indexName)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
 
-          <div className="d-flex justify-content-center align-items-center gap-3 mb-3 small text-muted w-100">
-            <span className="d-flex align-items-center gap-2">
-              <span style={{ width: 12, height: 12, backgroundColor: "#bdbdbd", display: "inline-block", borderRadius: "2px" }}></span>
+          <div className="flex flex-wrap justify-center items-center gap-6 mb-6 text-base text-gray-500 w-full">
+            <span className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-[#bdbdbd] inline-block rounded-sm"></span>
               Normal
             </span>
             
             {!indexName.includes("Flood") && (
-              <span className="d-flex align-items-center gap-2">
-                <span style={{ width: 12, height: 12, backgroundColor: "#d62728", display: "inline-block", borderRadius: "2px" }}></span>
+              <span className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-[#d62728] inline-block rounded-sm"></span>
                 Drought (&lt; -{spiThreshold})
               </span>
             )}
             
             {!indexName.includes("Drought") && (
-              <span className="d-flex align-items-center gap-2">
-                <span style={{ width: 12, height: 12, backgroundColor: "#1f77b4", display: "inline-block", borderRadius: "2px" }}></span>
+              <span className="flex items-center gap-2">
+                <span className="w-3 h-3 bg-[#1f77b4] inline-block rounded-sm"></span>
                 Wet / Flood (&gt; {spiThreshold})
               </span>
             )}
           </div>
         </>
       ) : (
-        <div className="mb-3">
-        <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={mergedData} margin={{ top: 5, left: 5, right: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="year" interval="preserveStartEnd" minTickGap={0} allowDecimals={false} />
-            <YAxis
-              width={70}
-              label={{ value: unit, angle: -90, position: "insideLeft" }}
-              // padding={{ top: 35 }}
-            />
-            <Tooltip formatter={(value) => value.toFixed(2)} />
-            <ReLegend />
-            <Line
-              dataKey="annual"
-              stroke="#000"
-              name={`${baseIndexName} Annual Avg`}
-              dot={false}
-            />
-            <Line
-              dataKey="yearAvg"
-              stroke="#800080"
-              name={`${windowSize}-Year Avg`}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="mb-6 w-full">
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={mergedData} margin={{ top: 5, left: 5, right: 20 }}>
+              {/* <CartesianGrid strokeDasharray="3 3" /> */}
+              <CartesianGrid stroke="#DCDCDC" strokeDasharray="3 3" />
+              <XAxis dataKey="year" interval="preserveStartEnd" minTickGap={0} allowDecimals={false} />
+              <YAxis
+                width={70}
+                label={{ value: unit, angle: -90, position: "insideLeft" }}
+              />
+              <Tooltip formatter={(value) => value.toFixed(2)} />
+              <ReLegend />
+              <Line
+                dataKey="annual"
+                stroke="#000"
+                name={`${baseIndexName} Annual Avg`}
+                dot={false}
+              />
+              <Line
+                dataKey="yearAvg"
+                stroke="#800080"
+                name={`${windowSize}-Year Avg`}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       )}
 
       {/* Seasonal Cycle */}
-      <ResponsiveContainer width="100%" height={240}>
-        <LineChart data={monthlyData} margin={{ top: 5, left: 5, right: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="month"
-            ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
-            interval={0}
-            tick={{ textAnchor: "end" }}
-            tickFormatter={(v) => {
-              const short = [
-                "J",
-                "F",
-                "M",
-                "A",
-                "M",
-                "J",
-                "J",
-                "A",
-                "S",
-                "O",
-                "N",
-                "D",
-              ];
-              const full = [
-                "JAN",
-                "FEB",
-                "MAR",
-                "APR",
-                "MAY",
-                "JUN",
-                "JUL",
-                "AUG",
-                "SEP",
-                "OCT",
-                "NOV",
-                "DEC",
-              ];
-              return window.innerWidth < 450 ? short[v - 1] : full[v - 1]; // window.innerWidth is now width if less than 450px use short | v-1 because month start 1 but index start 0
-            }}
-          />
-          <YAxis 
-            width={70} 
-            domain={spiDomain}
-            ticks={spiTicks}
-            tickFormatter={(v) => (isSPI ? v.toFixed(4): v)} 
-            label={{ value: unit, angle: -90, position: "insideLeft" }} 
-          />
-          {/* <Tooltip formatter={(value) => value.toFixed(2)} /> */}
-          {/* <Tooltip formatter={(value) => (isSPI ? value.toFixed(4) : value.toFixed(2))} /> */}
-          <Tooltip 
-            labelFormatter={(label) => {
-              const fullMonths = [
-                "JAN", "FEB", "MAR", "APR", "MAY", "JUN", 
-                "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
-              ];
-              // label is the month number (1-12), so we subtract 1 for the array index
-              return fullMonths[label - 1] || label;
-            }}
-            formatter={(value) => (isSPI ? value.toFixed(4) : value.toFixed(2))} 
-          />
-          <ReLegend />
-          {isSPI && <ReferenceLine y={0} stroke="#000" />}
-          <Line
-            dataKey="value"
-            stroke="#0077cc"
-            name={`${baseIndexName} Seasonal Cycle (${startYear}-${endYear})`}
-            dot
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <div className="w-full">
+        <ResponsiveContainer width="100%" height={240}>
+          <LineChart data={monthlyData} margin={{ top: 5, left: 5, right: 20 }}>
+            {/* <CartesianGrid strokeDasharray="3 3" /> */}
+            <CartesianGrid stroke="#DCDCDC" strokeDasharray="3 3" />
+            <XAxis
+              dataKey="month"
+              ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
+              interval={0}
+              tick={{ textAnchor: "end" }}
+              tickFormatter={(v) => {
+                const short = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+                const full = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                return window.innerWidth < 450 ? short[v - 1] : full[v - 1]; 
+              }}
+            />
+            <YAxis 
+              width={70} 
+              domain={spiDomain}
+              ticks={spiTicks}
+              tickFormatter={(v) => (isSPI ? v.toFixed(4): v)} 
+              label={{ value: unit, angle: -90, position: "insideLeft" }} 
+            />
+            <Tooltip 
+              labelFormatter={(label) => {
+                const fullMonths = [
+                  "JAN", "FEB", "MAR", "APR", "MAY", "JUN", 
+                  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+                ];
+                return fullMonths[label - 1] || label;
+              }}
+              formatter={(value) => (isSPI ? value.toFixed(4) : value.toFixed(2))} 
+            />
+            <ReLegend />
+            {isSPI && <ReferenceLine y={0} stroke="#000" />}
+            <Line
+              dataKey="value"
+              stroke="#0077cc"
+              name={`${baseIndexName} Seasonal Cycle (${startYear}-${endYear})`}
+              dot
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      
     </div>
   );
 }
