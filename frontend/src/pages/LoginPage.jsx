@@ -46,62 +46,6 @@ const LoginPage = () => {
     };
 
     // 4. UI Rendering
-    // return (
-    //     <div className="d-flex justify-content-center align-items-center mt-5">
-    //         {/* Card UI */}
-    //         <div className="card shadow-lg border-0 rounded-4" style={{ width: '100%', maxWidth: '450px' }}>
-    //             <div className="card-body p-5">
-    //                 {/* <h2 className="mb-4 text-center">Login</h2> */}
-    //                 <div className="text-center mb-4">
-    //                     <h2 className="fw-bold">Sign in</h2>
-    //                     <p className="text-muted">Sign in to access your climate workspace</p>
-    //                 </div>
-                    
-    //                 {/* Error Message */}
-    //                 {errorMsg && <div className="alert alert-danger mb-3">{errorMsg}</div>}
-
-    //                 <form onSubmit={handleLogin}>
-    //                     <div className="custom-outlined-input">
-    //                         <input 
-    //                             type="email" 
-    //                             id="emailInput" 
-    //                             placeholder=" " /* MUST BE A SPACE for CSS to detect empty state */
-    //                             value={email} 
-    //                             onChange={(e) => setEmail(e.target.value)} 
-    //                             required 
-    //                         />
-    //                         <label htmlFor="emailInput">Email address</label>
-    //                     </div>
-
-    //                     {/* Custom Outlined Password Input */}
-    //                     <div className="custom-outlined-input">
-    //                         <input 
-    //                             type="password" 
-    //                             id="passwordInput" 
-    //                             placeholder=" " /* MUST BE A SPACE */
-    //                             value={password} 
-    //                             onChange={(e) => setPassword(e.target.value)} 
-    //                             required 
-    //                         />
-    //                         <label htmlFor="passwordInput">Password</label>
-    //                     </div>
-
-    //                     <button type="submit" className="btn btn-primary w-100" disabled={isLoading}>
-    //                         {isLoading ? 'Signing In...' : 'Sign in'}
-    //                     </button>
-    //                 </form>
-
-    //                 {/* Link to Register Page */}
-    //                 {/* <div className="mt-4 text-center">
-    //                     <span className="text-muted">Don't have an account? </span>
-    //                     <Link to="/register" className="text-decoration-none fw-bold text-primary">
-    //                         Register here
-    //                     </Link>
-    //                 </div> */}
-    //             </div>
-    //         </div>
-    //     </div>
-    // );
     return (
         <div className="flex justify-center items-center mt-12">
             {/* Card UI */}

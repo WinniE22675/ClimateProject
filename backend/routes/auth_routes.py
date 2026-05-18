@@ -104,7 +104,6 @@ router = APIRouter()
     
 #     return {"access_token": access_token, "token_type": "bearer"}
 
-
 @router.post("/login", response_model=TokenResponse)
 def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
     """

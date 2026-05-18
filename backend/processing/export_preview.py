@@ -16,44 +16,6 @@ from processing.export_maps import (
     export_trend_map_shapefile
 )
 
-# # ============================
-# # Shapefile Configurations (Adjust paths to match your project)
-# # ============================
-# THAILAND_PROVINCES_SHAPEFILE_PATH = "data/tha_admbnda_adm1_rtsd_20190221.shp"
-# THAILAND_BOUNDARY_SHAPEFILE_PATH = r"data/geoBoundaries-THA-ADM0.geojson"
-
-# # Load Shapefiles safely
-# try:
-#     shp_thai_boundary = gpd.read_file(THAILAND_BOUNDARY_SHAPEFILE_PATH).to_crs("EPSG:4326")
-#     shp_thai_provinces = gpd.read_file(THAILAND_PROVINCES_SHAPEFILE_PATH).to_crs("EPSG:4326")
-#     THAILAND_PROVINCES_LIST = shp_thai_provinces['ADM1_EN'].unique().tolist()
-# except Exception as e:
-#     print(f"[WARNING] Could not load Thailand shapefiles: {e}")
-#     shp_thai_boundary = None
-#     shp_thai_provinces = None
-#     THAILAND_PROVINCES_LIST = []
-
-# SEA_COUNTRIES = [
-#     "Thailand",
-#     "Vietnam",
-#     "Laos",
-#     "Cambodia",
-#     "Myanmar",
-#     "Malaysia",
-#     "Indonesia",
-#     "Philippines",
-#     "Brunei",
-#     "Singapore",
-#     "Timor-Leste",
-# ]
-
-# COUNTRY_SHAPEFILE_PATH = "data/sea_boundary/southeast-asia-boundary.shp"
-
-# SEA_SHAPEFILE_PATH = "data/sea_boundary_dissolved/sea_boundary_dissolved.geojson"
-# shp_sea = gpd.read_file(SEA_SHAPEFILE_PATH).to_crs("EPSG:4326")
-
-# shp_countries = gpd.read_file(COUNTRY_SHAPEFILE_PATH).to_crs("EPSG:4326")
-
 def export_preview_all(
     ds: xr.Dataset,
     dataset_name: str,
@@ -75,9 +37,6 @@ def export_preview_all(
     print(f"[Preview] Loading dynamic shapefile for preview: {shapefile_path}")
     shp_areas = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
 
-    # shp_areas_simplified = shp_areas.copy()
-    # shp_areas_simplified['geometry'] = shp_areas_simplified['geometry'].simplify(tolerance=0.001, preserve_topology=True)
-    
     area_list = shp_areas[target_col].dropna().unique().tolist()
     
     shp_boundary = shp_areas.dissolve()
@@ -86,7 +45,7 @@ def export_preview_all(
     for var in ds.data_vars:
         print(f"[Preview] Processing Maps for variable: {var}")
         
-        # 1. Prepare data and clip to Thailand bounding box to reduce size
+        # Prepare data and clip to Thailand bounding box to reduce size
         da = prep_for_rio(ds[var])
         
         try:
@@ -95,7 +54,7 @@ def export_preview_all(
         except Exception as e:
             print(f"[WARNING] Failed to clip base data to Thailand boundary: {e}")
 
-        # 2. OPTIMIZATION: Resample to Annual data before generating maps/trends.
+        # Resample to Annual data before generating maps/trends.
         # Running Mann-Kendall on daily/monthly data takes too long.
         print(f"[Preview] Resampling {var} to Annual for map generation...")
         if var == "pr":
@@ -124,7 +83,7 @@ def export_preview_all(
         da_monthly = da_monthly.load()
 
         # ==========================================
-        # 3. Grid Maps (Overview Mode - Thailand)
+        # Grid Maps (Overview Mode - Thailand)
         # ==========================================
         print(f"[Preview] Generating Grid Maps for {var}...")
         try:
@@ -132,7 +91,7 @@ def export_preview_all(
                 index_data=da_annual, 
                 index_name=var, 
                 output_base_dir=output_base_dir,
-                region_name=country_name, #region_name="Thailand",
+                region_name=country_name,
                 province_name=None 
             )
             
@@ -140,57 +99,55 @@ def export_preview_all(
                 index_data=da_annual, 
                 index_name=var, 
                 output_base_dir=output_base_dir,
-                region_name=country_name, # region_name="Thailand",
+                region_name=country_name,
                 province_name=None
             )
             
             # Optional: Overlay shapefile boundary on grid maps
-            if shp_boundary is not None: # shp_thai_boundary
-                overlay_with_shapefile(actual_json_path_overview, shp_boundary) # shp_thai_boundary
-                overlay_with_shapefile(trend_json_path_overview, shp_boundary) # shp_thai_boundary
+            if shp_boundary is not None: 
+                overlay_with_shapefile(actual_json_path_overview, shp_boundary) 
+                overlay_with_shapefile(trend_json_path_overview, shp_boundary) 
                 
         except Exception as e:
             print(f"[ERROR] Failed generating Grid maps for {var}: {e}")
 
-        if shp_boundary is not None: # shp_thai_boundary
+        if shp_boundary is not None: 
             # Annual Timeseries Overview
-            # weighted_annual_overview = calc_weighted_mean(da_annual, "Thailand", shp_boundary, "shapeName") # shp_thai_boundary
             weighted_annual_overview = calc_weighted_mean(da_annual, "overview_area", shp_boundary, "overview_col")
             if weighted_annual_overview is not None:
                 export_yearly_timeseries(
                     index_data=weighted_annual_overview, 
                     index_name=var, 
                     output_base_dir=output_base_dir, 
-                    region_name=country_name, # region_name="Thailand", 
+                    region_name=country_name,  
                     province_name=None
                 )
             
             # Seasonal Cycle Overview
-            # weighted_monthly_overview = calc_weighted_mean(da_monthly, "Thailand", shp_thai_boundary, "shapeName")
             weighted_monthly_overview = calc_weighted_mean(da_monthly, "overview_area", shp_boundary, "overview_col")
             if weighted_monthly_overview is not None:
                 export_seasonal_cycle(
                     index_data=weighted_monthly_overview, 
                     index_name=var, 
                     output_base_dir=output_base_dir, 
-                    region_name=country_name, # region_name="Thailand", 
+                    region_name=country_name, 
                     province_name=None
                 )
 
         # ==========================================
         # 4. Shapefile Mode & Provincial Data
         # ==========================================
-        if shp_areas is not None: # shp_thai_provinces
+        if shp_areas is not None: 
             print(f"[Preview] Extracting Provincial Data for Shapefile Maps...")
             provincial_ts_dict = {}
             
-            for province in area_list: # THAILAND_PROVINCES_LIST
+            for province in area_list: 
                 # Calculate spatial average for each province over time
                 weighted_da = calc_weighted_mean(
                     da=da_annual, 
                     region_name=province, 
-                    gdf_region=shp_areas, # gdf_region=shp_thai_provinces
-                    target_col=target_col # "ADM1_EN" 
+                    gdf_region=shp_areas, 
+                    target_col=target_col 
                 )
 
                 if weighted_da is not None and not weighted_da.isnull().all():
@@ -199,8 +156,8 @@ def export_preview_all(
                 weighted_monthly_prov = calc_weighted_mean(
                     da=da_monthly, 
                     region_name=province, 
-                    gdf_region=shp_areas, # gdf_region=shp_thai_provinces
-                    target_col=target_col # "ADM1_EN"
+                    gdf_region=shp_areas, 
+                    target_col=target_col 
                 )
 
                 # ADD THIS: Export Timeseries & Seasonal for Province
@@ -209,7 +166,7 @@ def export_preview_all(
                         index_data=provincial_ts_dict[province], 
                         index_name=var, 
                         output_base_dir=output_base_dir, 
-                        region_name=country_name, # region_name="Thailand", 
+                        region_name=country_name, 
                         province_name=province
                     )
                 
@@ -218,7 +175,7 @@ def export_preview_all(
                         index_data=weighted_monthly_prov, 
                         index_name=var, 
                         output_base_dir=output_base_dir, 
-                        region_name=country_name, # region_name="Thailand", 
+                        region_name=country_name, 
                         province_name=province
                     )
 
@@ -230,18 +187,18 @@ def export_preview_all(
                         provincial_ts_dict=provincial_ts_dict,
                         index_name=var,
                         output_base_dir=output_base_dir,
-                        gdf_provinces=shp_areas, # shp_thai_provinces
-                        target_col=target_col, # "ADM1_EN",
-                        region_name=country_name # "Thailand"
+                        gdf_provinces=shp_areas, 
+                        target_col=target_col, 
+                        region_name=country_name 
                     )
                     
                     export_trend_map_shapefile(
                         provincial_ts_dict=provincial_ts_dict,
                         index_name=var,
                         output_base_dir=output_base_dir,
-                        gdf_provinces=shp_areas, # shp_thai_provinces
-                        target_col=target_col, # "ADM1_EN",
-                        region_name=country_name # "Thailand"
+                        gdf_provinces=shp_areas, 
+                        target_col=target_col, 
+                        region_name=country_name 
                     )
                 except Exception as e:
                      print(f"[ERROR] Failed generating Shapefile maps for {var}: {e}")

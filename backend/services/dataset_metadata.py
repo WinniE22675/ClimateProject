@@ -43,7 +43,6 @@ def get_dataset_metadata_merged(dataset_name):
         with xr.open_dataset(merged_path) as ds:
 
             # Extract Variables Info
-            # variables = [v for v in ds.data_vars]
             variables_list = list(ds.data_vars)
             standard_names = {}
             variable_units = {}
@@ -51,21 +50,14 @@ def get_dataset_metadata_merged(dataset_name):
             for v in variables_list:
                 attrs = ds[v].attrs
                 variable_units[v] = ds[v].attrs.get("units", "unknown")
-                # standard_names[v] = ds[v].attrs.get("standard_name", ds[v].attrs.get("long_name", v))
                 std = attrs.get("standard_name")
                 long_n = attrs.get("long_name")
-                # standard_names[v] = std if std else (long_n if long_n else v)
                 if is_valid_name(std):
                     standard_names[v] = std
                 elif is_valid_name(long_n):
                     standard_names[v] = long_n
                 else:
                     standard_names[v] = v
-
-            # Spatial Resolution
-            # lat_res = abs(ds.latitude.values[1] - ds.latitude.values[0]) if len(ds.latitude) > 1 else 0
-            # lon_res = abs(ds.longitude.values[1] - ds.longitude.values[0]) if len(ds.longitude) > 1 else 0
-            # spatial_resolution = f"{lat_res:.3f}° x {lon_res:.3f}°"
 
             if len(ds.latitude) > 1 and len(ds.longitude) > 1:
                 # Calculate absolute differences between all adjacent points
@@ -86,11 +78,6 @@ def get_dataset_metadata_merged(dataset_name):
 
                 spatial_resolution = f"{lat_str} x {lon_str}"
             
-            # Extract Time Info
-            # time_min = str(ds.time.min().values)[:10]
-            # time_max = str(ds.time.max().values)[:10]
-            # time_min = pd.Timestamp(ds.time.min().values).isoformat()
-            # time_max = pd.Timestamp(ds.time.max().values).isoformat()
             try:
                 # xarray's .dt.strftime smartly handles both datetime64 and cftime automatically
                 time_min = str(ds.time.min().dt.strftime("%Y-%m-%dT%H:%M:%S").item())

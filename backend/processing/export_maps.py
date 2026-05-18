@@ -4,55 +4,13 @@ import numpy as np
 import xarray as xr
 import shapely
 from shapely.geometry import Polygon
-# from cf_xarray import vertices_to_bounds
 import pymannkendall as mk
 # import regionmask
 import geopandas as gpd
 import pandas as pd
 
-# IMPORTANT: Must import cf_xarray to activate the '.cf' accessor in xarray
+# Must import cf_xarray to activate the '.cf' accessor in xarray
 import cf_xarray  
-
-# ========== helper functions ==========
-
-# LON_CF_ATTRS = {"standard_name": "longitude", "units": "degrees_east"}
-# LAT_CF_ATTRS = {"standard_name": "latitude", "units": "degrees_north"}
-
-
-# def _grid_1d(start_b, end_b, step):
-#     bounds = np.arange(start_b, end_b + step / 2, step)
-#     centers = (bounds[:-1] + bounds[1:]) / 2
-#     return centers, bounds
-# def _grid_1d(start_b, end_b, step):
-#     # 1. Calculate the exact number of boundaries needed.
-#     # We use round() to fix any floating-point inaccuracies before converting to int.
-#     num_bounds = int(round((end_b - start_b) / step)) + 1
-    
-#     # 2. Use linspace, which guarantees exactly 'num_bounds' elements between start and end.
-#     bounds = np.linspace(start_b, end_b, num_bounds)
-    
-#     # 3. Calculate centers
-#     centers = (bounds[:-1] + bounds[1:]) / 2
-    
-#     return centers, bounds
-
-# def cf_grid_2d(lon0_b, lon1_b, d_lon, lat0_b, lat1_b, d_lat):
-#     lon_1d, lon_b_1d = _grid_1d(lon0_b, lon1_b, d_lon)
-#     lat_1d, lat_b_1d = _grid_1d(lat0_b, lat1_b, d_lat)
-
-#     ds = xr.Dataset(
-#         coords={
-#             "lon": ("lon", lon_1d, {"bounds": "lon_bounds", **LON_CF_ATTRS}),
-#             "lat": ("lat", lat_1d, {"bounds": "lat_bounds", **LAT_CF_ATTRS}),
-#             "latitude_longitude": xr.DataArray(),
-#         },
-#         data_vars={
-#             "lon_bounds": vertices_to_bounds(lon_b_1d, ("bound", "lon")),
-#             "lat_bounds": vertices_to_bounds(lat_b_1d, ("bound", "lat")),
-#         },
-#     )
-#     return ds
-
 
 # ========== 1. Export Actual Map ==========
 def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_base_dir: str, start_year: int = None, end_year: int = None, region_name: str = "Thailand", province_name: str = None, spi_threshold: float = None):
@@ -89,23 +47,6 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
     else:
         avg_map = actual.mean("time", skipna=True)
 
-    # create grid from latitude/longitude of dataset
-    # lat = avg_map.latitude.values
-    # lon = avg_map.longitude.values
-    # d_lat = abs(lat[1] - lat[0])
-    # d_lon = abs(lon[1] - lon[0])
-
-    # grid = cf_grid_2d(
-    #     lon.min() - d_lon / 2,
-    #     lon.max() + d_lon / 2,
-    #     d_lon,
-    #     lat.min() - d_lat / 2,
-    #     lat.max() + d_lat / 2,
-    #     d_lat,
-    # )
-    # ==========================================
-    # MODIFIED: Convert DataArray to Dataset, then use cf_xarray to generate bounds
-    # ==========================================
     # cf_xarray's add_bounds works on Datasets. We temporarily convert our array to a dataset.
     ds_map = avg_map.to_dataset(name="index_value")
     
@@ -138,14 +79,6 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
             if np.isnan(val):
                 continue
 
-            # poly = Polygon(
-            #     [
-            #         (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
-            #         (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 0]),
-            #         (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 1]),
-            #         (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 1]),
-            #     ]
-            # )
             # Map the exact corners using the mathematically proven boundaries
             poly = Polygon(
                 [
@@ -190,7 +123,6 @@ def export_actual_maps_xesmf(index_data: xr.DataArray, index_name: str, output_b
     os.makedirs(out_dir, exist_ok=True)
     
     # filename with dynamic year range
-    # filename = f"{start_year}_{end_year}_actual_grid.geojson"
     if spi_threshold is not None:
         filename = f"{start_year}_{end_year}_{spi_threshold}_actual_grid.geojson"
     else:
@@ -209,7 +141,7 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
     """Export trend map using Mann-Kendall test (GeoJSON grid)."""
 
     index_data = index_data.assign_coords(
-    time=pd.to_datetime(index_data["time"].dt.strftime("%Y-%m-%d %H:%M:%S")) # time=pd.to_datetime(index_data["time"].values)
+    time=pd.to_datetime(index_data["time"].dt.strftime("%Y-%m-%d %H:%M:%S")) 
 )
 
     if start_year is None:
@@ -233,24 +165,7 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
     index_data = index_data.sel(time=slice(str(start_year), str(end_year)))
 
     trend = index_data.sortby("latitude", "longitude")
-    # trend = index_data.transpose("time", "latitude", "longitude").sortby("latitude", "longitude")
-
-    # lats = trend.latitude.values
-    # lons = trend.longitude.values
-    # d_lat = abs(lats[1] - lats[0])
-    # d_lon = abs(lons[1] - lons[0])
-
-    # grid = cf_grid_2d(
-    #     lons.min() - d_lon / 2,
-    #     lons.max() + d_lon / 2,
-    #     d_lon,
-    #     lats.min() - d_lat / 2,
-    #     lats.max() + d_lat / 2,
-    #     d_lat,
-    # )
-        # ==========================================
-    # MODIFIED: Convert DataArray to Dataset, then use cf_xarray to generate bounds
-    # ==========================================
+    
     # cf_xarray's add_bounds works on Datasets. We temporarily convert our array to a dataset.
     ds_map = trend.to_dataset(name="index_value")
     
@@ -310,16 +225,7 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
                             props["trend"] = "decreasing"
                         else:
                             props["trend"] = "no trend"
-                    
-                    # If calculation succeeds, immediately create the Polygon
-                    # poly = Polygon(
-                    #     [
-                    #         (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 0]),
-                    #         (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 0]),
-                    #         (grid["lon_bounds"][j, 1], grid["lat_bounds"][i, 1]),
-                    #         (grid["lon_bounds"][j, 0], grid["lat_bounds"][i, 1]),
-                    #     ]
-                    # )
+
                     # Map the exact corners using the mathematically proven boundaries
                     poly = Polygon(
                         [
@@ -369,7 +275,6 @@ def export_trend_map_xesmf(index_data: xr.DataArray, index_name: str, output_bas
     os.makedirs(out_dir, exist_ok=True)
     
     # filename with dynamic year range
-    # filename = f"{start_year}_{end_year}_trend_grid.geojson"
     if spi_threshold is not None:
         filename = f"{start_year}_{end_year}_{spi_threshold}_trend_grid.geojson"
     else:
@@ -391,7 +296,7 @@ def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, outpu
     # This prevents errors when extracting .dt.year later
     for prov_key, ts_data in provincial_ts_dict.items():
         provincial_ts_dict[prov_key] = ts_data.assign_coords(
-            time=pd.to_datetime(ts_data["time"].dt.strftime("%Y-%m-%d %H:%M:%S")) # time=pd.to_datetime(ts_data["time"].values)
+            time=pd.to_datetime(ts_data["time"].dt.strftime("%Y-%m-%d %H:%M:%S"))
         )
 
     # Get metadata (year range and units) from the first available province data
@@ -430,7 +335,7 @@ def export_actual_map_shapefile(provincial_ts_dict: dict, index_name: str, outpu
             if not np.isnan(val):
                 features.append({
                     "type": "Feature",
-                    "geometry": shapely.set_precision(row.geometry, grid_size=0.001).__geo_interface__, # "geometry": row.geometry.__geo_interface__,
+                    "geometry": shapely.set_precision(row.geometry, grid_size=0.001).__geo_interface__,
                     "properties": {
                         "name": prov_name,
                         "value": round(val, decimals)
@@ -480,7 +385,7 @@ def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output
     # This prevents errors when extracting .dt.year later
     for prov_key, ts_data in provincial_ts_dict.items():
         provincial_ts_dict[prov_key] = ts_data.assign_coords(
-            time=pd.to_datetime(ts_data["time"].dt.strftime("%Y-%m-%d %H:%M:%S")) # time=pd.to_datetime(ts_data["time"].values)
+            time=pd.to_datetime(ts_data["time"].dt.strftime("%Y-%m-%d %H:%M:%S"))
         )
 
     # Get metadata
@@ -541,7 +446,7 @@ def export_trend_map_shapefile(provincial_ts_dict: dict, index_name: str, output
                     
                     features.append({
                         "type": "Feature",
-                        "geometry": shapely.set_precision(row.geometry, grid_size=0.001).__geo_interface__, # "geometry": row.geometry.__geo_interface__,
+                        "geometry": shapely.set_precision(row.geometry, grid_size=0.001).__geo_interface__,
                         "properties": props
                     })
                 except Exception as e:

@@ -6,18 +6,6 @@ import xarray as xr
 import numpy as np
 from typing import List, Dict, Tuple, Any, Optional
 
-"""
-Utilities to inspect NetCDF/GRIB/CSV (xarray-readable) files,
-detect upload mode (attribute / time / mixed), and validate compatibility.
-
-Functions:
-- inspect_file(path) -> dict (variables, dims, coords, time_range, resolution, units)
-- detect_mode(metadata_list) -> ("attribute"|"time"|"mixed", grouping_info, diagnostics)
--
--
--
-"""
-
 COORD_ALIASES = {
     "latitude": ["lat", "latitude", "nav_lat", "y", "rlat"],
     "longitude": ["lon", "longitude", "nav_lon", "x", "rlon"],
@@ -40,7 +28,6 @@ def filter_dataset_vars(ds: xr.Dataset) -> xr.Dataset:
     Helper function: Keep only allowed variables, drop others.
     Does not touch coordinates (lat, lon, time).
     """
-    # หาตัวแปรที่ "ไม่ได้" อยู่ใน ALLOWED_VARS
     vars_to_drop = [v for v in ds.data_vars if v not in ALLOWED_VARS]
     
     if vars_to_drop:
@@ -162,7 +149,6 @@ def inspect_file(path: str) -> Dict[str, Any]:
         ds, time_name = map_and_rename_coord(ds, "time", COORD_ALIASES["time"])
 
         # Basic Info
-        # filename = os.path.basename(path)
         filename = None  
         file_size = f"{os.path.getsize(path)/1024/1024:.2f} MB"
 

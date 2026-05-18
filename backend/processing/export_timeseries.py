@@ -41,7 +41,7 @@ def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_b
         "type": "TimeSeries",
         "metadata": {
             "index": index_name,
-            "unit": index_data.attrs.get("units", ""), # getattr(index_data, "units", ""),
+            "unit": index_data.attrs.get("units", ""), 
             "method": "annual mean",
             "start_date": str(index_data.time.min().values)[:10],
             "end_date": str(index_data.time.max().values)[:10],
@@ -66,9 +66,6 @@ def export_yearly_timeseries(index_data: xr.DataArray, index_name: str, output_b
 def export_seasonal_cycle(index_data: xr.DataArray, index_name: str, output_base_dir: str, region_name: str = "Thailand", province_name: str = None):
     """Export monthly climatology (mean over space)."""
     years = index_data.time.dt.year.values
-
-    # monthly mean (space averaged only)
-    # monthly = index_data.mean(dim=["latitude", "longitude"], skipna=True)
 
     # ---- CASE 1: already aggregated ----
     if index_data.ndim == 1:

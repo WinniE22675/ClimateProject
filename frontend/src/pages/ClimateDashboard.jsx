@@ -5,103 +5,6 @@ import GridMapViewer from "../components/GridMapViewer";
 import { datasetAPI } from '../services/api';
 
 export default function ClimateDashboard() {
-
-  
-  const countries = [
-    "Thailand",
-    // "Vietnam",
-    // "Laos",
-    // "Cambodia",
-    // "Myanmar",
-    // "Malaysia",
-    // "Philippines",
-    // "Indonesia",
-    // "Singapore",
-    // "Brunei",
-    // "Timor-Leste",
-    // "SEA",
-  ];
-
-  const provinces = [
-    "Amnat Charoen",
-    "Ang Thong",
-    "Bangkok",
-    "Bueng Kan",
-    "Buri Ram",
-    "Chachoengsao",
-    "Chai Nat",
-    "Chaiyaphum",
-    "Chanthaburi",
-    "Chiang Mai",
-    "Chiang Rai",
-    "Chon Buri",
-    "Chumphon",
-    "Kalasin",
-    "Kamphaeng Phet",
-    "Kanchanaburi",
-    "Khon Kaen",
-    "Krabi",
-    "Lampang",
-    "Lamphun",
-    "Loei",
-    "Lop Buri",
-    "Mae Hong Son",
-    "Maha Sarakham",
-    "Mukdahan",
-    "Nakhon Nayok",
-    "Nakhon Pathom",
-    "Nakhon Phanom",
-    "Nakhon Ratchasima",
-    "Nakhon Sawan",
-    "Nakhon Si Thammarat",
-    "Nan",
-    "Narathiwat",
-    "Nong Bua Lam Phu",
-    "Nong Khai",
-    "Nonthaburi",
-    "Pathum Thani",
-    "Pattani",
-    "Phangnga",
-    "Phatthalung",
-    "Phayao",
-    "Phetchabun",
-    "Phetchaburi",
-    "Phichit",
-    "Phitsanulok",
-    "Phra Nakhon Si Ayutthaya",
-    "Phrae",
-    "Phuket",
-    "Prachin Buri",
-    "Prachuap Khiri Khan",
-    "Ranong",
-    "Ratchaburi",
-    "Rayong",
-    "Roi Et",
-    "Sa Kaeo",
-    "Sakon Nakhon",
-    "Samut Prakan",
-    "Samut Sakhon",
-    "Samut Songkhram",
-    "Saraburi",
-    "Satun",
-    "Si Sa Ket",
-    "Sing Buri",
-    "Songkhla",
-    "Sukhothai",
-    "Suphan Buri",
-    "Surat Thani",
-    "Surin",
-    "Tak",
-    "Trang",
-    "Trat",
-    "Ubon Ratchathani",
-    "Udon Thani",
-    "Uthai Thani",
-    "Uttaradit",
-    "Yala",
-    "Yasothon",
-  ];
-
   const ALL_INDICES = [
     "pr",
     "tmax",
@@ -177,10 +80,8 @@ export default function ClimateDashboard() {
 
   const [indexName, setIndexName] = useState("PRCPTOT");
   const [mode, setMode] = useState("actual"); // trend / actual
-  // const [datamode, setDataMode] = useState("default"); // default | upload
 
   const [country, setCountry] = useState("Thailand"); //"SEA"
-  // const [datasetId, setDatasetId] = useState("default"); // default, 1, 2, 3, 4
   const [datasetList, setDatasetList] = useState([]);
   const [activeDataset, setActiveDataset] = useState("ERA5"); //default
   const [province, setProvince] = useState("");
@@ -196,13 +97,12 @@ export default function ClimateDashboard() {
 
   const [availableIndices, setAvailableIndices] = useState(ALL_INDICES);
 
-  const [spiThreshold, setSpiThreshold] = useState(1);
-  const [appliedSpiThreshold, setAppliedSpiThreshold] = useState(1);
+  const [spiThreshold, setSpiThreshold] = useState(1.0);
+  const [appliedSpiThreshold, setAppliedSpiThreshold] = useState(1.0);
 
   const [shapefileName, setShapefileName] = useState("");
   const [targetCol, setTargetCol] = useState("");
   // In a real app, you might want to fetch this list from the backend
-  // const [shapefileList, setShapefileList] = useState(["THA_Provinces"])
 
   const [availableAreas, setAvailableAreas] = useState([]);
 
@@ -219,8 +119,8 @@ export default function ClimateDashboard() {
 
       try {
         // Fetch the metadata file from the backend
-        const response = await fetch(`http://localhost:8000/output/${activeDataset}/metadata.json?v=${new Date().getTime()}`);
-        
+        const response = await fetch(`http://172.16.2.110:10001/output/${activeDataset}/metadata.json?v=${new Date().getTime()}`);
+
         if (!response.ok) {
           throw new Error(`Failed to fetch metadata: HTTP ${response.status}`);
         }
@@ -248,39 +148,6 @@ export default function ClimateDashboard() {
           setAvailableAreas([]);
           setAvailableIndices([]);
         }
-
-        // if (data.available_areas) {
-        //   setAvailableAreas(data.available_areas);
-        // } else {
-        //   setAvailableAreas([]);
-        // }
-
-        // // if (data.shapefile_name) setShapefileName(data.shapefile_name);
-        // // if (data.target_col) setTargetCol(data.target_col);
-        // if (data.country) setCountry(data.country); // Sync workspace name
-
-        // const rawVariables = data.variables || [];
-        // const climateIndices = data.available_indices || [];
-        
-        // // Merge both arrays: ['pr', 'tmax', 'tmin', 'SPI3', 'PRCPTOT', ...]
-        // const combinedOptions = [...rawVariables, ...climateIndices];
-
-        // // Extract available indices from metadata
-        // if (combinedOptions.length > 0) {
-        //   // Set the combined list to your state
-        //   setAvailableIndices(combinedOptions);
-          
-        //   // Auto-adjust indexName if the current one is NOT in the new combined list
-        //   setIndexName((currentIndex) => {
-        //     if (!combinedOptions.includes(currentIndex)) {
-        //       return combinedOptions[0]; // Select the first available (likely 'pr')
-        //     }
-        //     return currentIndex; // Keep the same if it exists
-        //   });
-        // } else {
-        //   // Fallback if backend doesn't provide the list
-        //   setAvailableIndices(ALL_INDICES);
-        // }
 
         // Extract years from ISO string format (e.g., "1960-01-01T00:00:00" -> 1960)
         if (data.time_start && data.time_end) {
@@ -409,7 +276,6 @@ export default function ClimateDashboard() {
 
   const fetchDatasetList = async () => {
     try {
-      // const res = await fetch("http://localhost:8000/api/datasets");
       const res = await datasetAPI.getDatasets();
       if (!res.ok) return;
 
@@ -422,259 +288,6 @@ export default function ClimateDashboard() {
       console.error("Failed to fetch datasets", err);
     }
   };
-
-//   const fetchShapefiles = async () => {
-//   try {
-//     const res = await datasetAPI.getShapefiles();
-//     if (res.ok) {
-//       const data = await res.json();
-//       setShapefileList(data.shapefiles || []);
-//     }
-//   } catch (err) {
-//     console.error("Failed to fetch shapefiles", err);
-//   }
-// };
-
-// useEffect(() => { fetchShapefiles(); }, []);
-
-  // return (
-  //   <div className="container-fluid mt-4">
-  //     {/* Controls Container */}
-  //     <div className="d-flex align-items-end gap-3 flex-wrap mb-3">
-
-  //       {/* 1. Dataset Selector */}
-  //       <div>
-  //         <label className="form-label small fw-bold text-muted">
-  //           Dataset Source
-  //         </label>
-  //         <select
-  //           className="form-select form-select-sm"
-  //           value={activeDataset}
-  //           onChange={(e) => {
-  //             setActiveDataset(e.target.value)
-  //             setCountry(""); 
-  //             setProvince("");
-  //             setAvailableIndices([]);
-  //           }
-  //           }
-  //         >
-  //           {/* <option value="default">Default Dataset</option> */}
-  //           {datasetList.length === 0 && (
-  //             <option disabled>No uploaded dataset</option>
-  //           )}
-  //           {[...datasetList] 
-  //             .sort((a, b) => a.localeCompare(b))
-  //             .map((name) => (
-  //               <option key={name} value={name}>
-  //                 {name}
-  //               </option>
-  //           ))}
-  //           {/* {datasetList.map((name) => (
-  //             <option key={name} value={name}>
-  //               {name}
-  //             </option>
-  //           ))} */}
-  //         </select>
-  //       </div>
-
-  //       {/* 2. Workspace / Country */}
-  //       <div>
-  //         <label className="form-label small fw-bold text-muted">Workspace / Country</label>
-  //         <select
-  //           className="form-select form-select-sm"
-  //           value={country}
-  //           onChange={(e) => setCountry(e.target.value)}
-  //           disabled={availableWorkspaces.length === 0}
-  //         >
-  //           {availableWorkspaces.length === 0 && (
-  //             <option value="">No calculations yet</option>
-  //           )}
-  //           {[...availableWorkspaces]
-  //             .sort((a, b) => a.localeCompare(b))
-  //             .map((ws) => (
-  //               <option key={ws} value={ws}>
-  //                 {ws}
-  //               </option>
-  //           ))}
-  //           {/* {availableWorkspaces.map((ws) => (
-  //             <option key={ws} value={ws}>
-  //               {ws}
-  //             </option>
-  //           ))} */}
-  //         </select>
-  //       </div>
-
-  //       {/* 2. Country Selector */}
-  //       {/* <div>
-  //         <label className="form-label small fw-bold text-muted">Country</label>
-  //         <select
-  //           className="form-select form-select-sm"
-  //           value={country}
-  //           onChange={(e) => {
-  //             setCountry(e.target.value);
-  //             setProvince("");
-  //           }}
-  //         >
-  //           {countries.map((c) => (
-  //             <option key={c} value={c}>
-  //               {c}
-  //             </option>
-  //           ))}
-  //         </select>
-  //       </div> */}
-
-  //       {/* 3. Province Selector (Conditional) */}
-  //       {/* {country === "Thailand" && (
-  //         <div>
-  //           <label className="form-label small fw-bold text-muted">Province</label>
-  //           <select
-  //             className="form-select form-select-sm"
-  //             value={province}
-  //             onChange={(e) => setProvince(e.target.value)}
-  //           >
-  //             <option value="">Whole Country</option>
-  //             {provinces.map((p) => (
-  //               <option key={p} value={p}>
-  //                 {p}
-  //               </option>
-  //             ))}
-  //           </select>
-  //         </div>
-  //       )} */}
-  //       <div>
-  //         <label className="form-label small fw-bold text-muted">Select Area</label>
-  //         <select
-  //           className="form-select form-select-sm"
-  //           value={province}
-  //           onChange={(e) => setProvince(e.target.value)}
-  //           disabled={availableAreas.length === 0}
-  //         >
-  //           <option value="">Whole Country</option>
-  //           {availableAreas.map((area) => (
-  //             <option key={area} value={area}>
-  //               {area}
-  //             </option>
-  //           ))}
-  //         </select>
-  //       </div>
-
-  //       {/* 4. Index Selector (Moved here & formatted to match) */}
-  //       <div>
-  //         <label className="form-label small fw-bold text-muted">Index</label>
-  //         <select
-  //           className="form-select form-select-sm"
-  //           value={indexName}
-  //           onChange={(e) => setIndexName(e.target.value)}
-  //         >
-  //           {/* ALL_INDICES.map((idx) => ( */}
-  //           {availableIndices.map((idx) => (
-  //             <option key={idx} value={idx}>
-  //               {idx}
-  //             </option>
-  //           ))}
-  //         </select>
-  //       </div>
-
-  //       {/* Override Shapefile Selector */}
-  //       {/* <div>
-  //         <label className="form-label small fw-bold text-muted">Shapefile</label>
-  //         <select
-  //           className="form-select form-select-sm"
-  //           style={{ width: "150px" }}
-  //           value={shapefileName}
-  //           onChange={(e) => setShapefileName(e.target.value)}
-  //           title="Select a different shapefile boundary for map rendering"
-  //         >
-  //           {shapefileList.map((name) => (
-  //             <option key={name} value={name}>{name}</option>
-  //           ))}
-  //         </select>
-  //       </div> */}
-
-  //       {/* 5. Start Year Input (Moved here & formatted to match) */}
-  //       <div className="d-flex align-items-end gap-3">
-  //         <div>
-  //           <label className="form-label small fw-bold text-muted">Start Year</label>
-  //           <input
-  //             type="number"
-  //             className="form-control form-control-sm"
-  //             style={{ width: "85px" }}
-  //             value={inputStartYear}
-  //             onChange={(e) => setInputStartYear(e.target.value)}
-  //           />
-  //         </div>
-
-  //         {/* 6. End Year Input (Moved here & formatted to match) */}
-  //         <div>
-  //           <label className="form-label small fw-bold text-muted">End Year</label>
-  //           <input
-  //             type="number"
-  //             className="form-control form-control-sm"
-  //             style={{ width: "85px" }}
-  //             value={inputEndYear}
-  //             onChange={(e) => setInputEndYear(e.target.value)}
-  //           />
-  //         </div>
-  //       </div>
-
-  //       {/* 7. Apply Button (Moved here) */}
-  //       <div>
-  //         <button 
-  //           className="btn btn-sm btn-primary" 
-  //           onClick={handleApplyYearRange}
-  //         >
-  //           {/* {indexName.startsWith("SPI") ? "Apply Years & Threshold for Maps" : "Apply Years for Maps"} */}
-  //           {indexName.startsWith("SPI") && (indexName.includes("Drought") || indexName.includes("Flood"))
-  //             ? "Apply Years Threshold and Config for Maps" 
-  //             : "Apply config for Maps"}
-  //         </button>
-  //       </div>
-
-  //       {/* 8. Upload New Data Button (Moved to the end of the line) */}
-  //       <div className="ms-lg-auto mt-3 mt-lg-0 flex-grow-1 flex-lg-grow-0 text-center text-lg-end"> {/* 'ms-auto' pushes this button to the far right if there is extra space */}
-  //         <Link to="/manipulate">
-  //           <button className="btn btn-sm btn-primary p-2">Upload New Data</button>
-  //         </Link>
-  //       </div>
-
-  //     </div>
-
-  //     {/* Map and Chart Section */}
-  //     <div className="row">
-  //       <div className="col-12 col-lg-6">
-  //         <IndicesViewer
-  //           indexName={indexName}
-  //           datasetName={activeDataset}
-  //           country={country}
-  //           province={province}   
-  //           startYear={inputStartYear}
-  //           endYear={inputEndYear}
-  //           availableIndices={availableIndices}
-  //           spiThreshold={spiThreshold} //
-  //           setSpiThreshold={setSpiThreshold} //
-  //           // shapefileName={shapefileName}
-  //           // targetCol={targetCol}
-  //         />
-  //       </div>
-  //       <div className="col-12 col-lg-6">
-  //         <GridMapViewer
-  //           indexName={indexName}
-  //           mode={mode}
-  //           setMode={setMode}
-  //           datasetName={activeDataset}
-  //           country={country}
-  //           province={province}   
-  //           startYear={startYear}
-  //           endYear={endYear}
-  //           availableIndices={availableIndices}
-  //           spiThreshold={appliedSpiThreshold} //
-  //           shapefileName={shapefileName}
-  //           targetCol={targetCol}
-  //         />
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
 
   return (
     <div className="w-full px-4 mt-4">
@@ -697,7 +310,6 @@ export default function ClimateDashboard() {
             }
             }
           >
-            {/* <option value="default">Default Dataset</option> */}
             {datasetList.length === 0 && (
               <option disabled>No uploaded dataset</option>
             )}

@@ -10,7 +10,7 @@ const DATASET_SLOTS = [
   { id: 2, label: "Preset 2" },
   { id: 3, label: "Preset 3" },
   { id: 4, label: "Preset 4" },
-  { id: 5, label: "Shapefile" } // Slot 5 สำหรับ Shapefile
+  { id: 5, label: "Shapefile" } // Slot 5 for Shapefile
 ];
 
 export default function DatasetManager() {
@@ -40,23 +40,16 @@ export default function DatasetManager() {
 
   const fetchFiles = async (slotId) => {
     try {
-      // const res = await fetch(
-      //   `http://localhost:8000/api/datasets/${slotId}/files`
-      // );
-      // const res = await apiFetch(`/datasets/${slotId}/files`);
       const endpoint = slotId === 5 ? `/shapefiles?user_only=true` : `/datasets/${slotId}/files`;
       const res = await apiFetch(endpoint);
 
       if (res.ok) {
         const data = await res.json();
         if (slotId === 5) {
-            // const sfList = (data.shapefiles || []).map(name => ({ name }));
             setFileList(data.shapefiles || []);
-            // setFileList(sfList);
         } else {
             setFileList(data.files || []); // Expecting { files: [{name:Str, year:Int}, ...] }
         }
-        // setFileList(data.files || []); // Expecting { files: [{name:Str, year:Int}, ...] }
       } else {
         setFileList([]);
       }
@@ -69,12 +62,6 @@ export default function DatasetManager() {
     if (!window.confirm(`Delete ${filename}?`)) return;
 
     try {
-      // const res = await fetch(
-      //   `http://localhost:8000/api/datasets/${activeSlot}/files/${filename}`,
-      //   {
-      //     method: "DELETE",
-      //   }
-      // );
       const endpoint = isShapefileMode 
         ? `/shapefiles/${filename}` 
         : `/datasets/${activeSlot}/files/${filename}`;
@@ -104,21 +91,7 @@ export default function DatasetManager() {
       return;
     }
     try {
-      // send Scope to Backend manage file follow Metadata
-      // const res = await fetch(
-      //   `http://localhost:8000/api/datasets/process_selection`, 
-      //   {
-      //     method: "POST",
-      //     headers: { "Content-Type": "application/json" },
-      //     body: JSON.stringify({
-      //       slot_id: activeSlot,
-      //       dataset_name: datasetName,
-      //       scope: scope,
-      //     }),
-      //   }
-      // );
-
-      // 2. Clean the scope payload: Convert empty strings "" to null
+      // Clean the scope payload: Convert empty strings "" to null
       const cleanScope = {
         startYear: scope.startYear === "" ? null : Number(scope.startYear),
         endYear: scope.endYear === "" ? null : Number(scope.endYear),
@@ -134,25 +107,12 @@ export default function DatasetManager() {
         scope: cleanScope, //scope,
       });
       if (res.ok) {
-        // const result = await res.json();
-        // alert(result.message || "Data processed successfully!");
-        // TODO: Navigate to Result Page or Show success
         navigate("/process", { state: { datasetName } }); //slotId: activeSlot
       }
       else {
         const errorData = await res.json();
         alert(`Error: ${errorData.detail || "Failed to start processing."}`);
-        // alert("Failed to start processing.");
-        // const errorData = await res.json();
-        
-        // if (Array.isArray(errorData.detail)) {
-        //   const errorMessages = errorData.detail
-        //     .map(err => `- ${err.loc[err.loc.length - 1]}: ${err.msg}`)
-        //     .join('\n');
-        //   alert(`Data Validation Error:\n${errorMessages}`);
-        // } else {
-        //   alert(`Error: ${errorData.detail || "Failed to start processing."}`);
-        // }
+
       }
     } catch (err) {
       console.error(err);
@@ -162,212 +122,6 @@ export default function DatasetManager() {
     }
   };
 
-  // return (
-  //   <div className="card shadow-sm border-0">
-  //     <div className="card-body p-3">
-        
-  //       {/* 1. Slot Selector (5 Tabs) */}
-  //       <div className="mb-3">
-  //         <label className="form-label fw-bold small text-muted mb-2">Select Target</label>
-  //         <div className="btn-group d-flex w-100 shadow-sm" role="group">
-  //           {DATASET_SLOTS.map((slot) => (
-  //             <button
-  //               key={slot.id}
-  //               onClick={() => {
-  //                 setActiveSlot(slot.id);
-  //                 setDatasetName(""); 
-  //               }}
-  //               className={`btn py-2 ${
-  //                 activeSlot === slot.id ? "btn-primary shadow-sm" : "btn-outline-secondary"
-  //               }`}
-  //             >
-  //               {slot.label}
-  //             </button>
-  //           ))}
-  //         </div>
-  //       </div>
-
-  //       {isShapefileMode && (
-  //          <div className="alert alert-info py-2 mb-3 shadow-sm border-0 small">
-  //            <i className="bi bi-info-circle me-2"></i>
-  //            Upload a single <strong>.zip</strong> file containing all shapefile components (.shp, .shx, .dbf, ...).
-  //          </div>
-  //       )}
-
-  //       <div className="row mb-3 align-items-end g-3">
-  //         <div className="col-12 col-md-5">
-  //           {/* FIX: Show input field for both modes, just change the label/placeholder */}
-  //           <label className="form-label fw-bold small mb-1">
-  //             {isShapefileMode ? 'Shapefile Name' : 'Dataset Name'}
-  //           </label>
-  //           <input
-  //             type="text"
-  //             value={datasetName}
-  //             onChange={(e) => setDatasetName(e.target.value)}
-  //             className="form-control form-control-sm"
-  //             placeholder={isShapefileMode ? "e.g. My_Custom_Area" : "e.g. ERA5_Thailand_1960_2020"}
-  //           />
-  //         </div>
-  //         <div className="col-12 col-md-7">
-  //           <label className="form-label fw-bold small mb-1 text-primary">
-  //             Upload to {isShapefileMode ? 'Shapefile (zip)' : `Preset ${activeSlot}`}
-  //           </label>
-  //           <DatasetUploader
-  //             slotId={activeSlot}
-  //             isShapefileMode={isShapefileMode} 
-  //             datasetName={datasetName} 
-  //             onUploadSuccess={() => fetchFiles(activeSlot)}
-  //           />
-  //         </div>
-  //       </div>
-
-  //           {/* Scope Selection */}
-  //           {!isShapefileMode && (
-  //           <div className="card bg-light border-0 mb-3">
-  //             <div className="card-body p-3">
-  //               <div className="row g-3">
-  //                 {/* Time Range */}
-  //                 <div className="col-12 col-md-4">
-  //                   <label className="form-label small fw-bold text-muted mb-1">Time Range (Year)</label>
-  //                   <div className="input-group input-group-sm">
-  //                     <input
-  //                       type="number"
-  //                       value={scope.startYear}
-  //                       // onChange={(e) => setScope({ ...scope, startYear: Number(e.target.value) })}
-  //                       onChange={(e) => {
-  //                         const val = e.target.value;
-  //                         setScope({ ...scope, startYear: val === "" ? "" : Number(val) });
-  //                       }}
-  //                       className="form-control text-center"
-  //                       placeholder="start"
-  //                     />
-  //                     <span className="input-group-text bg-white">-</span>
-  //                     <input
-  //                       type="number"
-  //                       value={scope.endYear}
-  //                       // onChange={(e) => setScope({ ...scope, endYear: Number(e.target.value) })}
-  //                       onChange={(e) => {
-  //                         const val = e.target.value;
-  //                         setScope({ ...scope, endYear: val === "" ? "" : Number(val) });
-  //                       }}
-  //                       className="form-control text-center"
-  //                       placeholder="end"
-  //                     />
-  //                   </div>
-  //                 </div>
-
-  //                 {/* Latitude */}
-  //                 <div className="col-12 col-md-4">
-  //                   <label className="form-label small fw-bold text-muted mb-1">Latitude (Min - Max)</label>
-  //                   <div className="input-group input-group-sm">
-  //                     <input
-  //                       type="number"
-  //                       min="-90" max="90"
-  //                       value={scope.minLat}
-  //                       onChange={(e) => {
-  //                         const val = e.target.value;
-  //                         setScope({ ...scope, minLat: val === "" || val === "-" ? val : Number(val) });
-  //                       }}
-  //                       className="form-control text-center"
-  //                       placeholder="min"
-  //                     />
-  //                     <span className="input-group-text bg-white">-</span>
-  //                     <input
-  //                       type="number"
-  //                       min="-90" max="90"
-  //                       value={scope.maxLat}
-  //                       onChange={(e) => {
-  //                         const val = e.target.value;
-  //                         setScope({ ...scope, maxLat: val === "" || val === "-" ? val : Number(val) });
-  //                       }}
-  //                       className="form-control text-center"
-  //                       placeholder="max"
-  //                     />
-  //                   </div>
-  //                 </div>
-
-  //                 {/* Longitude */}
-  //                 <div className="col-12 col-md-4">
-  //                   <label className="form-label small fw-bold text-muted mb-1">Longitude (Min - Max)</label>
-  //                   <div className="input-group input-group-sm">
-  //                     <input
-  //                       type="number"
-  //                       min="-180" max="180"
-  //                       value={scope.minLon}
-  //                       onChange={(e) => {
-  //                         const val = e.target.value;
-  //                         setScope({ ...scope, minLon: val === "" || val === "-" ? val : Number(val) });
-  //                       }}
-  //                       className="form-control text-center"
-  //                       placeholder="min"
-  //                     />
-  //                     <span className="input-group-text bg-white">-</span>
-  //                     <input
-  //                       type="number"
-  //                       min="-180" max="180"
-  //                       value={scope.maxLon}
-  //                       onChange={(e) => {
-  //                         const val = e.target.value;
-  //                         setScope({ ...scope, maxLon: val === "" || val === "-" ? val : Number(val) });
-  //                       }}
-  //                       className="form-control text-center"
-  //                       placeholder="max"
-  //                     />
-  //                   </div>
-  //                 </div>
-  //               </div>
-  //             </div>
-  //           </div>
-  //           )}
-
-  //           {/* Action Button */}
-  //           {!isShapefileMode && (
-  //           <div className="text-center mb-4">
-  //             <button
-  //               onClick={handleProcessSelection}
-  //               disabled={loading || fileList.length === 0}
-  //               className="btn btn-sm btn-success px-5 fw-bold shadow-sm"
-  //             >
-  //               {loading ? (
-  //                 <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing (Clipping)...</>
-  //               ) : (
-  //                 "Confirm & Clip Data"
-  //               )}
-  //             </button>
-  //           </div>
-  //       )}
-
-  //       {/* File List Visualization */}
-  //       <div>
-  //         <h6 className="fw-bold mb-2">Uploaded {isShapefileMode ? 'Shapefiles' : 'Files'} <span className="badge bg-secondary">{fileList.length}</span></h6>
-          
-  //         <div className="list-group overflow-auto border rounded shadow-sm" style={{ maxHeight: "250px" }}>
-  //           {fileList.length === 0 && (
-  //             <div className="list-group-item text-center text-muted p-4 bg-light">
-  //               No {isShapefileMode ? 'shapefiles' : 'files'} uploaded yet.
-  //             </div>
-  //           )}
-
-  //           {fileList.map((file, idx) => (
-  //             <div key={idx} className="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-2">
-  //               <span className="text-truncate small" style={{ maxWidth: "80%" }} title={file.name}>
-  //                 {file.name}
-  //               </span>
-  //               <button
-  //                 onClick={() => handleDelete(file.name)}
-  //                 className="btn btn-sm btn-outline-danger py-0 px-2"
-  //                 style={{ fontSize: "0.8rem" }}
-  //               >
-  //                 Delete
-  //               </button>
-  //             </div>
-  //           ))}
-  //         </div>
-  //       </div>
-
-  //     </div>
-  //   </div>
-  // );
   return (
     <div className="bg-white rounded-lg border border-gray-200">
       <div className="p-4">
@@ -586,180 +340,3 @@ export default function DatasetManager() {
     </div>
   );
 }
-//   return (
-//     <div className="card shadow-sm border-0">
-//       <div className="card-body p-3">
-        
-//         {/* 1. Slot Selector (Converted to Bootstrap Button Group) */}
-//         <div className="mb-3">
-//           <label className="form-label fw-bold small text-muted mb-2">Select Preset Slot</label>
-//           <div className="btn-group d-flex w-100 shadow-sm" role="group">
-//             {DATASET_SLOTS.map((slot) => (
-//               <button
-//                 key={slot}
-//                 onClick={() => setActiveSlot(slot)}
-//                 className={`btn py-2 ${
-//                   activeSlot === slot ? "btn-primary shadow-sm" : "btn-outline-secondary"
-//                 }`}
-//               >
-//                 Preset {slot}
-//               </button>
-//             ))}
-//           </div>
-//         </div>
-
-//         {/* 2. Dataset Name & Uploader (Side by Side to save space) */}
-//         <div className="row mb-3 align-items-end g-3">
-//           <div className="col-12 col-md-5">
-//             <label className="form-label fw-bold small mb-1">Dataset Name</label>
-//             <input
-//               type="text"
-//               value={datasetName}
-//               onChange={(e) => setDatasetName(e.target.value)}
-//               className="form-control form-control-sm"
-//               placeholder="e.g. ERA5_Thailand_1960_2020"
-//             />
-//           </div>
-//           <div className="col-12 col-md-7">
-//             <label className="form-label fw-bold small mb-1 text-primary">
-//               Upload to Preset {activeSlot}
-//             </label>
-//             <DatasetUploader
-//               slotId={activeSlot}
-//               onUploadSuccess={() => fetchFiles(activeSlot)}
-//             />
-//           </div>
-//         </div>
-
-//         {/* 3. Scope Selection (Compact Grid) */}
-//         <div className="card bg-light border-0 mb-3">
-//           <div className="card-body p-3">
-//             <div className="row g-3">
-//               {/* Time Range */}
-//               <div className="col-12 col-md-4">
-//                 <label className="form-label small fw-bold text-muted mb-1">Time Range (Year)</label>
-//                 <div className="input-group input-group-sm">
-//                   <input
-//                     type="number"
-//                     value={scope.startYear}
-//                     onChange={(e) => setScope({ ...scope, startYear: Number(e.target.value) })}
-//                     className="form-control text-center"
-//                     placeholder="Start"
-//                   />
-//                   <span className="input-group-text bg-white">-</span>
-//                   <input
-//                     type="number"
-//                     value={scope.endYear}
-//                     onChange={(e) => setScope({ ...scope, endYear: Number(e.target.value) })}
-//                     className="form-control text-center"
-//                     placeholder="End"
-//                   />
-//                 </div>
-//               </div>
-
-//               {/* Latitude */}
-//               <div className="col-12 col-md-4">
-//                 <label className="form-label small fw-bold text-muted mb-1">Latitude (Min - Max)</label>
-//                 <div className="input-group input-group-sm">
-//                   <input
-//                     type="number"
-//                     min="-90" max="90"
-//                     value={scope.minLat}
-//                     onChange={(e) => {
-//                       const val = e.target.value;
-//                       setScope({ ...scope, minLat: val === "" || val === "-" ? val : Number(val) });
-//                     }}
-//                     className="form-control text-center"
-//                   />
-//                   <span className="input-group-text bg-white">-</span>
-//                   <input
-//                     type="number"
-//                     min="-90" max="90"
-//                     value={scope.maxLat}
-//                     onChange={(e) => {
-//                       const val = e.target.value;
-//                       setScope({ ...scope, maxLat: val === "" || val === "-" ? val : Number(val) });
-//                     }}
-//                     className="form-control text-center"
-//                   />
-//                 </div>
-//               </div>
-
-//               {/* Longitude */}
-//               <div className="col-12 col-md-4">
-//                 <label className="form-label small fw-bold text-muted mb-1">Longitude (Min - Max)</label>
-//                 <div className="input-group input-group-sm">
-//                   <input
-//                     type="number"
-//                     min="-180" max="180"
-//                     value={scope.minLon}
-//                     onChange={(e) => {
-//                       const val = e.target.value;
-//                       setScope({ ...scope, minLon: val === "" || val === "-" ? val : Number(val) });
-//                     }}
-//                     className="form-control text-center"
-//                   />
-//                   <span className="input-group-text bg-white">-</span>
-//                   <input
-//                     type="number"
-//                     min="-180" max="180"
-//                     value={scope.maxLon}
-//                     onChange={(e) => {
-//                       const val = e.target.value;
-//                       setScope({ ...scope, maxLon: val === "" || val === "-" ? val : Number(val) });
-//                     }}
-//                     className="form-control text-center"
-//                   />
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Action Button */}
-//         <div className="text-center mb-4">
-//         <button
-//           onClick={handleProcessSelection}
-//           disabled={loading || fileList.length === 0}
-//           className="btn btn-sm btn-success px-5 fw-bold shadow-sm"
-//         >
-//           {loading ? (
-//             <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing (Clipping)...</>
-//           ) : (
-//             "Confirm & Clip Data"
-//           )}
-//         </button>
-//         </div>
-
-//         {/* 4. File List Visualization */}
-//         <div>
-//           <h6 className="fw-bold mb-2">Uploaded Files <span className="badge bg-secondary">{fileList.length}</span></h6>
-          
-//           <div className="list-group overflow-auto border rounded shadow-sm" style={{ maxHeight: "250px" }}>
-//             {fileList.length === 0 && (
-//               <div className="list-group-item text-center text-muted p-4 bg-light">
-//                 No files uploaded yet.
-//               </div>
-//             )}
-
-//             {fileList.map((file, idx) => (
-//               <div key={idx} className="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-2">
-//                 <span className="text-truncate small" style={{ maxWidth: "80%" }} title={file.name}>
-//                   {file.name}
-//                 </span>
-//                 <button
-//                   onClick={() => handleDelete(file.name)}
-//                   className="btn btn-sm btn-outline-danger py-0 px-2"
-//                   style={{ fontSize: "0.8rem" }}
-//                 >
-//                   Delete
-//                 </button>
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-
-//       </div>
-//     </div>
-//   );
-// }

@@ -31,18 +31,6 @@ export const AuthProvider = ({ children }) => {
     // State to handle initial loading while checking localStorage
     const [loading, setLoading] = useState(true);
 
-    // Run this only once when the application starts
-    // useEffect(() => {
-    //     const storedToken = localStorage.getItem('jwt_token');
-        
-    //     if (storedToken) {
-    //         setToken(storedToken);
-    //         setUser({ isLoggedIn: true });
-    //     }
-        
-    //     // Finish loading
-    //     setLoading(false);
-    // }, []);
     useEffect(() => {
         const storedToken = localStorage.getItem('jwt_token');
         
@@ -69,16 +57,11 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     // Function to handle login success
-    // const login = (newToken) => {
-    //     localStorage.setItem('jwt_token', newToken);
-    //     setToken(newToken);
-    //     setUser({ isLoggedIn: true });
-    // };
     const login = (newToken) => {
         localStorage.setItem('jwt_token', newToken);
         setToken(newToken);
         
-        // MODIFIED: Decode the new token right after login
+        // Decode the new token right after login
         const decodedPayload = decodeTokenPayload(newToken);
         if (decodedPayload) {
             setUser({ 

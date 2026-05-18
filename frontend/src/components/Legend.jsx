@@ -22,39 +22,8 @@ export default function Legend({ bins, scale, mode, unit, indexName, isSPIEvent 
     // cleanup
     return () => resizeObserver.disconnect();
   }, []);
-  
-  // if (mode === "trend" && isSPIEvent) {
-  //   return (
-  //     <div className="d-flex flex-column align-items-center w-100 mt-2 px-4">
-  //       <div className="d-flex flex-wrap justify-content-center align-items-center gap-4">
-          
-  //         {/* Increasing Box */}
-  //         <div className="d-flex align-items-center gap-2">
-  //           <div style={{ width: "30px", height: "16px", backgroundColor: "#d73027", borderRadius: "2px" }}></div>
-  //           <span className="small fw-bold text-dark">Increasing</span>
-  //         </div>
-          
-  //         {/* No Trend Box */}
-  //         <div className="d-flex align-items-center gap-2">
-  //           <div style={{ width: "30px", height: "16px", backgroundColor: "#dddddd", border: "1px solid #bbbbbb", borderRadius: "2px" }}></div>
-  //           <span className="small fw-bold text-dark">No Trend</span>
-  //         </div>
-          
-  //         {/* Decreasing Box */}
-  //         <div className="d-flex align-items-center gap-2">
-  //           <div style={{ width: "30px", height: "16px", backgroundColor: "#1f77b4", borderRadius: "2px" }}></div>
-  //           <span className="small fw-bold text-dark">Decreasing</span>
-  //         </div>
 
-  //       </div>
-        
-  //       {/* Legend Title */}
-  //       <div className="text-center mt-2">
-  //         <small className="text-muted fw-bold">Trend Direction</small>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  
   if (mode === "trend" && isSPIEvent) {
     return (
       <div className="flex flex-col items-center w-full mt-2 px-4">
@@ -127,13 +96,6 @@ export default function Legend({ bins, scale, mode, unit, indexName, isSPIEvent 
     return Math.round(v).toString();
   };
 
-  // return (
-  //   <div ref={containerRef} style={{ width: "100%" }}>
-  //     <svg
-  //       width={width}
-  //       height={60}
-  //       style={{ display: "block", margin: "0 auto" }}
-  //     >
   return (
     <div ref={containerRef} className="w-full">
       <svg

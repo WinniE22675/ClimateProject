@@ -9,41 +9,27 @@ import { apiFetch, datasetAPI } from '../services/api';
 export default function DatasetProcessPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  // get slotId from Upload page (if don't have set default = 1)
-  // const initialSlot = location.state?.slotId || 1;
-  // const [activeSlot, setActiveSlot] = useState(initialSlot);
 
   // Data States
   // const [files, setFiles] = useState([]);
   const [metadata, setMetadata] = useState(null);
   const [loadingMeta, setLoadingMeta] = useState(false);
 
-  // Visualization States
-  // const [selectedVar, setSelectedVar] = useState("");
-  // const [previewReady, setPreviewReady] = useState(false); // check if backend generated preview
-  // const [previewBaseUrl, setPreviewBaseUrl] = useState(""); // keep path at backend send back
-
   // Overlay Loading
   const [isCalculating, setIsCalculating] = useState(false);
 
   const [status, setStatus] = useState("loading");
 
-  // const [step, setStep] = useState(null);
-  // const [progress, setProgress] = useState(0);
-  // const [statusMessage, setStatusMessage] = useState("");
-
   const [datasetList, setDatasetList] = useState([]);
   const [activeDataset, setActiveDataset] = useState(
     location.state?.datasetName || ""
   );
-  // const [activeDataset, setActiveDataset] = useState("");
 
-  // const location = useLocation();
   const pendingDataset = location.state?.datasetName || null;
-
+  
   const [workspaceList, setWorkspaceList] = useState([]);
   const [activeWorkspace, setActiveWorkspace] = useState("");
-
+  
   // Add this array near the top of your component or outside it
   const PROTECTED_DATASETS = ["ERA5", "CMIP6_SSP245", "CMIP6_SSP585"];
 
@@ -55,7 +41,7 @@ export default function DatasetProcessPage() {
   // It is protected ONLY IF the active dataset is a protected dataset AND the workspace name matches
   const isProtectedWorkspace = isProtectedDataset && PROTECTED_WORKSPACES.includes(activeWorkspace);
 
-    useEffect(() => {
+  useEffect(() => {
     if (metadata && metadata.workspaces) {
       const workspaces = Object.keys(metadata.workspaces);
       setWorkspaceList(workspaces);
@@ -73,12 +59,8 @@ export default function DatasetProcessPage() {
 
   useEffect(() => {
     if (!activeDataset) return;
-    // setPreviewReady(false);
-    // setSelectedVar("");
     setMetadata(null);
     setStatus("loading");
-    // setFiles([]);
-    // setPreviewBaseUrl("");
 
     fetchData(activeDataset);
   }, [activeDataset]);
@@ -88,17 +70,10 @@ export default function DatasetProcessPage() {
 
     try {
       // Fetch Merged Metadata
-      // const resMeta = await fetch(
-      //   `http://localhost:8000/api/datasets/${activeDataset}/metadata`
-      // );
       const resMeta = await apiFetch(`/datasets/${activeDataset}/metadata`);
       if (resMeta.ok) {
         const dataMeta = await resMeta.json();
         setMetadata(dataMeta);
-        // Default select first variable
-        // if (dataMeta.variables && dataMeta.variables.length > 0) {
-        //   setSelectedVar(dataMeta.variables[0]);
-        // }
       } else {
         // Handle case where metadata is 404 (dataset empty)
         setMetadata(null);
@@ -122,17 +97,6 @@ export default function DatasetProcessPage() {
     setIsCalculating(true);
 
     try {
-      // const res = await fetch(
-      //   `http://localhost:8000/api/datasets/${activeDataset}/calculate_indices`, //${activeSlot}
-      //   {
-      //     method: "POST",
-      //     headers: { "Content-Type": "application/json" },
-      //     body: JSON.stringify({ 
-      //       selected_indices: selectedIndices,
-      //       baseline: baseline,
-      //      }),
-      //   }
-      // );
       const res = await apiFetch(`/datasets/${activeDataset}/calculate_indices`, {
         method: "POST",
         body: JSON.stringify({ 
@@ -167,15 +131,8 @@ export default function DatasetProcessPage() {
     setStatus("loading");
 
     const interval = setInterval(async () => {
-      // if (status === "ready" || status === "error") {
-      //   clearInterval(interval);
-      //   return;
-      // }
 
       try {
-        // const res = await fetch(
-        //   `http://localhost:8000/api/datasets/${activeDataset}/status`
-        // );
         const res = await apiFetch(`/datasets/${activeDataset}/status`);
 
         if (!res.ok) return;
@@ -183,18 +140,10 @@ export default function DatasetProcessPage() {
 
         setStatus(data.status);
 
-        // if (data.status === "processing") {
-        //   setStep(data.step || null);
-        //   setProgress(data.progress || 0);
-        //   setStatusMessage(data.message || "");
-        // }
-
         if (data.status === "ready") {
-          // setStatus("ready");
           setMetadata(data);
           clearInterval(interval);
         } else if (data.status === "error") {
-          // setStatus("error");
           clearInterval(interval);
         }
         // else status is "processing" -> continue polling
@@ -212,16 +161,10 @@ export default function DatasetProcessPage() {
 
   const fetchDatasetList = async () => {
     try {
-      // const res = await fetch("http://localhost:8000/api/datasets");
       const res = await datasetAPI.getDatasets();
       if (!res.ok) return 
         const data = await res.json();
         setDatasetList(data.datasets || []);
-
-        // auto-select first dataset
-        // if (data.datasets.length > 0) {
-        //   setActiveDataset(data.datasets[0]);
-        // }
 
         if (!activeDataset && data.datasets.length > 0) {
           setActiveDataset(data.datasets[0]);
@@ -239,7 +182,6 @@ export default function DatasetProcessPage() {
 
     const interval = setInterval(async () => {
       try {
-        // const res = await fetch("http://localhost:8000/api/datasets");
         const res = await datasetAPI.getDatasets();
         if (!res.ok) return;
 
@@ -270,7 +212,6 @@ export default function DatasetProcessPage() {
   }, [pendingDataset]);
 
   const fetchDatasets = async () => {
-    // const res = await fetch("http://localhost:8000/api/datasets");
     const res = await datasetAPI.getDatasets();
     const data = await res.json();
     setDatasetList(data.datasets);
@@ -278,10 +219,6 @@ export default function DatasetProcessPage() {
 
   const handleDeleteDataset = async () => {
     try {
-      // const res = await fetch(
-      //   `http://localhost:8000/api/datasets/${activeDataset}`,
-      //   { method: "DELETE" }
-      // );
       const res = await apiFetch(`/datasets/${activeDataset}`, { 
         method: "DELETE" 
       });
@@ -305,7 +242,7 @@ export default function DatasetProcessPage() {
     }
   };
 
-  const handleDeleteWorkspace = async () => {
+    const handleDeleteWorkspace = async () => {
     if (!activeWorkspace) return;
     
     const confirm = window.confirm(`Are you sure you want to delete workspace "${activeWorkspace}"?`);
@@ -333,187 +270,6 @@ export default function DatasetProcessPage() {
     }
   };
 
-  // return (
-  //   <div className="container-fluid position-relative mt-4">
-      
-  //     {/* 1. Header & Navigation */}
-  //     <div className="d-flex justify-content-between align-items-center mb-2 pb-3 border-bottom">
-  //       <h2 className="h3 fw-bold mb-0 text-dark"> Dataset Processor</h2>
-        
-  //       {/* <div className="d-flex gap-2 align-items-center">
-  //         <div className="input-group input-group-sm shadow-sm">
-  //           <span className="input-group-text bg-white fw-bold text-muted">Dataset:</span>
-  //           <select
-  //             value={activeDataset}
-  //             onChange={(e) => setActiveDataset(e.target.value)}
-  //             className="form-select"
-  //           >
-  //             {datasetList.length === 0 && (
-  //               <option value="">No dataset available</option>
-  //             )}
-  //             {datasetList.map((name) => (
-  //               <option key={name} value={name}>{name}</option>
-  //             ))}
-  //           </select>
-  //         </div>
-          
-  //         <button
-  //           className="btn btn-sm btn-outline-danger shadow-sm"
-  //           disabled={!activeDataset || activeDataset === "default"}
-  //           onClick={handleDeleteDataset}
-  //         >
-  //           Delete
-  //         </button>
-  //       </div> */}
-  //       {/* Wrap in a flex container to hold both Dataset and Workspace groups */}
-  //       <div className="d-flex flex-wrap gap-3 align-items-center">
-          
-  //         {/* Dataset Selector Group */}
-  //         <div className="d-flex gap-2 align-items-center">
-  //           <div className="input-group input-group-sm shadow-sm">
-  //             <span className="input-group-text bg-white fw-bold text-muted">Dataset:</span>
-  //             <select
-  //               value={activeDataset}
-  //               onChange={(e) => setActiveDataset(e.target.value)}
-  //               className="form-select"
-  //             >
-  //               {datasetList.length === 0 && (
-  //                 <option value="">No dataset available</option>
-  //               )}
-  //               {[...datasetList]
-  //                 .sort((a, b) => a.localeCompare(b))
-  //                 .map((name) => (
-  //                   <option key={name} value={name}>{name}</option>
-  //               ))}
-  //               {/* {datasetList.map((name) => (
-  //                 <option key={name} value={name}>{name}</option>
-  //               ))} */}
-  //             </select>
-  //           </div>
-            
-  //           <button
-  //             className="btn btn-sm btn-outline-danger shadow-sm"
-  //             disabled={!activeDataset || activeDataset === "default"}
-  //             onClick={handleDeleteDataset}
-  //           >
-  //             Delete
-  //           </button>
-  //         </div>
-
-  //         {/* Workspace Selector Group */}
-  //         <div className="d-flex gap-2 align-items-center">
-  //           <div className="input-group input-group-sm shadow-sm">
-  //             <span className="input-group-text bg-white fw-bold text-muted">Workspace:</span>
-  //             <select
-  //               value={activeWorkspace}
-  //               onChange={(e) => setActiveWorkspace(e.target.value)}
-  //               className="form-select"
-  //               // disabled={workspaceList.length === 0}
-  //             >
-  //               <option value="__NEW__" >
-  //                 -- New Workspace --
-  //               </option>
-  //               {/* {workspaceList.length === 0 && (
-  //                 <option value="">No workspace</option>
-  //               )} */}
-  //               {[...workspaceList]
-  //                 .sort((a, b) => a.localeCompare(b))
-  //                 .map((ws) => (
-  //                   <option key={ws} value={ws}>{ws}</option>
-  //               ))}
-  //               {/* {workspaceList.map((ws) => (
-  //                 <option key={ws} value={ws}>{ws}</option>
-  //               ))} */}
-  //             </select>
-  //           </div>
-            
-  //           <button
-  //             className="btn btn-sm btn-outline-danger shadow-sm"
-  //             // disabled={!activeWorkspace}
-  //             disabled={!activeWorkspace || activeWorkspace === "__NEW__"}
-  //             onClick={handleDeleteWorkspace}
-  //           >
-  //             Delete
-  //           </button>
-  //         </div>
-
-  //       </div>
-  //     </div>
-
-  //     {/* Error State */}
-  //     {status === "error" && (
-  //       <div className="alert alert-danger shadow-sm mb-4" role="alert">
-  //         <i className="bi bi-exclamation-triangle-fill me-2"></i>
-  //         <strong>Error!</strong> Something went wrong during processing.
-  //       </div>
-  //     )}
-
-  //     {/* 2. Download Section */}
-  //     <div className="card shadow-sm border-0 mb-2">
-  //       <div className="card-body d-flex flex-column flex-md-row justify-content-between align-items-center p-3">
-  //         <div className="mb-3 mb-md-0">
-  //           <h5 className="fw-bold mb-1 text-dark">Download Merged Dataset</h5>
-  //           <p className="text-muted small mb-0">Download the selected area and time as a single merged NetCDF file.</p>
-  //         </div>
-  //         <div style={{ minWidth: "250px" }}>
-  //           <DownloadSection datasetName={activeDataset} datasetStatus={status} />
-  //         </div>
-  //       </div>
-  //     </div>
-
-  //     {/* 3. Main Content (Preview & Indices) */}
-  //     <div className="row g-4 mb-5">
-        
-  //       {/* LEFT: Metadata */}
-  //       <div className="col-12 col-lg-6">
-  //         {metadata && metadata.variables ? (
-  //           <DatasetPreview
-  //             metadata={[metadata]}
-  //             selectedFile={0}
-  //             onSelectFile={() => {}}
-  //           />
-  //         ) : (
-  //           <div className="card h-100 shadow-sm border-0">
-  //             <div className="card-body d-flex align-items-center justify-content-center text-muted bg-light rounded">
-  //               {loadingMeta ? "Loading..." : "No Metadata (Please clip data first)"}
-  //             </div>
-  //           </div>
-  //         )}
-  //       </div>
-
-  //       {/* RIGHT: Indices Selector */}
-  //       <div className="col-12 col-lg-6">
-  //         {metadata && metadata.variables ? (
-  //           <IndicesSelector
-  //             availableVars={metadata.variables}
-  //             activeWorkspace={activeWorkspace}
-  //             workspaceConfig={metadata?.workspaces?.[activeWorkspace] || null}
-  //             onCalculate={handleCalculateIndices}
-  //           />
-  //         ) : (
-  //           <div className="card h-100 shadow-sm border-0">
-  //             <div className="card-body d-flex align-items-center justify-content-center text-muted bg-light rounded">
-  //               Waiting for metadata...
-  //             </div>
-  //           </div>
-  //         )}
-  //       </div>
-  //     </div>
-
-  //     {/* Loading Overlay */}
-  //     {isCalculating && (
-  //       <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: "rgba(0,0,0,0.6)", zIndex: 9999 }}>
-  //         <div className="bg-white p-5 rounded-4 shadow-lg text-center" style={{ maxWidth: "400px", width: "100%" }}>
-  //           <div className="spinner-border text-primary mb-4" style={{ width: "3rem", height: "3rem" }} role="status">
-  //             <span className="visually-hidden">Loading...</span>
-  //           </div>
-  //           <h4 className="fw-bold mb-2">Calculating Indices</h4>
-  //           <p className="text-muted small mb-0">Please wait while indices are being calculated. This may take a while.</p>
-  //         </div>
-  //       </div>
-  //     )}
-  //   </div>
-  // );
   return (
     <div className="w-full px-4 relative mt-6">
       

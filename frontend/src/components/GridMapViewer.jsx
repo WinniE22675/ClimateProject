@@ -7,39 +7,6 @@ import Legend from "./Legend";
 
 import { apiFetch } from '../services/api';
 
-// function MapBoundsController({ province, allProvincesData, fallbackView }) { // geojsonData
-//   const map = useMap();
-
-//   useEffect(() => {
-//     // 1. If a specific province is selected, calculate its bounds and zoom
-//     // if (province && geojsonData && geojsonData.features && geojsonData.features.length > 0) {
-//     // Create a temporary Leaflet layer to calculate the bounding box
-//     // 1. If a province is selected, find its specific boundary and zoom to it
-//     if (province && allProvincesData && allProvincesData.features) {
-//       const provinceFeature = allProvincesData.features.find(
-//         (f) => f.properties.ADM1_EN === province
-//       );
-
-//       if (provinceFeature) {
-//         // Create a temporary layer JUST for this province to calculate perfect bounds
-//         const layer = L.geoJSON(provinceFeature); // geojsonData
-//         const bounds = layer.getBounds();
-        
-//         if (bounds.isValid()) {
-//           // fitBounds automatically calculates the perfect center and zoom level!
-//           // padding ensures the map doesn't touch the exact edges of the container
-//           map.fitBounds(bounds, { padding: [30, 30], animate: true });
-//         }
-//       }
-//     } 
-//     // 2. If no province is selected (Whole Country), use the default COUNTRY_VIEW
-//     else if (fallbackView) {
-//       map.setView(fallbackView.center, fallbackView.zoom, { animate: true });
-//     }
-//   }, [province, allProvincesData, fallbackView, map]); // geojsonData
-
-//   return null;
-// }
 function MapBoundsController({ province, allProvincesData, targetCol }) { 
   const map = useMap();
 
@@ -72,36 +39,6 @@ function MapBoundsController({ province, allProvincesData, targetCol }) {
 
   return null;
 }
-
-// function BoundaryMaskLayer({ mask }) {
-//   const map = useMap();
-
-//   useEffect(() => {
-//     if (!mask) return;
-
-//     if (!map.getPane("mask")) {
-//       map.createPane("mask");
-//       map.getPane("mask").style.zIndex = 500; // on top of everything
-//       map.getPane("mask").style.pointerEvents = "none";
-//     }
-
-//     const layer = L.geoJSON(mask, {
-//       pane: "mask",
-//       style: {
-//         fillColor: "#dddddd", // background color
-//         fillOpacity: 1, // IMPORTANT: must be 1
-//         stroke: false,
-//         weight: 0,
-//         interactive: false,
-//       },
-//     }).addTo(map);
-
-//     return () => map.removeLayer(layer);
-//   }, [map, mask]);
-
-//   return null;
-// }
-
 
 function BoundaryLayer({ data , weight = 0.5 }) {
   const map = useMap();
@@ -198,15 +135,12 @@ export default function GridMapViewer({
   const [binsAll, setBinsAll] = useState({ actual: [], trend: [] });
   const [showSig, setShowSig] = useState(true);
   const [unit, setUnit] = useState("");
-  // const [boundaryData, setBoundaryData] = useState(null);
   const layersRef = useRef({ actual: null, trend: null });
 
   // state: loading / error / no-data
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [noData, setNoData] = useState(false);
-
-  // const [maskData, setMaskData] = useState(null);
 
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -250,9 +184,6 @@ export default function GridMapViewer({
       "spi60",
     ];
     
-    // Check if the current index is related to rain/precipitation
-    // const isRain = rainIndices.includes(indexName.toLowerCase());
-
     // Convert indexName to lowercase once for efficiency
     const indexLower = indexName.toLowerCase();
 
@@ -263,10 +194,6 @@ export default function GridMapViewer({
       trend: "RdBu",
     });
   }, [indexName]);
-
-  // const [seaBoundary, setSeaBoundary] = useState(null);
-  // const [countryBoundary, setCountryBoundary] = useState(null);
-  // const [maskData, setMaskData] = useState(null);
 
   // user-defined legend range (null = auto)
   const [legendRange, setLegendRange] = useState({
@@ -327,11 +254,6 @@ export default function GridMapViewer({
     },
   };
 
-  // const mapView =
-  //   country && COUNTRY_VIEW[country]
-  //     ? COUNTRY_VIEW[country]
-  //     : COUNTRY_VIEW.default;
-
   const mapView = COUNTRY_VIEW[country] || COUNTRY_VIEW.SEA;
 
   const NO_TREND_INDICES = [
@@ -345,7 +267,7 @@ export default function GridMapViewer({
   const isSPI = indexName.startsWith("SPI");
 
   const isSPIEvent = indexName.startsWith("SPI") && (indexName.includes("_Drought_") || indexName.includes("_Flood_"));
-
+  
   // Check if the current shapefile has multiple sub-areas (e.g., provinces)
   const hasSubAreas = allProvincesData?.features?.length > 1;
 
@@ -384,13 +306,6 @@ export default function GridMapViewer({
       return; 
     }
 
-    // if (availableIndices && availableIndices.length > 0) {
-    //   if (!availableIndices.includes(indexName)) {
-    //     console.log(`[Guard] Index '${indexName}' not found in current dataset. Waiting for update...`);
-    //     return; 
-    //   }
-    // }
-
     const fetchAllMaps = async () => {
       setLoading(true);
       setError(null);
@@ -399,19 +314,18 @@ export default function GridMapViewer({
 
       // Check SPI event and add thresholdPart for fetch
       // const thresholdPart = isSPIEvent ? `_${spiThreshold}` : "";
-      // const thresholdPart = isSPIEvent ? `_${Number(spiThreshold).toFixed(1)}` : "";
-      // 1. Convert the value to a floating-point number
+      // Convert the value to a floating-point number
       const num = parseFloat(spiThreshold);
 
-      // 2. Check if it's an integer (e.g., 1) or has decimals (e.g., 1.15)
+      // Check if it's an integer (e.g., 1) or has decimals (e.g., 1.15)
       // - Number.isInteger(num) returns true if num is 1 -> we use .toFixed(1) to get "1.0"
       // - If it's false (e.g., 1.15) -> we convert it directly to String("1.15") to keep all decimals
       const formatThreshold = Number.isInteger(num) ? num.toFixed(1) : String(num);
 
-      // 3. Append to the string
+      // Append to the string
       const thresholdPart = isSPIEvent && !isNaN(num) ? `_${formatThreshold}` : "";
 
-      const apiBase = "http://localhost:8000";
+      const apiBase = "http://172.16.2.110:10001";
       // Determine base path based on dataset type
       const datasetPath = datasetName === "default" ? "/data" : `${apiBase}/output/${datasetName}`;
       
@@ -422,13 +336,9 @@ export default function GridMapViewer({
       // Dynamically select folder based on mapStyle state
       const mapFolder = mapStyle === "shapefile" ? "maps_shp" : "maps_grid";
       const fileSuffix = mapStyle === "shapefile" ? "shp" : "grid";
-      // const mapFolder = mapStyle === "shapefile" ? "maps_grid" : "maps_grid";
-      // const fileSuffix = mapStyle === "shapefile" ? "grid" : "grid";
-
+      
       // Construct file paths based on the domain-centric structure
-      // const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}_actual_${fileSuffix}.geojson?v=${cacheKey}`;
       const actualGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}${thresholdPart}_actual_${fileSuffix}.geojson?v=${cacheKey}`;
-      // const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}_trend_${fileSuffix}.geojson?v=${cacheKey}`;
       const trendGridPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}${thresholdPart}_trend_${fileSuffix}.geojson?v=${cacheKey}`;
 
       // Helper function to handle fetch and return 404 gracefully instead of breaking
@@ -459,20 +369,6 @@ export default function GridMapViewer({
         if (actualRes.status === 404 || (supportsTrend && trendRes.status === 404)) {
           setIsGenerating(true);
 
-          // Trigger generation API
-          // const generateRes = await fetch(`${apiBase}/api/maps/generate`, {
-          //   method: "POST",
-          //   headers: { "Content-Type": "application/json" },
-          //   body: JSON.stringify({
-          //     indexName,
-          //     datasetName,
-          //     country,
-          //     province: province || null, // Send null if empty string
-          //     startYear: parseInt(startYear, 10),
-          //     endYear: parseInt(endYear, 10),
-          //     supportsTrend
-          //   }),
-          // });
           const generateRes = await apiFetch(`/maps/generate`, {
             method: "POST",
             body: JSON.stringify({
@@ -497,8 +393,6 @@ export default function GridMapViewer({
 
           // Re-fetch after generation ---
           const newCacheKey = Date.now(); 
-          // const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}_actual_${fileSuffix}.geojson?v=${newCacheKey}`;
-          // const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}_trend_${fileSuffix}.geojson?v=${newCacheKey}`;
           const retryActualPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/actual/${startYear}_${endYear}${thresholdPart}_actual_${fileSuffix}.geojson?v=${newCacheKey}`;
           const retryTrendPath = `${datasetPath}/${country}/${area}/${indexName}/${mapFolder}/trend/${startYear}_${endYear}${thresholdPart}_trend_${fileSuffix}.geojson?v=${newCacheKey}`;
 
@@ -532,7 +426,6 @@ export default function GridMapViewer({
           } else {
             setGridData({ actual: actualData, trend: trendData });
             // Extract unit from metadata
-            // const u = actualData?.metadata?.unit || trendData?.metadata?.unit || "";
             let u = actualData?.metadata?.unit || trendData?.metadata?.unit || "";
             // Check if the current index is an SPI event
             if (indexName.startsWith("SPI")) {
@@ -564,82 +457,14 @@ export default function GridMapViewer({
     return () => { isMounted = false; };
   }, [indexName, datasetName, country, province, startYear, endYear , mapStyle, availableIndices, supportsTrend, spiThreshold]);
 
-  // useEffect(() => {
-  //   fetch("/data/southeast-asia-boundary.geojson")
-  //     .then((res) => res.json())
-  //     // .then(setSeaBoundary)
-  //     .then((data) => setBoundaryData(data));
-  // }, []);
-
-  // useEffect(() => {
-  //   fetch(`/data/boundary/${country}.geojson`)
-  //     .then((res) => res.json())
-  //     // .then(setSeaBoundary)
-  //     .then((data) => setBoundaryData(data));
-  // }, [country]);
-
-  // useEffect(() => {
-  //   if (!country || country === "SEA") {
-  //     setMaskData(null);
-  //     return;
-  //   }
-
-  //   fetch(`/data/mask/${country}_mask.geojson`)
-  //     .then((res) => res.json())
-  //     .then(setMaskData);
-  // }, [country]);
-
-  // useEffect(() => {
-  //   fetch(`/data/mask/Thailand_mask.geojson`)
-  //     .then((res) => res.json())
-  //     .then(setMaskData);
-  // }, []);
-
-// useEffect(() => {
-//     if (country === "Test") {
-//       fetch(`/data/boundary/Thailand_provinces.geojson`)
-//         .then((res) => {
-//           if (!res.ok) throw new Error("Province boundary file not found");
-//           return res.json();
-//         })
-//         .then((data) => setAllProvincesData(data))
-//         .catch(console.error);
-//     } else {
-//       setAllProvincesData(null);
-//     }
-//   }, [country]);
-// ==========================================
-  // UPDATED: Fetch dynamic shapefile from Backend
-  // ==========================================
-  // useEffect(() => {
-  //   // Check if we have a valid shapefile name
-  //   if (shapefileName && shapefileName.trim() !== "") {
-  //     const fetchBoundary = async () => {
-  //       try {
-  //         const res = await apiFetch(`/shapefiles/${shapefileName}/geojson`);
-  //         if (!res.ok) throw new Error("Shapefile boundary not found");
-          
-  //         const data = await res.json();
-  //         setAllProvincesData(data);
-  //       } catch (error) {
-  //         console.error("Failed to load boundary geojson:", error);
-  //         setAllProvincesData(null);
-  //       }
-  //     };
-  //     fetchBoundary();
-  //   } else {
-  //     setAllProvincesData(null);
-  //   }
-  // }, [shapefileName]); // Trigger only when shapefileName changes
   useEffect(() => {
     // Check if we have both datasetName and country before fetching
     if (datasetName && country) {
       const fetchBoundary = async () => {
         try {
-          const apiBase = "http://localhost:8000";
+          const apiBase = "http://172.16.2.110:10001";
           const datasetPath = datasetName === "default" ? "/data" : `${apiBase}/output/${datasetName}`;
           
-          // Construct the static URL: e.g., http://localhost:8000/output/ERA5/Thailand/boundary.geojson
           const cacheKey = new Date().getTime(); // Prevent browser caching
           const boundaryUrl = `${datasetPath}/${country}/boundary.geojson?v=${cacheKey}`;
           
@@ -711,13 +536,6 @@ export default function GridMapViewer({
       if (m === "actual") {
         const thresholds = d3.ticks(minVal, maxVal, nBins);
 
-        // const customBlueRange = d3.schemeBlues[11].slice(-nBins);
-        // const customBlueRange = d3.quantize((t) => d3.interpolateBlues(t * 0.8 + 0.2), nBins);
-        
-        // const selectedScheme = d3[`scheme${colorSchemes.actual}`] 
-        //   ? d3[`scheme${colorSchemes.actual}`][nBins] 
-        //   : d3.schemeYlOrRd[nBins];
-
         // Intercept "Blues" selection to apply custom darker starting shade
         const schemeName = colorSchemes.actual;
         let selectedScheme;
@@ -735,9 +553,6 @@ export default function GridMapViewer({
           .scaleThreshold()
           .domain(thresholds.slice(1, -1))
           .range(selectedScheme);
-          // .range(d3.schemeYlOrRd[nBins]);
-          // .range(customBlueRange);
-          // .range(d3.schemeBlues[nBins]); //d3.schemeBlues d3.schemeYlOrRd
 
         setScales((s) => ({ ...s, actual: scale }));
         setBinsAll((b) => ({ ...b, actual: thresholds }));
@@ -751,14 +566,10 @@ export default function GridMapViewer({
 
         const thresholds = d3.ticks(-absMax, absMax, nBins);
 
-        // const colors = [...d3.schemeRdBu[nBins]]; //.reverse()
         const rawSchemeName = colorSchemes.trend;
         const isReversed = rawSchemeName.startsWith("-");
         const cleanSchemeName = isReversed ? rawSchemeName.substring(1) : rawSchemeName;
 
-        // const selectedScheme = d3[`scheme${colorSchemes.trend}`]
-        //   ? [...d3[`scheme${colorSchemes.trend}`][nBins]]
-        //   : [...d3.schemeRdBu[nBins]];
         const selectedScheme = d3[`scheme${cleanSchemeName.trend}`]
           ? [...d3[`scheme${cleanSchemeName.trend}`][nBins]]
           : [...d3.schemeRdBu[nBins]];
@@ -772,7 +583,6 @@ export default function GridMapViewer({
           .scaleThreshold()
           .domain(thresholds.slice(1, -1))
           .range(selectedScheme);
-          // .range(colors);
 
         setScales((s) => ({ ...s, trend: scale }));
         setBinsAll((b) => ({ ...b, trend: thresholds }));
@@ -806,7 +616,7 @@ export default function GridMapViewer({
         cellColor = "#dddddd"; // Gray color for no trend (or slope = 0)
       }
     }
-        return {
+    return {
       fillColor: cellColor,
       // stroke: false,
       // weight: 0,
@@ -821,7 +631,6 @@ export default function GridMapViewer({
 
   // Significant Points
   const significantPoints = useMemo(() => {
-    // useMemo >> calculate again if gridData or mode change
     const data = gridData[mode];
     if (!data) return [];
     return data.features.filter(
@@ -897,16 +706,6 @@ export default function GridMapViewer({
     layer.bindPopup(html);
   };
 
-  // if (loading || isGenerating) {
-  //   return (
-  //     <div className="d-flex flex-column justify-content-center align-items-center" style={{ height: "450px", border: "1px solid #ddd", borderRadius: "8px", background: "#f8f9fa" }}>
-  //       <div className="spinner-border text-primary mb-2" role="status"></div>
-  //       <span className="fw-bold text-primary">
-  //         {isGenerating ? `Calculating map data for ${startYear} - ${endYear}...` : "Loading maps..."}
-  //       </span>
-  //     </div>
-  //   );
-  // }
 if (loading || isGenerating) {
     return (
       /* Added mt-[60px] to align with left side, and changed h-[450px] to h-[500px] */
@@ -925,351 +724,6 @@ if (loading || isGenerating) {
   if (error) return <div className="p-3 text-danger border rounded">Error: {error}</div>;
   if (noData) return <div className="p-3 text-warning border rounded">No map data available for the selected parameters.</div>;
 
-  // return (
-  //   <div className="card border-0">
-      
-  //     {/* 1. Header Section: Mode Buttons & Map Title */}
-  //     <div className="card-header bg-white d-flex justify-content-between align-items-center p-3 border-bottom">
-        
-  //       {/* Left: Mode Buttons (Grouped for better UI) */}
-  //       <div className="btn-group" role="group">
-  //         <button
-  //           onClick={() => setMode("actual")}
-  //           className={`btn btn-sm ${mode === "actual" ? "btn-primary shadow-sm" : "btn-outline-secondary"}`}
-  //         >
-  //           Actual Map
-  //         </button>
-  //         <button
-  //           onClick={() => setMode("trend")}
-  //           className={`btn btn-sm ${mode === "trend" ? "btn-primary shadow-sm" : "btn-outline-secondary"}`}
-  //           title={!supportsTrend ? "Trend map is not available for raw variables" : "View Trend Map"}
-  //           disabled={!supportsTrend}
-  //         >
-  //           Trend Map
-  //         </button>
-  //       </div>
-
-  //       {/* Center: Checkbox for Significant Points (Only in Trend mode) */}
-  //       {mode === "trend" && (
-  //         <div className="form-check form-switch mb-0 ms-3 me-auto">
-  //           <input
-  //             className="form-check-input"
-  //             type="checkbox"
-  //             id="sigPointsToggle"
-  //             checked={showSig}
-  //             onChange={() => setShowSig((s) => !s)}
-  //           />
-  //           <label className="form-check-label small text-muted fw-bold" htmlFor="sigPointsToggle">
-  //             Significant Points (p &lt; 0.05)
-  //           </label>
-  //         </div>
-  //       )}
-
-  //       {/* Right: Dynamic Map Title */}
-  //       <div className="text-end">
-  //         <h6 className="mb-0 fw-bold text-secondary">
-  //           {indexName} {
-  //             mode === "actual" 
-  //               ? (indexName.includes("Frequency") ? "Sum" : "Average") 
-  //               : "Trend"
-  //           } Map
-  //         </h6>
-  //         <small className="text-muted">
-  //           {startYear} - {endYear} {isSPIEvent && `| Threshold ${spiThreshold}`} {province ? `| ${province}` : "| Whole Country"}
-  //         </small>
-  //       </div>
-  //     </div>
-
-  //     {/* 2. Checkbox for Significant Points (Only in Trend mode) */}
-  //     {/* {mode === "trend" && (
-  //       <div className="px-3 pt-2">
-  //         <div className="form-check form-switch">
-  //           <input
-  //             className="form-check-input"
-  //             type="checkbox"
-  //             id="sigPointsToggle"
-  //             checked={showSig}
-  //             onChange={() => setShowSig((s) => !s)}
-  //           />
-  //           <label className="form-check-label small text-muted" htmlFor="sigPointsToggle">
-  //             Show Significant Points (p &lt; 0.05)
-  //           </label>
-  //         </div>
-  //       </div>
-  //     )} */}
-
-  //     {/* 3. Map Container */}
-  //     <div className="card-body p-0 position-relative">
-  //       {errorType === "DATA_UNAVAILABLE" ? (
-          
-  //         <div className="d-flex justify-content-center align-items-center w-100" style={{ height: "450px" }}>
-  //           <div className="p-4 rounded bg-white border border-secondary mx-3" style={{ maxWidth: "550px" }}>
-  //             <div className="d-flex align-items-center mb-3">
-  //               <i className="bi bi-info-circle text-dark me-3" style={{ fontSize: "2rem" }}></i>
-  //               <h5 className="text-dark fw-bold mb-0">Map Visualization Unavailable</h5>
-  //             </div>
-  //             <p className="text-muted small mb-3">
-  //               The system could not generate a map for <strong>{province || country}</strong>. This typically happens due to one of the following reasons:
-  //             </p>
-  //             <ul className="text-muted small mb-3">
-  //               <li className="mb-1"><strong>Resolution Limit:</strong> The selected area is too small (less than 1 grid cell).</li>
-  //               <li className="mb-1"><strong>Spatial Mismatch:</strong> The dataset does not cover this geographic area.</li>
-  //               <li><strong>Missing Values:</strong> The area contains only invalid or No-Data values (NaN).</li>
-  //             </ul>
-  //             <div className="text-muted small d-flex align-items-start mt-4">
-  //               <i className="bi bi-lightbulb text-dark me-2 fs-6"></i>
-  //               <span><strong>Tip:</strong> If the <em>Timeseries charts</em> on the left are also empty, it confirms a <strong>Spatial Mismatch</strong> or <strong>Missing Values</strong>.</span>
-  //             </div>
-  //           </div>
-  //         </div>
-
-  //       ) : errorType === "GENERAL_ERROR" || error ? (
-
-  //         <div className="d-flex justify-content-center align-items-center w-100 text-dark" style={{ height: "450px" }}>
-  //           <div className="text-center bg-white p-4 rounded border border-secondary mx-3" style={{ maxWidth: "500px" }}>
-  //              <i className="bi bi-exclamation-octagon fs-1 d-block mb-3 text-dark"></i>
-  //              <h5 className="fw-bold mb-2">System Error Encountered</h5>
-  //              <p className="small text-muted mb-3">
-  //                An unexpected error has occurred while processing the map data. <br/>
-  //                Please contact the system administrator for assistance.
-  //              </p>
-               
-  //              {error && (
-  //                <div className="bg-light p-2 rounded border small text-start text-break text-secondary">
-  //                  <strong>Details:</strong> {error}
-  //                </div>
-  //              )}
-  //           </div>
-  //         </div>
-
-  //       ) : (
-  //         <MapContainer
-  //           key={`map-container-${country}`} // Force re-mount of map ONLY when country changes
-  //           // center={mapView.center}
-  //           // zoom={mapView.zoom}
-  //           zoomSnap={0.25}  // Enable fractional zoom snapping to 0.25 increments
-  //           zoomDelta={0.25} // Set zoom step for +/- buttons to 0.25
-  //           style={{ height: "450px", width: "100%", zIndex: 0 }} //450px
-  //           // preferCanvas={true} //  Use Canvas instead of SVG for crisp vector edges
-  //         >
-  //           {/* Boundary always on top */}
-  //           {/* {allProvincesData && <BoundaryLayer data={allProvincesData} weight={1.0} />} */}
-  //           {displayProvinceBoundary && (
-  //             <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
-  //           )}
-
-  //           {/* <MapViewUpdater center={mapView.center} zoom={mapView.zoom} /> */}
-  //           <MapBoundsController 
-  //             province={province} 
-  //             allProvincesData={allProvincesData} // geojsonData={displayProvinceBoundary} 
-  //             targetCol={targetCol} // fallbackView={mapView} 
-  //           />
-
-  //           {/* Mask first */}
-  //           {/* {maskData && <BoundaryMaskLayer mask={maskData} />} */}
-
-
-  //           {/* Province Boundaries */}
-  //           {/* {displayProvinceBoundary && (
-  //             <BoundaryLayer data={displayProvinceBoundary} weight={1.0} />
-  //           )} */}
-
-  //           {allProvincesData && (
-  //             <CountryContextLayer 
-  //               data={allProvincesData} 
-  //               selectedProvince={province} 
-  //             />
-  //           )}
-
-  //           {/* Map Data Layers */}
-  //           {mode === "trend" && gridData.trend && (
-  //             <GeoJSON
-  //               // key={`trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
-  //               // key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
-  //               key={`geojson-trend-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
-  //               data={gridData.trend}
-  //               style={style("trend")}
-  //               onEachFeature={onEachFeature("trend")}
-  //               ref={(ref) => (layersRef.current.trend = ref)}
-  //             />
-  //           )}
-  //           {mode === "actual" && gridData.actual && (
-  //             <GeoJSON
-  //               // key={`actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}`}
-  //               // key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${Date.now()}`}
-  //               key={`geojson-actual-${indexName}-${startYear}-${endYear}-${province}-${mapStyle}-${spiThreshold}`}
-  //               data={gridData.actual}
-  //               style={style("actual")}
-  //               onEachFeature={onEachFeature("actual")}
-  //               ref={(ref) => (layersRef.current.actual = ref)}
-  //             />
-  //           )}
-
-  //           {showSig &&
-  //             significantPoints.map((f, i) => <SigPoint key={i} feature={f} />)}
-  //         </MapContainer>
-  //       )}
-  //     </div>
-
-  //     {/* 4. Legend & Controls Footer */}
-  //     <div className="card-footer bg-white border-top pt-2 pb-3 px-0">
-        
-  //       {/* Color Bar */}
-  //       {/* {scales[mode] && binsAll[mode]?.length > 0 && (
-  //         <div className="mb-2">
-  //           <Legend
-  //             bins={binsAll[mode]}
-  //             scale={scales[mode]}
-  //             mode={mode}
-  //             unit={unit}
-  //             indexName={indexName}
-  //             isSPIEvent={isSPIEvent}
-  //           />
-  //         </div>
-  //       )} */}
-  //       {((scales[mode] && binsAll[mode]?.length > 0) || (mode === "trend" && isSPIEvent && gridData[mode])) && (
-  //         <div className="mb-2">
-  //           <Legend
-  //             key={`legend-${indexName}-${mode}-${isSPIEvent}`} 
-  //             bins={binsAll[mode]}
-  //             scale={scales[mode]}
-  //             mode={mode}
-  //             unit={unit}
-  //             indexName={indexName}
-  //             isSPIEvent={isSPIEvent}
-  //           />
-  //         </div>
-  //       )}
-  //       {/* d-flex justify-content-between align-items-center px-3 */}
-  //       <div className="d-flex flex-wrap justify-content-between align-items-center px-3 gap-3">
-
-  //       {/* d-flex align-items-center gap-3 */}
-  //       <div className=" d-flex flex-wrap align-items-center gap-3">
-
-  //         {!(mode === "trend" && isSPIEvent) && (
-  //           <>
-
-  //               {/* 1. Color Palette Selector */}
-  //               <div className="d-flex align-items-center gap-2">
-  //                 <span className="small fw-bold text-muted">Color:</span>
-  //                 <select
-  //                   className="form-select form-select-sm"
-  //                   style={{ width: "140px" }}
-  //                   value={colorSchemes[mode]}
-  //                   onChange={(e) =>
-  //                     setColorSchemes((prev) => ({ ...prev, [mode]: e.target.value }))
-  //                   }
-  //                 >
-  //                   {mode === "actual" ? (
-  //                     <>
-  //                       <optgroup label="Temperature">
-  //                         <option value="YlOrRd">Yellow-Orange-Red</option>
-  //                         <option value="OrRd">Orange-Red</option>
-  //                         <option value="Reds">Reds</option>
-  //                       </optgroup>
-  //                       <optgroup label="Precipitation">
-  //                         <option value="Blues">Blues</option>
-  //                         <option value="YlGnBu">Yellow-Green-Blue</option>
-  //                         <option value="GnBu">Green-Blue</option>
-  //                       </optgroup>
-  //                     </>
-  //                   ) : (
-  //                     <>
-  //                         {/* Note: -RdBu means we will reverse it in the logic */}
-  //                         <option value="RdBu">Red-Blue</option>
-  //                         <option value="-RdBu">Blue-Red</option>
-  //                         <option value="BrBG">Brown-Green</option>
-  //                     </>
-  //                   )}
-  //                 </select>
-  //               </div>
-
-  //             {/* Legend Range Controls */}
-  //             {/* d-flex justify-content-center align-items-center gap-1 */}
-  //               <div className="d-flex flex-wrap align-items-center gap-1">
-  //                 <span className="small fw-bold text-muted me-2">Legend Range:</span>
-
-  //                 <input
-  //                   type="number"
-  //                   placeholder="Min"
-  //                   value={legendRange[mode].min ?? ""}
-  //                   onChange={(e) =>
-  //                     setLegendRange((r) => ({
-  //                       ...r,
-  //                       [mode]: {
-  //                         ...r[mode],
-  //                         min: e.target.value === "" ? null : +e.target.value,
-  //                       },
-  //                     }))
-  //                   }
-  //                   className="form-control form-control-sm text-center"
-  //                   style={{ width: "65px" }}
-  //                 />
-                  
-  //                 <span className="text-muted">-</span>
-
-  //                 <input
-  //                   type="number"
-  //                   placeholder="Max"
-  //                   value={legendRange[mode].max ?? ""}
-  //                   onChange={(e) =>
-  //                     setLegendRange((r) => ({
-  //                       ...r,
-  //                       [mode]: {
-  //                         ...r[mode],
-  //                         max: e.target.value === "" ? null : +e.target.value,
-  //                       },
-  //                     }))
-  //                   }
-  //                   className="form-control form-control-sm text-center"
-  //                   style={{ width: "65px" }}
-  //                 />
-
-  //                 <button
-  //                   className="btn btn-sm btn-outline-secondary ms-2"
-  //                   onClick={() =>
-  //                     setLegendRange((r) => ({
-  //                       ...r,
-  //                       [mode]: { min: null, max: null },
-  //                     }))
-  //                   }
-  //                 >
-  //                   Auto Fix
-  //                 </button>
-  //               </div>
-  //           </>
-  //         )}
-  //       </div>
-
-  //       {/* d-flex justify-content-end gap-1 */}
-  //         <div 
-  //           className="d-flex align-items-center gap-1" 
-  //         >
-  //           <button
-  //             className={`btn btn-sm ${mapStyle === "grid" ? "btn-secondary" : "btn-outline-secondary"}`}
-  //             onClick={() => setMapStyle("grid")}
-  //             title="Show as Grid"
-  //             disabled={!!province}
-  //           >
-  //             Grid
-  //           </button>
-  //           <button
-  //             className={`btn btn-sm ${mapStyle === "shapefile" ? "btn-secondary" : "btn-outline-secondary"}`}
-  //             onClick={() => setMapStyle("shapefile")}
-  //             // title="Show as Shapefile Area Average"
-  //             // disabled={!!province}
-  //             // Dynamic title based on availability
-  //             title={!hasSubAreas ? "Shapefile mode requires multiple sub-areas" : "Show as Shapefile Area Average"}
-  //             // Disable if a province is selected OR if there are no sub-areas
-  //             disabled={!!province || !hasSubAreas}
-  //           >
-  //             Shapefile
-  //           </button>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   </div>
-  // );
   return (
     <div className="w-full overflow-hidden">
       

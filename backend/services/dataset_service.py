@@ -38,17 +38,6 @@ def get_dir_size(path: str) -> int:
                     total_size += os.path.getsize(fp)
     return total_size
 
-# async def save_raw_files(user_id: str, slot_id, files):
-#     target_dir = get_raw_path(user_id, slot_id)
-#     saved_list = []
-    
-#     for file in files:
-#         file_path = os.path.join(target_dir, file.filename)
-#         with open(file_path, "wb") as buffer:
-#             shutil.copyfileobj(file.file, buffer)
-#         saved_list.append(file.filename)
-#     return saved_list
-
 async def save_raw_files(user_id: str, slot_id, files):
     target_dir = get_raw_path(user_id, slot_id)
     os.makedirs(target_dir, exist_ok=True)
@@ -170,20 +159,7 @@ def update_metadata_json(dataset_name: str, new_data: dict):
                 existing_data = json.load(f)
             except json.JSONDecodeError:
                 pass # Proceed with empty dict if file is corrupt
-                
-    # Update the dictionary with new values
-    # existing_data.update(new_data)
-    # for key, value in new_data.items():
-    #     # Check if the key already exists and BOTH values are lists
-    #     if key in existing_data and isinstance(existing_data[key], list) and isinstance(value, list):
-    #         # Combine the old list and the new list
-    #         combined_list = existing_data[key] + value
-    #         # Use set() to remove duplicates, then convert back to list
-    #         # Note: set() might lose order. If order matters, use a different deduplication method.
-    #         existing_data[key] = list(set(combined_list))
-    #     else:
-    #         # If it's not a list (e.g., string, dict, or new key), overwrite normally
-    #         existing_data[key] = value
+       
     for key, value in new_data.items():
         if key in existing_data and isinstance(existing_data[key], list) and isinstance(value, list):
             
@@ -207,6 +183,7 @@ def update_metadata_json(dataset_name: str, new_data: dict):
     with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(existing_data, f, indent=2)
 
+
 def run_async_calculation(
         user_id: str,
         dataset_name: str,
@@ -217,15 +194,11 @@ def run_async_calculation(
         baseline=None,
         spi_threshold: float = 1,
         is_existing: bool = False
-): # slot_id: int
+): 
     """
     Run indices calculation using already-merged dataset.
     No merge or clip is performed here.
     """
-
-    # print(f"--- DEBUG: is_existing = {is_existing} ---")
-    # print(f"--- DEBUG: frontend sent shapefile_name = '{shapefile_name}' ---")
-
     # Expand selected_indices to automatically include all 8 SPI events if a base SPI is selected
     extended_indices = []
     if selected_indices:
@@ -262,14 +235,7 @@ def run_async_calculation(
         final_shapefile_name = shapefile_name
         final_target_col = target_col
 
-    # RESOLVE SHAPEFILE PATH
-    # shapefile_path = get_shapefile_path(user_id, shapefile_name)
     shapefile_path = get_shapefile_path(user_id, final_shapefile_name)
-    
-    # try:
-    #     # Load limited rows to save memory
-    #     shp_areas = gpd.read_file(shapefile_path, rows=1000)
-    #     area_list = shp_areas[target_col].dropna().unique().tolist()
     
     output_dir = get_dataset_output_dir(dataset_name)
     country_output_dir = os.path.join(output_dir, country)
@@ -290,10 +256,6 @@ def run_async_calculation(
             gdf_full = gpd.read_file(shapefile_path)
             gdf_full = gdf_full.to_crs("EPSG:4326")
 
-            # print("Simplifying boundary geometry to optimize loading speed...")
-
-            # gdf_full['geometry'] = gdf_full['geometry'].simplify(tolerance=0.001, preserve_topology=True)
-            
             gdf_full['geometry'] = shapely.set_precision(gdf_full['geometry'].values, grid_size=0.001)
 
             # Extract unique areas BEFORE dropping columns
@@ -336,50 +298,30 @@ def run_async_calculation(
 
     # Create or update the configuration for THIS specific country
     workspaces[country] = {
-        "shapefile_name": final_shapefile_name, # shapefile_name,
-        "target_col": final_target_col, #target_col,
+        "shapefile_name": final_shapefile_name,
+        "target_col": final_target_col,
         "available_areas": area_list,
         "baseline": baseline_dict,
-        "available_indices": unique_indices # extended_indices # Store calculated indices per workspace
+        "available_indices": unique_indices # Store calculated indices per workspace
     }
 
     # Save the nested workspaces object back to metadata.json
     update_metadata_json(dataset_name, {"workspaces": workspaces})
 
-    # if baseline:
-    #     # Convert Pydantic model (BaselinePeriod) to dict safely
-    #     baseline_dict = baseline.dict() if hasattr(baseline, 'dict') else baseline
-    #     metadata_updates["baseline"] = baseline_dict
-    # else:
-    #     metadata_updates["baseline"] = None
-        
-    # update_metadata_json(dataset_name, metadata_updates)
-
-    # Path must match process_selection output
-    # merged_path = os.path.join(
-    #     "output",
-    #     f"{dataset_name}",
-    #     "merged.nc" # f"{dataset_name}_merged.nc"
-    # )
     output_dir = get_dataset_output_dir(dataset_name)
     merged_path = os.path.join(output_dir, "merged.nc")
 
     if not os.path.exists(merged_path):
         raise Exception(f"Merged file creation failed, dataset: {dataset_name}")
     
-    # save_metadata_json(dataset_name, {"status": "processing", "step": "previewing", "message": "Generating raw data previews..."})
-    
-    # run_preview_visualization(dataset_name, user_id)
     run_preview_visualization(dataset_name, user_id, country)
-
-    # save_metadata_json(dataset_name, {"status": "processing", "step": "calculating", "message": "Calculating climate indices..."})
 
     generate_all(
         file_input=merged_path,
         selected_indices=selected_indices,
         dataset_name=dataset_name,
         shapefile_path=shapefile_path,
-        target_col=final_target_col, # target_col,
+        target_col=final_target_col, 
         country=country,
         baseline=baseline,
         spi_threshold=spi_threshold
@@ -460,8 +402,6 @@ def run_async_processing(user_id: str, slot_id, dataset_name, scope, background_
             
         print(f"[Dataset {dataset_name}] Async Task Completed.")
 
-        # run_preview_visualization(dataset_name, user_id)
-
         print(f"[Dataset {dataset_name}] All Processes and Previews Finished.")
 
         # Delete the temporary 'processed' folder immediately after successful merge
@@ -513,13 +453,6 @@ def generate_on_demand_map(
     """
     Service layer to handle on-demand map generation.
     """
-    # Define dataset path 
-    # if dataset_name == "default":
-    #     # Adjust this to where your default raw/merged data is stored
-    #     # merged_path = os.path.join("data", "merged.nc") 
-    #     # output_base_dir = "data"
-    #     raise Exception(f"default can't calculate indices") #############################################################
-    # else:
     merged_path = os.path.join("output", dataset_name, "merged.nc")
     output_base_dir = os.path.join("output", dataset_name)
 
@@ -533,11 +466,7 @@ def generate_on_demand_map(
 
     # Extract baseline from the specific workspace
     saved_baseline = metadata.get("baseline")
-    # # saved_baseline will be something like {"start_year": 1981, "end_year": 2010} or None
-
-    # Read shapefile configurations from metadata.json
-    # final_shapefile_name = shapefile_name or metadata.get("shapefile_name")
-    # final_target_col = target_col or metadata.get("target_col")
+ 
     final_shapefile_name = shapefile_name or current_workspace.get("shapefile_name")
     final_target_col = target_col or current_workspace.get("target_col")
 
@@ -571,12 +500,6 @@ def generate_on_demand_map(
 
     return {"dataset": dataset_name, "index": index_name}
 
-# Update get_shapefile_columns (Refactoring)
-# def get_shapefile_columns(user_id: str, shapefile_name: str) -> dict:
-#     # REFACTORED: Use the helper function to keep code clean
-#     shp_path = get_shapefile_path(user_id, shapefile_name)
-#     return detect_region_columns(shp_path)
-
 async def upload_and_validate_shapefile(user_id: str, file, custom_name: str = None):
     user_shape_dir = get_user_shapefile_dir(user_id)
 
@@ -603,9 +526,6 @@ async def upload_and_validate_shapefile(user_id: str, file, custom_name: str = N
     os.makedirs(target_dir, exist_ok=True)
     zip_path = os.path.join(target_dir, file.filename)
     
-    # 1. Save the uploaded .zip file
-    # with open(zip_path, "wb") as buffer:
-    #     shutil.copyfileobj(file.file, buffer)
     # 1. Save the uploaded .zip file WITH size limit enforcement
     current_file_size = 0
     with open(zip_path, "wb") as buffer:
@@ -675,9 +595,6 @@ def get_shapefile_columns(user_id: str, shapefile_name: str) -> dict:
         
         if not os.path.exists(target_dir):
             raise Exception("Shapefile directory not found")
-            
-    # Find the actual .shp file inside the directory
-    # shp_files = [f for f in os.listdir(target_dir) if f.lower().endswith('.shp')]
 
     valid_files = [f for f in os.listdir(target_dir) if f.lower().endswith(('.shp', '.geojson'))]
     

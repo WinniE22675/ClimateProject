@@ -33,8 +33,6 @@ export default function DatasetUploader({ slotId, isShapefileMode, datasetName, 
     setUploading(true);
 
     const formData = new FormData();
-    // add slot_id into formData or use for path parameter 
-    // Array.from(files).forEach((f) => formData.append("files", f));
 
     if (isShapefileMode) {
       // Shapefile Mode: Server expects a single file named "file", and an optional "custom_name"
@@ -50,12 +48,6 @@ export default function DatasetUploader({ slotId, isShapefileMode, datasetName, 
     }
 
     try {
-      // const res = await fetch(`http://localhost:8000/api/datasets/${slotId}/upload`, {
-      //   method: "POST",
-      //   body: formData,
-      // });
-      // It handles the formData automatically behind the scenes
-      // const res = await datasetAPI.uploadFiles(slotId, formData);
       const res = isShapefileMode 
         ? await datasetAPI.uploadShapefile(formData) 
         : await datasetAPI.uploadFiles(slotId, formData);
@@ -75,31 +67,6 @@ export default function DatasetUploader({ slotId, isShapefileMode, datasetName, 
     }
   };
 
-  // return (
-  //   // Converted to Bootstrap Input Group for a seamless, attached button look
-  //   <div className="input-group input-group-sm shadow-sm">
-  //     <input
-  //       type="file"
-  //       id="ncFileInput"
-  //       ref={fileInputRef} // ADDED ref
-  //       multiple={!isShapefileMode} // Disable multiple for shapefile
-  //       accept={isShapefileMode ? ".zip,.geojson" : ".nc"} // Change accept based on mode
-  //       onChange={(e) => setFiles(e.target.files)}
-  //       className="form-control"
-  //     />
-  //     <button 
-  //       onClick={handleUpload} 
-  //       disabled={uploading || files.length === 0}
-  //       className="btn btn-primary px-3"
-  //     >
-  //       {uploading ? (
-  //         <><span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></>
-  //       ) : (
-  //         isShapefileMode ? "Upload Shapefile" : "Upload Raw" // Dynamic button text
-  //       )}
-  //     </button>
-  //   </div>
-  // );
   return (
     // Simulated Bootstrap Input Group using Flexbox
     <div className="flex shadow-sm text-sm rounded-md overflow-hidden border border-gray-300">

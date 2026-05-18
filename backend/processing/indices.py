@@ -113,12 +113,6 @@ def txn(ds: xr.Dataset, freq="YS"):
 def tnn(ds: xr.Dataset, freq="YS"):
     return xc.indicators.icclim.TNn(tasmin=ds["tmin"], freq=freq)
 
-# def dtr(ds: xr.Dataset, freq="YS"):
-#     return xc.indicators.icclim.DTR(tasmax=ds["tasmax"], tasmin=ds["tasmin"], freq=freq)
-
-# def etr(ds: xr.Dataset, freq="YS"):
-#     return xc.indicators.icclim.ETR(tasmax=ds["tasmax"], tasmin=ds["tasmin"], freq=freq)
-
 def fd(ds: xr.Dataset, freq="YS"):
     return xc.indicators.icclim.FD(tasmin=ds["tmin"], freq=freq)
 
@@ -167,88 +161,7 @@ def spi(ds: xr.Dataset, window: int, freq="MS"):
         pr=ds["pr"], freq=freq, window=window, dist="gamma", method="ML", ds=ds
     )
 
-# # ========================= Event characteristic per time series =========================
-# def event_characteristics(spi_ts, threshold=-1.0, event_type="drought", min_duration=2):
-#     values = np.asarray(spi_ts)
-#     n = len(values)
-#     if np.all(np.isnan(values)):
-#         return np.nan, np.nan, np.nan, np.nan
-
-#     events = []
-#     in_event = False
-#     start = None
-
-#     for t in range(n):
-#         if event_type == "drought":
-#             cond_start = values[t] < threshold
-#             cond_end = values[t] >= threshold
-#         else:
-#             cond_start = values[t] > abs(threshold)
-#             cond_end = values[t] <= abs(threshold)
-
-#         if cond_start and not in_event:
-#             in_event = True
-#             start = t
-#         elif cond_end and in_event:
-#             end = t - 1
-#             events.append((start, end))
-#             in_event = False
-#     if in_event:
-#         events.append((start, n - 1))
-
-#     events = [e for e in events if (e[1] - e[0] + 1) >= min_duration]
-
-#     durations, peaks, severities = [], [], []
-#     for (s, e) in events:
-#         dur = e - s + 1
-#         peak = np.min(values[s:e+1]) if event_type == "drought" else np.max(values[s:e+1])
-#         sev = np.sum(-values[s:e+1]) if event_type == "drought" else np.sum(values[s:e+1])
-#         durations.append(dur)
-#         peaks.append(peak)
-#         severities.append(sev)
-
-#     freq = len(events) if len(events) > 0 else np.nan
-#     max_duration = np.max(durations) if durations else np.nan
-#     extreme_peak = np.min(peaks) if event_type == "drought" and peaks else (np.max(peaks) if peaks else np.nan)
-#     mean_severity = np.mean(severities) if severities else np.nan
-
-#     return freq, max_duration, extreme_peak, mean_severity
-
-# def calc_event_maps(spi: xr.DataArray, threshold=-1.0, event_type="drought"):
-#     results = xr.apply_ufunc(
-#         lambda x: np.array(event_characteristics(x, threshold, event_type)),
-#         spi,
-#         input_core_dims=[["time"]],
-#         output_core_dims=[["metric"]],
-#         vectorize=True,
-#         dask="parallelized",
-#         output_dtypes=[float],
-#         dask_gufunc_kwargs={"output_sizes": {"metric": 4}}
-#     )
-
-#     results = results.assign_coords(metric=["freq", "duration", "peak", "severity"])
-
-#     freq_map = results.sel(metric="freq")
-#     dur_map = results.sel(metric="duration")
-#     peak_map = results.sel(metric="peak")
-#     sev_map = results.sel(metric="severity")
-
-#     t_start = spi.time.min().values
-#     t_end = spi.time.max().values
-
-#     out = {
-#         "Frequency": freq_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
-#         "Duration": dur_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
-#         "Peak": peak_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
-#         "Severity": sev_map.expand_dims(time=[t_start, t_end]).drop_vars("metric"),
-#     }
-
-#     return out
-
-import numpy as np
-import xarray as xr
-import pandas as pd
-
+# ========================= Event characteristic per time series =========================
 def event_characteristics_annual_continuous(spi_ts, threshold=-1.0, event_type="drought", min_duration=2):
     """
     Extracts continuous SPI event characteristics (Frequency, Duration, Peak, Severity) 
@@ -522,7 +435,6 @@ def calculate_all_indices(ds: xr.Dataset, freq="YS", selected_indices=None, base
             # Define event configurations
             if freq == "YS":
                 safe_threshold = abs(spi_threshold)
-                # event_configs = [("Drought", -1.0), ("Flood", 1.0)]
                 event_configs = [("Drought", -safe_threshold), ("Flood", safe_threshold)]
                 metrics = ["Frequency", "Duration", "Peak", "Severity"]
 

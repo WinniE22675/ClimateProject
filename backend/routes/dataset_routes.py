@@ -16,8 +16,6 @@ from services.dataset_service import (
     generate_on_demand_map
 )
 
-# from services.dataset_metadata import get_dataset_metadata_merged
-
 from dependencies import get_current_user, require_analyst_role
 from services.dataset_paths import *
 
@@ -97,14 +95,7 @@ def delete_file(slot_id: int, filename: str, current_user: dict = Depends(requir
         raise HTTPException(status_code=404, detail="File not found")
     return {"message": f"Deleted {filename}"}
 
-# Get Merged Metadata (Left Panel)
-# @router.get("/datasets/{dataset_name}/metadata")
-# def get_dataset_metadata(dataset_name: str): # slot_id: int
-#     meta = get_dataset_metadata_merged(dataset_name)
-#     if not meta:
-#         raise HTTPException(status_code=404, detail="Dataset not found or empty")
-#     return meta
-# Get Metadata (Read directly from metadata.json for better performance and workspace data)
+# Get Metadata 
 @router.get("/datasets/{dataset_name}/metadata")
 def get_dataset_metadata(dataset_name: str):
     # Define path to the JSON file
@@ -136,7 +127,6 @@ class CalculateRequest(BaseModel):
     baseline: Optional[BaselinePeriod] = None
     spi_threshold: Optional[float] = 1 # Add SPI threshold with a default value
     is_existing: Optional[bool] = False
-    # is_existing: bool = False
 
 @router.post("/datasets/{dataset_name}/calculate_indices")
 async def calculate_indices_from_slot(
@@ -211,9 +201,6 @@ def delete_dataset(dataset_name: str, current_user: dict = Depends(require_analy
 
     DATASET_ROOTS = {
         "output": os.path.join("output", dataset_name),
-        # "processed": os.path.join("uploads","processed", dataset_name),
-        # optional future
-        # "uploads": os.path.join("uploads", dataset_name),
     }
 
     deleted = []
@@ -296,9 +283,6 @@ async def upload_shapefile(
     custom_name: str = Form(None),
     current_user: dict = Depends(require_analyst_role)
 ):
-    # Validate file extension before processing
-    # if not file.filename.lower().endswith('.zip'):
-    #     raise HTTPException(status_code=400, detail="Only .zip files are allowed")
     file_ext = file.filename.lower()
     if not (file_ext.endswith('.zip') or file_ext.endswith('.geojson')):
         raise HTTPException(status_code=400, detail="Only .zip or .geojson files are allowed")
@@ -375,23 +359,6 @@ def delete_shapefile(shapefile_name: str, current_user: dict = Depends(require_a
             raise HTTPException(status_code=500, detail=f"Failed to delete directory: {str(e)}")
             
     raise HTTPException(status_code=404, detail="Shapefile not found")
-
-# # The API acts as a smart middleman
-# @router.get("/shapefiles/{shapefile_name}/geojson")
-# def get_shapefile_geojson(shapefile_name: str, current_user: dict = Depends(require_analyst_role)):
-    
-#     # 1. Secures the file (Only this user can access their directory)
-#     shapefile_path = get_shapefile_path(current_user["id"], shapefile_name)
-#     shapefile_dir = os.path.dirname(shapefile_path)
-#     cached_geojson_path = os.path.join(shapefile_dir, "boundary.geojson")
-    
-#     # 2. Checks existence and handles errors gracefully
-#     if os.path.exists(cached_geojson_path):
-#         with open(cached_geojson_path, "r", encoding="utf-8") as f:
-#             return json.load(f)
-#     else:
-#         # 3. Returns meaningful error instead of just a dead link
-#         raise HTTPException(status_code=404, detail="Cache not found. Run Calculate first.")
 
 @router.delete("/datasets/{dataset_name}/workspaces/{workspace_name}")
 def delete_workspace(dataset_name: str, workspace_name: str, current_user: dict = Depends(require_analyst_role)):

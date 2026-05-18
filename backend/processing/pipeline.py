@@ -10,19 +10,6 @@ from processing.overlay import overlay_with_shapefile
 
 from fastapi import HTTPException
 
-# SEA_SHAPEFILE_PATH = "data/sea_boundary_dissolved/sea_boundary_dissolved.geojson"
-
-# COUNTRY_SHAPEFILE_PATH = "data/sea_boundary/southeast-asia-boundary.shp"
-# shp_countries = gpd.read_file(COUNTRY_SHAPEFILE_PATH).to_crs("EPSG:4326")
-
-# THAILAND_SHAPEFILE_PATH = "data/tha_admbnda_adm1_rtsd_20190221.shp"
-# shp_thai_provinces = gpd.read_file(THAILAND_SHAPEFILE_PATH).to_crs("EPSG:4326")
-
-# THAILAND_PROVINCES_LIST = shp_thai_provinces['ADM1_EN'].dropna().unique()
-
-# THAILAND_BOUNDARY_SHAPEFILE_PATH = r"data/geoBoundaries-THA-ADM0.geojson"
-# shp_thai_boundary = gpd.read_file(THAILAND_BOUNDARY_SHAPEFILE_PATH).to_crs("EPSG:4326")
-
 SEA_COUNTRIES = [
     "Thailand", 
     "Vietnam", 
@@ -36,23 +23,6 @@ SEA_COUNTRIES = [
     "Singapore", 
     "Timor-Leste"
 ]
-
-# import pandas as pd
-# def prepare_for_xclim(ds: xr.Dataset) -> xr.Dataset:
-#     time = ds.time.to_index()
-
-#     inferred = pd.infer_freq(time)
-#     if inferred is None:
-#         # force daily 
-#         ds = ds.assign_coords(
-#             time=pd.date_range(
-#                 start=str(time[0]),
-#                 periods=len(time),
-#                 freq="D",
-#             )
-#         )
-
-#     return ds
 
 def generate_all(
         file_input, 
@@ -85,9 +55,6 @@ def generate_all(
         print(f"Loading shapefile from: {shapefile_path}")
         # Load the user's shapefile
         shp_areas = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
-
-        # shp_areas_simplified = shp_areas.copy()
-        # shp_areas_simplified['geometry'] = shp_areas_simplified['geometry'].simplify(tolerance=0.001, preserve_topology=True)
         
         # Check if target column exists
         if target_col not in shp_areas.columns:
@@ -114,14 +81,10 @@ def generate_all(
 
         ds_clip = xr.Dataset(clipped_vars)
         print("Clipped to Thailand boundary.")
-        # ds_clip = prepare_for_xclim(ds_clip)
 
         # 3. Indices
         print("Calculate Indices.")
         try:
-            # indices_annual = calculate_all_indices(ds_clip, "YS", selected_indices, baseline)
-            # indices_monthly = calculate_all_indices(ds_clip, "MS", selected_indices, baseline)
-
             # 1. Calculate EVERYTHING in the annual pass (SPI will use 'MS' internally)
             indices_annual = calculate_all_indices(ds_clip, "YS", selected_indices, baseline, spi_threshold=spi_threshold)
             
@@ -148,33 +111,6 @@ def generate_all(
        
         for var in indices_annual.data_vars:
             print(f"Exporting Annual: {var}")
-            
-            # SEA
-            """
-            # Maps 
-            # send output_base_dir to export_maps and will auto create folder 'actual'/'trend' 
-            actual_json_path = export_actual_maps_xesmf(indices_annual[var], var, output_base_dir)
-            trend_json_path = export_trend_map_xesmf(indices_annual[var], var, output_base_dir)
-            
-            # Overlay Map 
-            if shp_sea is not None:
-                overlay_with_shapefile(actual_json_path, shp_sea)
-                overlay_with_shapefile(trend_json_path, shp_sea)
-
-            # Timeseries (each counrty)
-            # 1. SEA Average 
-            export_yearly_timeseries(indices_annual[var], var, output_base_dir, region_name="SEA")
-            
-            # 2. Country-specific Average
-            for country in SEA_COUNTRIES:
-                # Mask only counrty
-                weighted_da = calc_weighted_mean(indices_annual[var], country, shp_countries, target_col="ADMIN") # COUNTRY_SHAPEFILE_PATH
-                
-                if weighted_da is not None and not weighted_da.isnull().all():
-                    export_yearly_timeseries(weighted_da, var, output_base_dir, region_name=country)
-                else:
-                    print(f"Skipping {country} for {var} (No data coverage)")
-            """
 
             current_da = prep_for_rio(indices_annual[var]).load()
 
@@ -187,39 +123,38 @@ def generate_all(
             # '''
             # Actual and Trend Maps Overview
             actual_json_path_overview = export_actual_maps_xesmf(
-                index_data=current_da, # indices_annual[var], 
+                index_data=current_da, 
                 index_name=var, 
                 output_base_dir=output_base_dir,
-                region_name=country, # region_name="Thailand",
+                region_name=country, 
                 province_name=None,
                 spi_threshold=spi_threshold if is_spi_event else None
             )
             
             trend_json_path_overview = export_trend_map_xesmf(
-                index_data=current_da, #indices_annual[var], 
+                index_data=current_da,  
                 index_name=var, 
                 output_base_dir=output_base_dir,
-                region_name=country, # region_name="Thailand",
+                region_name=country, 
                 province_name=None,
                 spi_threshold=spi_threshold if is_spi_event else None
             )
 
-            if shp_areas is not None: # shp_thai_provinces
-                overlay_with_shapefile(actual_json_path_overview, shp_boundary) # shp_thai_boundary)
-                overlay_with_shapefile(trend_json_path_overview, shp_boundary) # shp_thai_boundary)
-            # '''
+            if shp_areas is not None: 
+                overlay_with_shapefile(actual_json_path_overview, shp_boundary) 
+                overlay_with_shapefile(trend_json_path_overview, shp_boundary) 
 
             provincial_ts_dict = {}
             
             # Annual Timeseries Overview
             if not is_spi_event:
                 print(f"Start Timeseries Thailand")
-                if shp_boundary is not None: # shp_thai_boundary
+                if shp_boundary is not None: 
                     weighted_da_overview = calc_weighted_mean(
-                        da=current_da, # indices_annual[var], 
-                        region_name="overview_area", # region_name="Thailand", 
-                        gdf_region=shp_boundary, # shp_thai_boundary,
-                        target_col='overview_col' # "shapeName" # Use column name from your geoBoundaries file
+                        da=current_da, 
+                        region_name="overview_area",  
+                        gdf_region=shp_boundary, 
+                        target_col='overview_col' 
                     )
 
                     if weighted_da_overview is not None and not weighted_da_overview.isnull().all():
@@ -230,30 +165,29 @@ def generate_all(
                             index_data=weighted_da_overview, 
                             index_name=var, 
                             output_base_dir=output_base_dir, 
-                            region_name=country, # region_name="Thailand", 
+                            region_name=country, 
                             province_name=None # Will save to 'overview' folder
                         )
                     else:
                         print(f"Skipping Thailand Overview timeseries for {var}")
 
-            for province in area_list: # THAILAND_PROVINCES_LIST
+            for province in area_list:
                 print(f"Start {province}")
 
-                province_shp = shp_areas[shp_areas[target_col] == province] # shp_thai_provinces[shp_thai_provinces['ADM1_EN'] == province]
+                province_shp = shp_areas[shp_areas[target_col] == province] 
 
                 try:
-                    da_province = current_da.rio.clip( # indices_annual[var].rio.clip(
+                    da_province = current_da.rio.clip(
                         province_shp.geometry.values, 
                         province_shp.crs, 
                         drop=True,
                         all_touched=True,)
-                    # print(f"Clip {province}")
 
                 except Exception as e:
                     print(f"Skipping maps for {province} (No data in boundary or clipping error): {e}")
                     da_province = None
                 # """
-                
+
                 if da_province is not None:
                     # --- Check (Province / City) ---
                     if da_province.sizes.get('latitude', 0) == 0 or da_province.sizes.get('longitude', 0) == 0:
@@ -261,44 +195,39 @@ def generate_all(
                         # Skip to the next province
                         continue
                         
-                if da_province is not None:
-                    # print(f"Export Actual Map : {province}")
-                    
+                if da_province is not None:          
                     actual_json_path = export_actual_maps_xesmf(
                         index_data=da_province, 
                         index_name=var, 
                         output_base_dir=output_base_dir,
-                        region_name=country, # region_name="Thailand",
+                        region_name=country, 
                         province_name=province,
                         spi_threshold=spi_threshold if is_spi_event else None
                     )
                     
-                    # print(f"Export Trend Map : {province}")
                     trend_json_path = export_trend_map_xesmf(
                         index_data=da_province, 
                         index_name=var, 
                         output_base_dir=output_base_dir,
-                        region_name=country, # region_name="Thailand",
+                        region_name=country,
                         province_name=province,
                         spi_threshold=spi_threshold if is_spi_event else None
                     )
                     
                     # Overlay Map 
-                    if shp_areas is not None: # shp_thai_provinces
+                    if shp_areas is not None: 
                         if actual_json_path:
-                            overlay_with_shapefile(actual_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces
+                            overlay_with_shapefile(actual_json_path, province_shp.to_crs("EPSG:4326")) 
                         if trend_json_path:
-                            overlay_with_shapefile(trend_json_path, province_shp.to_crs("EPSG:4326")) # shp_thai_provinces 
+                            overlay_with_shapefile(trend_json_path, province_shp.to_crs("EPSG:4326")) 
                 
-                # print(f"Calculate Weight Provinces: {var}")
                 weighted_da = calc_weighted_mean(
-                    da=current_da, #indices_annual[var], 
+                    da=current_da, 
                     region_name=province, 
-                    gdf_region=shp_areas, # shp_thai_provinces,
-                    target_col=target_col # "ADM1_EN" # Change to "ADM1_TH" if you want Thai names
+                    gdf_region=shp_areas, 
+                    target_col=target_col 
                 )
 
-                # print(f"Export Timeseries: {var}")
                 if weighted_da is not None and not weighted_da.isnull().all():
 
                     weighted_da.attrs = current_da.attrs.copy()
@@ -311,7 +240,7 @@ def generate_all(
                             index_data=weighted_da, 
                             index_name=var, 
                             output_base_dir=output_base_dir, 
-                            region_name=country, # region_name="Thailand", 
+                            region_name=country, 
                             province_name=province
                         )
                     # """
@@ -319,15 +248,15 @@ def generate_all(
                     print(f"Skipping {province} for {var} (No data coverage or error)")
 
             #  Shapefile Mode Maps Overview
-            if shp_areas is not None and provincial_ts_dict: # shp_thai_provinces
+            if shp_areas is not None and provincial_ts_dict: 
                 # Actual Map for Shapefile Mode
                 actual_shp_path = export_actual_map_shapefile(
                     provincial_ts_dict=provincial_ts_dict,
                     index_name=var,
                     output_base_dir=output_base_dir,
-                    gdf_provinces=shp_areas, # shp_thai_provinces,
-                    target_col=target_col, # "ADM1_EN",
-                    region_name=country, # region_name="Thailand",
+                    gdf_provinces=shp_areas, 
+                    target_col=target_col, 
+                    region_name=country, 
                     spi_threshold=spi_threshold if is_spi_event else None
                 )
                 
@@ -336,32 +265,17 @@ def generate_all(
                     provincial_ts_dict=provincial_ts_dict,
                     index_name=var,
                     output_base_dir=output_base_dir,
-                    gdf_provinces=shp_areas, # shp_thai_provinces,
-                    target_col=target_col, #"ADM1_EN",
-                    region_name=country, # region_name="Thailand",
+                    gdf_provinces=shp_areas,
+                    target_col=target_col, 
+                    region_name=country, 
                     spi_threshold=spi_threshold if is_spi_event else None
                 )
-            # ==========================================
-
+            
         # --- Monthly Export ---
         for var in indices_monthly.data_vars:
             print(f"Exporting monthly: {var}")
 
-            # indices_monthly = indices_monthly[var].rio.write_crs("EPSG:4326")
-            # indices_monthly[var]
             current_da = prep_for_rio(indices_monthly[var]).load()
-
-            # SEA
-            """
-            # SEA Avg
-            export_seasonal_cycle(indices_monthly[var], var, output_base_dir, region_name="SEA")
-            
-            # Country Avg
-            for country in SEA_COUNTRIES:
-                weighted_da = calc_weighted_mean(indices_monthly[var], country, shp_countries, target_col="ADMIN") # COUNTRY_SHAPEFILE_PATH
-                if weighted_da is not None and not weighted_da.isnull().all():
-                    export_seasonal_cycle(weighted_da, var, output_base_dir, region_name=country)
-            """
 
             is_spi_event = var.startswith("SPI") and any(evt in var for evt in ["_Drought_", "_Flood_"])
             if is_spi_event:
@@ -369,12 +283,12 @@ def generate_all(
                 continue
 
             # Seasonal Cycle Overview
-            if shp_boundary is not None: # shp_thai_boundary
+            if shp_boundary is not None: 
                 weighted_da_overview = calc_weighted_mean(
-                    da=current_da, #indices_monthly[var], 
-                    region_name="overview_area", # region_name="Thailand", 
-                    gdf_region=shp_boundary, # shp_thai_boundary,
-                    target_col='overview_col' # "shapeName" # Use column name from your geoBoundaries file
+                    da=current_da, 
+                    region_name="overview_area",
+                    gdf_region=shp_boundary, 
+                    target_col='overview_col'
                 )
 
                 if weighted_da_overview is not None and not weighted_da_overview.isnull().all():
@@ -385,18 +299,18 @@ def generate_all(
                         index_data=weighted_da_overview, 
                         index_name=var, 
                         output_base_dir=output_base_dir, 
-                        region_name=country, # region_name="Thailand", 
+                        region_name=country,  
                         province_name=None # Will save to 'overview' folder
                     )
                 else:
                     print(f"Skipping Thailand Overview seasonal for {var}")
 
-            for province in area_list: # THAILAND_PROVINCES_LIST
+            for province in area_list: 
                 weighted_da = calc_weighted_mean(
-                    da=current_da, #indices_monthly[var], 
+                    da=current_da, 
                     region_name=province, 
-                    gdf_region=shp_areas, # shp_thai_provinces,
-                    target_col=target_col # "ADM1_EN" # Change to "ADM1_TH" if you want Thai names
+                    gdf_region=shp_areas, 
+                    target_col=target_col # Change to "ADM1_TH" if you want Thai names
                 )
 
                 if weighted_da is not None and not weighted_da.isnull().all():
@@ -408,12 +322,14 @@ def generate_all(
                         index_data=weighted_da, 
                         index_name=var, 
                         output_base_dir=output_base_dir, 
-                        region_name=country, # region_name="Thailand", 
+                        region_name=country, 
                         province_name=province
                     )
                 else:
                     print(f"Skipping {province} for {var} (No data coverage or error)")
-
+        
+    
+        # '''
     except Exception as e:
         print(f"Pipeline Error: {e}")
         raise e
@@ -460,24 +376,15 @@ def generate_custom_map_pipeline(
     area_name = province if province and province.strip() else "overview"
 
     # Define paths to check if files already exist
-    # grid_file = os.path.join(output_base_dir, country, area_name, index_name, "maps_grid", "actual", f"{start_year}_{end_year}_actual_grid.geojson")
     grid_file = os.path.join(output_base_dir, country, area_name, index_name, "maps_grid", "actual", grid_filename)
 
     if not province: # <-- if it is Overview
-        # shp_file = os.path.join(output_base_dir, country, "overview", index_name, "maps_shp", "actual", f"{start_year}_{end_year}_actual_shp.geojson")
         shp_file = os.path.join(output_base_dir, country, "overview", index_name, "maps_shp", "actual", shp_filename)
         need_shp = not os.path.exists(shp_file)
     else:
         need_shp = False # if select province don't do Shapefile mode map
 
     need_grid = not os.path.exists(grid_file)
-    # need_shp = not os.path.exists(shp_file)
-
-
-######################
-    # need_shp = False # for calculate show please delete ##############################################################
-#####################
-
 
     # If both files already exist, exit early to save CPU time
     if not need_grid and not need_shp:
@@ -493,9 +400,6 @@ def generate_custom_map_pipeline(
         # Load the user's shapefile
         shp_areas = gpd.read_file(shapefile_path).to_crs("EPSG:4326")
 
-        # shp_areas_simplified = shp_areas.copy()
-        # shp_areas_simplified['geometry'] = shp_areas_simplified['geometry'].simplify(tolerance=0.001, preserve_topology=True)
-        
         # Check if target column exists
         if target_col not in shp_areas.columns:
             raise ValueError(f"Column '{target_col}' not found in shapefile.")
@@ -517,7 +421,7 @@ def generate_custom_map_pipeline(
         clipped_vars = {}
         for var in ds.data_vars:
             da = prep_for_rio(ds[var])
-            clipped_vars[var] = clip_to_shape(da, shp_boundary) # THAILAND_BOUNDARY_SHAPEFILE_PATH
+            clipped_vars[var] = clip_to_shape(da, shp_boundary) 
         ds_clip = xr.Dataset(clipped_vars)
 
         print(f"Processing requested variable: {index_name}")
@@ -548,11 +452,11 @@ def generate_custom_map_pipeline(
             index_data = prep_for_rio(indices_annual[index_name]).load()
 
         da_target = index_data
-        target_shp = shp_boundary # shp_thai_boundary # Default to country boundary
+        target_shp = shp_boundary
 
         if province and province.strip(): # Check if province is provided and not empty
-            if shp_areas is not None: # shp_thai_provinces
-                province_shp = shp_areas[shp_areas[target_col] == province] # shp_thai_provinces[shp_thai_provinces['ADM1_EN'] == province]
+            if shp_areas is not None: 
+                province_shp = shp_areas[shp_areas[target_col] == province] 
                 target_shp = province_shp # Update target shape for overlay later
                 
                 print(f"Clipping data to province: {province}")
@@ -613,7 +517,7 @@ def generate_custom_map_pipeline(
                 provincial_ts_dict = {}
 
                 # Calculate weight for ALL provinces (Whole Country mode)
-                for prov in area_list: # THAILAND_PROVINCES_LIST
+                for prov in area_list: 
                     weighted_da = calc_weighted_mean(da_target_sliced, prov, shp_areas, target_col) # shp_thai_provinces, "ADM1_EN"
                     if weighted_da is not None:
                         provincial_ts_dict[prov] = weighted_da
@@ -624,8 +528,8 @@ def generate_custom_map_pipeline(
                         provincial_ts_dict=provincial_ts_dict,
                         index_name=index_name,
                         output_base_dir=output_base_dir,
-                        gdf_provinces=shp_areas, # shp_thai_provinces
-                        target_col=target_col, # "ADM1_EN"
+                        gdf_provinces=shp_areas, 
+                        target_col=target_col, 
                         region_name=country,
                         spi_threshold=spi_threshold if is_spi_event else None
                     )
@@ -636,8 +540,8 @@ def generate_custom_map_pipeline(
                             provincial_ts_dict=provincial_ts_dict,
                             index_name=index_name,
                             output_base_dir=output_base_dir,
-                            gdf_provinces=shp_areas, # shp_thai_provinces
-                            target_col=target_col, #"ADM1_EN",
+                            gdf_provinces=shp_areas, 
+                            target_col=target_col, 
                             region_name=country,
                             spi_threshold=spi_threshold if is_spi_event else None
                         )

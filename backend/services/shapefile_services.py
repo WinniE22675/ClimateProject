@@ -7,18 +7,9 @@ def detect_region_columns(shapefile_path: str) -> dict:
     and suggests the most likely column for region names.
     """
     try:
-        # Trick: Read only the first row (rows=1) to save memory and processing time.
-        # We only need the column headers and their data types, not the full geometry.
-        # gdf = gpd.read_file(shapefile_path, rows=1)
-
         with fiona.open(shapefile_path) as src:
             properties = src.schema.get('properties', {})
         
-        # 1. Filter only string/object columns (ignore numbers, dates, and geometry)
-        # string_cols = [
-        #     col for col in gdf.columns 
-        #     if gdf[col].dtype == 'object' and col.lower() != 'geometry'
-        # ]
         # 1. Filter only string columns (Fiona uses 'str:50' or 'char' for text types)
         string_cols = [
             col for col, dtype in properties.items() 

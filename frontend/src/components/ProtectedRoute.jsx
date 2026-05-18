@@ -19,7 +19,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     // If 'allowedRoles' is provided AND the user's role is NOT in the list
     if (allowedRoles && !allowedRoles.includes(user.role)) {
         // Redirect unauthorized users back to the Dashboard
-        // (You could also redirect to a custom "/unauthorized" error page if you prefer)
         return <Navigate to="/" replace />;
     }
 

@@ -13,20 +13,12 @@ export default function DownloadSection({ datasetName, datasetStatus }) {
 
     setDownloading(true);
     try {
-      // const response = await fetch(
-      //   `http://localhost:8000/api/datasets/${datasetName}/download_merged`,
-      //   {
-      //     method: "GET",
-      //     headers: { "Content-Type": "application/json" },
-      //     // body: JSON.stringify(scope),
-      //   }
-      // );
       const response = await apiFetch(`/datasets/${datasetName}/download_merged`, {
         method: "GET"
       });
 
       if (response.ok) {
-        // Blob trick เพื่อดาวน์โหลดไฟล์จาก POST request
+        // Blob trick for download file from POST request
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -46,23 +38,6 @@ export default function DownloadSection({ datasetName, datasetStatus }) {
     }
   };
 
-  // return (
-  //   <button
-  //     onClick={handleDownload}
-  //     disabled={isDisabled}
-  //     className={`btn w-100 fw-bold shadow-sm ${
-  //       isReady && !downloading
-  //         ? "btn-primary"
-  //         : "btn-secondary"
-  //     }`}
-  //   >
-  //     {downloading
-  //       ? "Downloading..."
-  //       : isReady
-  //       ? "Download Merged Dataset"
-  //       : "Wait for Dataset"} 
-  //   </button>
-  // );
   return (
     <button
       onClick={handleDownload}

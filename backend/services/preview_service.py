@@ -11,16 +11,7 @@ def run_preview_visualization(dataset_name: str, user_id: str, country_name: str
     try:
         output_base_dir = get_dataset_output_dir(dataset_name)
         
-        # CHECK: Skip if previews already exist
-        # Assuming 'pr', 'tmax', or 'tmin' are the raw variables.
-        # We check if a directory for one of them exists to avoid re-running.
-        raw_vars = ["pr", "tmax", "tmin"] # , "tas"
-        # already_generated = any(os.path.exists(os.path.join(output_base_dir, country_name, "overview", v)) for v in raw_vars for country_name in os.listdir(output_base_dir) if os.path.isdir(os.path.join(output_base_dir, country_name)))
-        
-        # A simpler check: Just look if ANY variable folder exists directly inside the country folder
-        # For a more robust check, we can just look for the "overview" folder of raw variables.
-        # metadata = read_metadata_json(dataset_name)
-        # country_name = metadata.get("country", "custom_workspace")
+        raw_vars = ["pr", "tmax", "tmin"] 
 
         preview_check_path = os.path.join(output_base_dir, country_name, "overview")
         if os.path.exists(preview_check_path):
@@ -42,8 +33,6 @@ def run_preview_visualization(dataset_name: str, user_id: str, country_name: str
         workspaces = metadata.get("workspaces", {})
         current_workspace = workspaces.get(country_name, {})
 
-        # shapefile_name = metadata.get("shapefile_name")
-        # target_col = metadata.get("target_col")
         shapefile_name = current_workspace.get("shapefile_name")
         target_col = current_workspace.get("target_col")
 
@@ -56,7 +45,6 @@ def run_preview_visualization(dataset_name: str, user_id: str, country_name: str
 
         print(f"[PREVIEW] Loading {merged_path}")
 
-        # ds = xr.open_dataset(merged_path)
         with xr.open_dataset(merged_path) as ds:
             export_preview_all(
                 ds=ds,
