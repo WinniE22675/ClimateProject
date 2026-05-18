@@ -211,7 +211,6 @@ def generate_all(
 
             provincial_ts_dict = {}
             
-            '''
             # Annual Timeseries Overview
             if not is_spi_event:
                 print(f"Start Timeseries Thailand")
@@ -236,9 +235,7 @@ def generate_all(
                         )
                     else:
                         print(f"Skipping Thailand Overview timeseries for {var}")
-            '''
 
-            '''
             for province in area_list: # THAILAND_PROVINCES_LIST
                 print(f"Start {province}")
 
@@ -260,7 +257,7 @@ def generate_all(
                 if da_province is not None:
                     # --- Check (Province / City) ---
                     if da_province.sizes.get('latitude', 0) == 0 or da_province.sizes.get('longitude', 0) == 0:
-                        print(f"⚠️ Skipping area '{province}': The area is too small for the current grid resolution.")
+                        print(f"Skipping area '{province}': The area is too small for the current grid resolution.")
                         # Skip to the next province
                         continue
                         
@@ -345,8 +342,7 @@ def generate_all(
                     spi_threshold=spi_threshold if is_spi_event else None
                 )
             # ==========================================
-            '''
-        '''
+
         # --- Monthly Export ---
         for var in indices_monthly.data_vars:
             print(f"Exporting monthly: {var}")
@@ -417,9 +413,7 @@ def generate_all(
                     )
                 else:
                     print(f"Skipping {province} for {var} (No data coverage or error)")
-        
-    
-        '''
+
     except Exception as e:
         print(f"Pipeline Error: {e}")
         raise e

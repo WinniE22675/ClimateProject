@@ -146,8 +146,9 @@ def merge_time_mode(paths: List[str], merged_dir: str) -> Tuple[bool, Any, List[
         ds = xr.open_mfdataset(
             paths,
             combine="by_coords",
-            parallel=True,          # faster multi-file open
+            parallel=False,          
             chunks=CHUNK_CONFIG,    # keeps data as Dask arrays
+            engine="netcdf4" 
         )
 
         # vars_to_drop = [v for v in ds.data_vars if v in SKIP_VARS]

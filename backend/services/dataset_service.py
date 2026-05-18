@@ -290,7 +290,7 @@ def run_async_calculation(
             gdf_full = gpd.read_file(shapefile_path)
             gdf_full = gdf_full.to_crs("EPSG:4326")
 
-            print("Simplifying boundary geometry to optimize loading speed...")
+            # print("Simplifying boundary geometry to optimize loading speed...")
 
             # gdf_full['geometry'] = gdf_full['geometry'].simplify(tolerance=0.001, preserve_topology=True)
             

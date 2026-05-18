@@ -104,6 +104,10 @@ def export_preview_all(
         else:
             # Temperatures (tmax, tmin) are averaged
             da_annual = da.resample(time="YS").mean(skipna=True)
+
+        da_annual.attrs = da.attrs.copy()
+        if da.rio.crs is not None:
+             da_annual = da_annual.rio.write_crs(da.rio.crs)
             
         da_annual = da_annual.load() # Load into memory for faster processing
 
@@ -112,6 +116,10 @@ def export_preview_all(
             da_monthly = da.resample(time="MS").sum(skipna=True)
         else:
             da_monthly = da.resample(time="MS").mean(skipna=True)
+
+        da_monthly.attrs = da.attrs.copy()
+        if da.rio.crs is not None:
+             da_monthly = da_monthly.rio.write_crs(da.rio.crs)
             
         da_monthly = da_monthly.load()
 

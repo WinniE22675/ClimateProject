@@ -1,6 +1,7 @@
 # routes/dataset_routes.py
 from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, Query, Form
 from fastapi.responses import FileResponse
+from fastapi.concurrency import run_in_threadpool
 from typing import List, Optional
 from pydantic import BaseModel
 import os
@@ -49,7 +50,7 @@ async def upload_dataset_files(
 
 # List Files Route: send list file to Frontend
 @router.get("/datasets/{slot_id}/files")
-def list_dataset_files(slot_id: int, current_user: dict = Depends(get_current_user)):
+def list_dataset_files(slot_id: int, current_user: dict = Depends(require_analyst_role)):
     # Return List of file name 
     return get_file_list(current_user["id"], slot_id)
 
@@ -257,12 +258,12 @@ class MapGenerateRequest(BaseModel):
 @router.post("/maps/generate")
 async def generate_map_endpoint(req: MapGenerateRequest, current_user: dict = Depends(require_analyst_role)):
     """
-    Synchronous endpoint to generate specific map (Actual & Trend) on demand.
-    Frontend will wait for this to finish before trying to fetch the files.
+    Asynchronous endpoint: 
+    Frontend will still wait, but it won't block the FastAPI server for other users.
     """
     try:
         # Call the service function directly (blocks until finished)
-        result = generate_on_demand_map(
+        result = await generate_on_demand_map(
             user_id=current_user["id"],
             dataset_name=req.datasetName,
             index_name=req.indexName,
