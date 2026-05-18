@@ -103,19 +103,21 @@ def test_core_process_file_skip_year(mock_open, mock_scope):
     """
     # 1. Setup Mock DS with year 1990
     ds_mock = MagicMock()
+    # Mocking Context Manager for `with xr.open_dataset(...) as ds:`
+    mock_open.return_value.__enter__.return_value = ds_mock
+    
     ds_mock.dims = {'time': 10}
     # Mock .dt.year.min() and .max()
     ds_mock.time.dt.year.min.return_value = 1990
     ds_mock.time.dt.year.max.return_value = 1995
-    
-    mock_open.return_value = ds_mock
 
     # 2. Run function
     result = core_process_file("dummy_raw.nc", "dummy_save.nc", mock_scope)
 
     # 3. Assert
     assert result is False # Should return False (Skipped)
-    ds_mock.close.assert_called() # Should close file
+    # Removing ds_mock.close.assert_called() because we now use 'with' block 
+    # which automatically calls __exit__ (close equivalent)
 
 @patch("services.dataset_clip.xr.open_dataset")
 def test_core_process_file_success(mock_open, mock_scope):
@@ -124,6 +126,9 @@ def test_core_process_file_success(mock_open, mock_scope):
     """
     # 1. Setup Mock DS that fits the scope (2005)
     ds_mock = MagicMock()
+    # Mocking Context Manager
+    mock_open.return_value.__enter__.return_value = ds_mock
+    
     ds_mock.dims = {'time': 10, 'latitude': 10, 'longitude': 10}
     ds_mock.coords = {} # simulate standard coords
     
@@ -137,26 +142,31 @@ def test_core_process_file_success(mock_open, mock_scope):
     ds_subset.time.size = 5
     ds_subset.latitude.size = 5
     ds_subset.longitude.size = 5
-    ds_subset.data_vars = [] # minimal vars
-    ds_mock.sel.return_value = ds_subset
-    ds_subset.load.return_value = ds_subset
-    ds_subset.drop_vars.return_value = ds_subset
     
-    mock_open.return_value = ds_mock
-
+    # Needs to be iterable dictionaries for unit conversion & encoding cleanup logic
+    mock_var = MagicMock()
+    mock_var.attrs = {}
+    ds_subset.variables = {'temp': mock_var}
+    ds_subset.data_vars = {'temp': mock_var}
+    
+    # Mock methods returning self
+    ds_mock.sel.return_value = ds_subset
+    ds_subset.drop_vars.return_value = ds_subset
+    ds_subset.copy.return_value = ds_subset 
+    
     # 2. Run
     result = core_process_file("dummy.nc", "dummy_out.nc", mock_scope)
 
     # 3. Assert
-    assert result is True
-    ds_subset.to_netcdf.assert_called_with("dummy_out.nc", format='NETCDF4')
+    assert result is True, "Result was False, possibly due to an unhandled Exception in core_process_file logic."
+    # Assert saving logic (adding compute=True to match implementation)
+    ds_subset.to_netcdf.assert_called_with("dummy_out.nc", format='NETCDF4', compute=True)
 
 def test_core_process_no_time_dim(messy_coord_ds, mock_scope):
     """
     Test that core_process_file returns False
     when dataset has no time dimension.
     """
-
     ds = messy_coord_ds.drop_vars("temp").assign_coords(latitude=[0, 1], longitude=[0, 1])
 
     with patch("xarray.open_dataset", return_value=ds):
@@ -169,7 +179,6 @@ def test_core_process_empty_slice(messy_coord_ds, mock_scope):
     Test that function returns False
     when spatial slicing results in empty dataset.
     """
-
     mock_scope.minLat = 50
     mock_scope.maxLat = 60  # outside data range
 
@@ -184,7 +193,6 @@ def test_core_process_exception(mock_open, mock_scope):
     Test that unexpected exception
     results in False, not crash.
     """
-
     result = core_process_file("dummy.nc", "out.nc", mock_scope)
 
     assert result is False

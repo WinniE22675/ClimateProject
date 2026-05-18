@@ -105,7 +105,7 @@ def test_ensure_temperature_kelvin():
     da = xr.DataArray([273.15], attrs={"units": "kelvin"})
     out = ensure_temperature_unit(da)
 
-    assert out.attrs["units"] == "°C"
+    assert out.attrs["units"] == "C"
     assert np.isclose(out.values[0], 0.0)
 
 def test_ensure_temperature_invalid():

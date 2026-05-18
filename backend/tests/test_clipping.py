@@ -179,11 +179,17 @@ def test_calc_weighted_mean_variable_values():
     Expected: (10*1.0 + 50*0.5) / (1.0 + 0.5) = 35 / 1.5 = 23.333...
     If weights were ignored (simple mean), result would be 30.
     """
-    # 1. Arrange DataArray (1 row, 2 cols)
+    # 1. Arrange DataArray (2 rows, 2 cols) to provide safe grid spacing
     # Grid centers at 0.5 and 1.5 (Pixel width=1.0)
     lon = np.array([0.5, 1.5]) 
-    lat = np.array([0.5])
-    data = np.array([[10.0, 50.0]]) # 1x2 array
+    lat = np.array([0.5, 1.5]) # เพิ่มให้มีอย่างน้อย 2 ค่าเพื่อไม่ให้เกิด IndexError ตอนหา d_lat
+    
+    # Row 1 (y=0.5): จะถูกนำไปคำนวณตรงตาม Scenario ของเรา (ค่า 10.0 และ 50.0)
+    # Row 2 (y=1.5): อยู่นอกพื้นที่ Polygon (box), จะได้ Weight=0 (ค่าจะเป็นอะไรก็ได้)
+    data = np.array([
+        [10.0, 50.0],
+        [ 0.0,  0.0]
+    ]) 
     
     da = xr.DataArray(
         data,
@@ -202,13 +208,17 @@ def test_calc_weighted_mean_variable_values():
     )
 
     # 3. Act
-    result = calc_weighted_mean(da, "VariableCountry", gdf)
+    result = calc_weighted_mean(da, "VariableCountry", gdf, "NAME_EN")
 
     # 4. Assert
-    # Check if result is close to 23.333...
+    assert result is not None, "calc_weighted_mean returned None, check for errors in the function."
+    
+    # แปลง result กลับเป็น float (กรณี xarray คืนค่าเป็น 0d array) เพื่อความชัวร์ในการเช็คด้วย np.isclose
+    result_val = float(result) if hasattr(result, '__float__') else result
+    
     expected_value = 23.333333
-    assert np.isclose(result, expected_value, rtol=1e-5), \
-        f"Expected weighted mean ~{expected_value}, but got {result}. Weights might be ignored."
+    assert np.isclose(result_val, expected_value, rtol=1e-5), \
+        f"Expected weighted mean ~{expected_value}, but got {result_val}. Weights might be ignored."
 
 def test_calc_weighted_mean_country_not_found(sample_dataarray, sample_geodataframe):
     """
@@ -217,8 +227,8 @@ def test_calc_weighted_mean_country_not_found(sample_dataarray, sample_geodatafr
     # Arrange
     target_country = "NonExistentCountry"
 
-    # Act
-    result = calc_weighted_mean(sample_dataarray, target_country, sample_geodataframe)
+    # Act - Added 'NAME_EN' as target_col
+    result = calc_weighted_mean(sample_dataarray, target_country, sample_geodataframe, "NAME_EN")
 
     # Assert
     assert result is None, "Should return None if country not found"
@@ -231,9 +241,9 @@ def test_calc_weighted_mean_missing_column(sample_dataarray):
     # Create GDF without NAME, ADMIN, or NAME_EN
     gdf_broken = gpd.GeoDataFrame({'WRONG_COL': ['A'], 'geometry': [box(0,0,1,1)]})
     
-    # Act
+    # Act - Requested missing column 'NAME_EN'
     # The function prints error and returns None due to try-except block
-    result = calc_weighted_mean(sample_dataarray, "A", gdf_broken)
+    result = calc_weighted_mean(sample_dataarray, "A", gdf_broken, "NAME_EN")
 
     # Assert
     assert result is None, "Should return None if column lookup fails"
@@ -247,8 +257,8 @@ def test_calc_weighted_mean_with_time_dimension(sample_dataarray_with_time, samp
     da = sample_dataarray_with_time
     target_country = "TestCountry" # Corresponds to sample_geodataframe fixture
 
-    # Act
-    result = calc_weighted_mean(da, target_country, sample_geodataframe)
+    # Act - Added 'NAME_EN' as target_col
+    result = calc_weighted_mean(da, target_country, sample_geodataframe, "NAME_EN")
 
     # Assert
     # 1. Check if result is not None

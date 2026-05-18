@@ -83,7 +83,7 @@ class TestMergeDatasets(unittest.TestCase):
         path2 = self.create_dummy_nc("precip.nc", "pr", "2023-01-01", 5)
         
         # Act
-        success, result, errors = merge_attribute_mode([path1, path2])
+        success, result, errors = merge_attribute_mode([path1, path2], self.output_dir)
         
         # Assert
         self.assertTrue(success, f"Merge failed with errors: {errors}")
@@ -130,7 +130,7 @@ class TestMergeDatasets(unittest.TestCase):
         ds2.close()
 
         # 3. รวมไฟล์ (Attribute Mode)
-        success, result, errors = merge_attribute_mode([path1, path2])
+        success, result, errors = merge_attribute_mode([path1, path2], self.output_dir)
         self.assertTrue(success, f"Merge failed: {errors}")
         ds = xr.open_dataset(result['path'])
 
@@ -189,7 +189,7 @@ class TestMergeDatasets(unittest.TestCase):
         ds2.close()
 
         # 3. สั่งรวมไฟล์ (Attribute Mode)
-        success, result, errors = merge_attribute_mode([path1, path2])
+        success, result, errors = merge_attribute_mode([path1, path2], self.output_dir)
         self.assertTrue(success, f"Merge failed: {errors}")
         
         # โหลดผลลัพธ์มาเช็ค
@@ -208,7 +208,6 @@ class TestMergeDatasets(unittest.TestCase):
             time_strs = [t.strftime('%Y-%m-%d') for t in times]
             self.assertIn(target_date, time_strs, "Gap date should be filled")
             
-  
             val_tmax = ds_out.sel(time=target_date)['tmax'].values
             val_pr  = ds_out.sel(time=target_date)['pr'].values
             
@@ -236,7 +235,7 @@ class TestMergeDatasets(unittest.TestCase):
         path2 = self.create_dummy_nc("pr_2024.nc", "pr", "2024-01-01", 31, value_offset=20.0)
 
         # 2. รวมไฟล์
-        success, result, errors = merge_attribute_mode([path1, path2])
+        success, result, errors = merge_attribute_mode([path1, path2], self.output_dir)
         self.assertTrue(success, f"Merge failed: {errors}")
         ds= xr.open_dataset(result['path'])
 
@@ -278,16 +277,17 @@ class TestMergeDatasets(unittest.TestCase):
         path2 = self.create_dummy_nc("t2.nc", "tmax", "2023-01-03", 2) # Jan 3, 4
         
         # Act
-        success, result, errors = merge_time_mode([path1, path2])
+        success, result, errors = merge_time_mode([path1, path2], self.output_dir)
         
         # Assert
         self.assertTrue(success)
-        ds_res = result['dataset'] # time mode returns dataset object in dict
+        ds_res = xr.open_dataset(result['path']) # changed from result['dataset'] since it returns path now
         
         # Should be 4 days total
         self.assertEqual(ds_res.sizes['time'], 4)
         # Verify SKIP_VARS removed
         self.assertNotIn("height", ds_res.data_vars)
+        ds_res.close()
 
     def test_merge_time_mode_cross_year(self):
         """
@@ -298,17 +298,18 @@ class TestMergeDatasets(unittest.TestCase):
         path2 = self.create_dummy_nc("2024.nc", "tmax", "2024-01-01", 2) # Jan 01, 02
         
         # Act
-        success, result, errors = merge_time_mode([path1, path2])
+        success, result, errors = merge_time_mode([path1, path2], self.output_dir)
         
         # Assert
         self.assertTrue(success)
-        ds = result['dataset']
+        ds = xr.open_dataset(result['path'])
         
         # Check continuity
         times = pd.to_datetime(ds.time.values)
         self.assertEqual(len(times), 4)
         self.assertEqual(times[0].year, 2023)
         self.assertEqual(times[-1].year, 2024)
+        ds.close()
 
     def test_merge_time_mode_unordered_input(self):
         """
@@ -320,15 +321,16 @@ class TestMergeDatasets(unittest.TestCase):
         path3 = self.create_dummy_nc("jan3.nc", "tmax", "2023-01-03", 1)
         
         # Act: Pass in wrong order [3, 1, 2]
-        success, result, errors = merge_time_mode([path3, path1, path2])
+        success, result, errors = merge_time_mode([path3, path1, path2], self.output_dir)
         
         # Assert
         self.assertTrue(success)
-        ds = result['dataset']
+        ds = xr.open_dataset(result['path'])
         
         # Check if time is sorted
         times = pd.to_datetime(ds.time.values)
         self.assertTrue(times[0] < times[1] < times[2], "Time coordinate is not sorted!")
+        ds.close()
 
     def test_merge_time_mode_with_gap(self):
         """
@@ -347,12 +349,12 @@ class TestMergeDatasets(unittest.TestCase):
 
         try:
             # Act
-            success, result, errors = merge_time_mode([path1, path2])
+            success, result, errors = merge_time_mode([path1, path2], self.output_dir)
             
             # Assert
             self.assertTrue(success, f"Merge with gap failed: {errors}")
             
-            ds = result['dataset']
+            ds = xr.open_dataset(result['path'])
             
             # 1. จำนวนวันต้องรวมกันได้ถูกต้อง 
             # (1 วันปี 23 + 366 วันปี 24 + 1 วันปี 25 = 368 วัน)
@@ -397,11 +399,11 @@ class TestMergeDatasets(unittest.TestCase):
         path2 = self.create_dummy_nc("2024_jan.nc", "tmax", "2024-01-01", 31)
         
         # Act: รวมไฟล์
-        success, result, errors = merge_time_mode([path1, path2])
+        success, result, errors = merge_time_mode([path1, path2], self.output_dir)
         
         # Assert: ตรวจสอบผลลัพธ์
         self.assertTrue(success, f"Merge failed: {errors}")
-        ds = result['dataset']
+        ds = xr.open_dataset(result['path'])
         
         # 1. เช็คจำนวนวันรวม (ต้องได้ 62 วันเป๊ะ ไม่ใช่ 365+365)
         self.assertEqual(ds.sizes['time'], 396)
@@ -432,8 +434,8 @@ class TestMergeDatasets(unittest.TestCase):
         path2 = self.create_dummy_nc("pr2025.nc", "pr", "2025-01-01", 365, value_offset=10.0)
         
         try :
-            success, result, _ = merge_time_mode([path1, path2])
-            ds = result['dataset']
+            success, result, _ = merge_time_mode([path1, path2], self.output_dir)
+            ds = xr.open_dataset(result['path'])
             
             ds['pr'].attrs['units'] = 'mm/day' 
 
@@ -481,8 +483,8 @@ class TestMergeDatasets(unittest.TestCase):
         
         # รวมไฟล์
         try :
-            success, result, _ = merge_time_mode([path1, path2])
-            ds = result['dataset']
+            success, result, _ = merge_time_mode([path1, path2], self.output_dir)
+            ds = xr.open_dataset(result['path'])
             
             ds['pr'].attrs['units'] = 'mm/day' 
 
@@ -545,7 +547,8 @@ class TestMergeDatasets(unittest.TestCase):
             paths=all_paths, 
             groups=groups, 
             metas=metas, 
-            temp_paths=all_paths
+            temp_paths=all_paths,
+            merged_dir=self.output_dir
         )
         
         # Assert
@@ -610,7 +613,8 @@ class TestMergeDatasets(unittest.TestCase):
             paths=paths, 
             groups=groups, 
             metas=metas, 
-            temp_paths=paths
+            temp_paths=paths,
+            merged_dir=self.output_dir
         )
 
         # ---------------------------------------------------------------------
@@ -681,7 +685,8 @@ class TestMergeDatasets(unittest.TestCase):
             paths=paths, 
             groups=groups, 
             metas=metas, 
-            temp_paths=paths
+            temp_paths=paths,
+            merged_dir=self.output_dir
         )
 
         # Assert
@@ -709,7 +714,7 @@ class TestMergeDatasets(unittest.TestCase):
         """
         # Act
         fake_path = os.path.join(self.test_dir, "non_existent.nc")
-        success, result, errors = merge_attribute_mode([fake_path])
+        success, result, errors = merge_attribute_mode([fake_path], self.output_dir)
         
         # Assert
         self.assertFalse(success)
