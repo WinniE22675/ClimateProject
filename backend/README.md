@@ -53,7 +53,7 @@ backend
 ### Architecture Overview
 This class diagram illustrates the modular architecture of the backend, which is fundamentally divided into three distinct layers to ensure a clean **Separation of Concerns**:
 
-![Backend Class Diagram](images\BackendClassDiagram.png)
+![Backend Class Diagram](images/BackendClassDiagram.png)
 
 1. **API Routes Layer (`routes/`):** The entry point of the system. It handles incoming HTTP requests from the frontend, validates user authentication, and delegates commands.
 2. **Service Layer (`services/`):** The business logic orchestrator. It manages asynchronous background tasks, memory-efficient file I/O operations, and state/metadata management without performing heavy math.
@@ -66,12 +66,12 @@ To better understand the asynchronous nature and memory management of the backen
 #### 1. Data Ingestion & Merging Flow
 This workflow demonstrates how the backend handles large climate datasets safely. It uses **Chunked Uploads** to prevent RAM spikes and employs **Lazy Loading** with Dask to merge files out-of-core.
 
-![Backend Sequence Diagrams 1](images\BackendSequenceDiagrams1.png)
+![Backend Sequence Diagrams 1](images/BackendSequenceDiagrams1.png)
 
 #### 2. Index Calculation & Map Export Flow
 This complex workflow shows the asynchronous computation engine. It features the simplification of Shapefiles into cached GeoJSONs to optimize frontend rendering, followed by the rigorous calculation of `xclim` indices (Annual & Monthly passes) and the generation of spatial maps.
 
-![Backend Sequence Diagrams 2](images\BackendSequenceDiagrams2.png)
+![Backend Sequence Diagrams 2](images/BackendSequenceDiagrams2.png)
 
 ---
 

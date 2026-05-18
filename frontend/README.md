@@ -49,7 +49,7 @@ frontend
 ### Component Architecture (Frontend Class Diagram)
 The diagram below illustrates the architectural structure and dependencies among the system's components. It provides a clear overview of how Pages compose Sub-components and how they interact with Global Contexts and API Services.
 
-![Frontend Class Diagram](images\FrontendClassDiagram.png)
+![Frontend Class Diagram](images/FrontendClassDiagram.png)
 
 ---
 
