@@ -107,7 +107,11 @@ Extracts and aggregates spatial dimensions along the time axis into 1D arrays, e
 ## processing/export_preview.py
 The pipeline controller for automatically generating preview data, from boundary clipping to exporting national and provincial maps and time-series.
 ### Functions
-- **export_preview_all :** Controls the workflow: 1. Loads the Shapefile. 2. Clips boundaries to reduce RAM usage. 3. Resamples data frequency to annual and monthly. 4. Generates grid/polygon maps and time-series.
+- **export_preview_all :** Controls the workflow: 
+1. Loads the Shapefile.
+2. Clips boundaries to reduce RAM usage.
+3. Resamples data frequency to annual and monthly.
+4. Generates grid/polygon maps and time-series.
 
 ## processing/indices.py
 The core engine for calculating all indices using `xclim` based on international standards, covering temperature, precipitation, SPI (droughts/floods), and extreme weather event detection algorithms.
@@ -137,7 +141,11 @@ Merges NetCDF files into a single `xarray.Dataset`, preventing Out-of-Memory (RA
 ## processing/pipeline.py
 The main orchestrator connecting the entire workflow (data preparation, clipping, calculation, exporting) into an automated pipeline linked to the API.
 ### Functions
-- **generate_all :** The main processing pipeline upon data upload: 1. Loads data. 2. Clips national boundaries. 3. Calculates annual/monthly indices. 4. Loops to generate maps and time-series at national and provincial levels.
+- **generate_all :** The main processing pipeline upon data upload: 
+1. Loads data.
+2. Clips national boundaries.
+3. Calculates annual/monthly indices.
+4. Loops to generate maps and time-series at national and provincial levels.
 - **generate_custom_map_pipeline :** An On-demand map generation pipeline. It checks the cache first; if missing, it calculates only the requested index and boundary before applying overlays.
 
 ## processing/preprocessing.py
