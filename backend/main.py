@@ -30,10 +30,6 @@ app.add_middleware(
 )
 
 # include router
-# app.include_router(indices_routes.router, prefix="/api")
-
-# app.include_router(preview_router, prefix="/api")
-
 app.include_router(dataset_routes.router, prefix="/api")
 
 app.include_router(auth_routes.router, prefix="/api/auth", tags=["Authentication"])
