@@ -1,0 +1,35 @@
+# === Data & Uploads ===
+backend/uploads/
+backend/output/
+backend/data/
+public/data/
+frontend/public/data/
+
+# === Databases ===
+*.db
+*.sqlite3
+backend/climate_app.db
+
+# === Ignored Folders (If still exists somehow) ===
+ComputeIndices/
+Dataset/
+Information/
+test_output/
+SPI_Event_Calc/
+Output/
+output_geojson_cmip6/
+
+# === Archives ===
+*.zip
+*.tar.gz
+
+# === System & Environments ===
+node_modules/
+__pycache__/
+.venv/
+.env
+.pytest_cache
+
+# === OS Generated ===
+.DS_Store
+Thumbs.db
