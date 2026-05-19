@@ -231,7 +231,7 @@ Toolkit for reading Shapefiles with low RAM consumption.
 The core service facade of the backend, handling file/dataset uploads, dispatching background tasks, and updating Metadata.
 ### Functions
 - **save_raw_files & upload_and_validate_shapefile :** Uploads files (Raw/Shapefile) in chunks to prevent RAM spikes, enforces strict size limits, safely extracts Zips, and validates required components (.shp, .shx, .dbf, .prj).
-- **update_metadata_json :** Updates `metadata.json` by merging new data without duplication and ordering indices according to the standard (`MASTER_ORDER`).
+- **update_metadata_json :** Updates `metadata.json` by merging new data without duplication and ordering indices according to the standard.
 - **run_async_processing :** Post-upload background task; queues boundary clipping, file merging, Metadata extraction, and immediate temp folder deletion.
 - **run_async_calculation :** Climate index calculation task; simplifies Shapefile coordinates into a small `boundary.geojson` cache for fast Frontend loading, then runs the calculation pipeline.
 - **generate_on_demand_map :** Generates maps for specific years on-demand; blocks API response until file creation completes so the Frontend can render it immediately.
