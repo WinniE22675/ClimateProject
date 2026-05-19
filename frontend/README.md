@@ -178,7 +178,7 @@ Displays the Metadata details of successfully merged datasets, allowing users to
 ## Indices Selector (src/components/IndicesSelector.jsx)
 A comprehensive configuration panel for index calculation. Allows users to select Shapefile boundaries, Baseline years, SPI Thresholds, and the desired climate indices.
 ### Functions
-- **useEffect (availableVars) :** Groups raw variables from the file (e.g., pr, tmax) and matches them with computable standard indices (e.g., PRCPTOT, TXx).
+- **useEffect (availableVars) :** Groups raw variables from the file (e.g., pr, tmax, tmin) and matches them with computable standard indices (e.g., PRCPTOT, TXx).
 - **toggleSelect, selectAll, selectCategory :** Functions to manage checking/unchecking of indices individually, by category, or all at once.
 - **fetchColumns :** Automatically fetches column data from the Shapefile, allowing the user to select the column specifying sub-areas (e.g., province names).
 - **onCalculate :** Gathers all configuration data from the form and passes it to the Parent component (`DatasetProcessPage`) to execute the Backend command.
