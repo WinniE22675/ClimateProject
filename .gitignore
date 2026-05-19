@@ -10,15 +10,6 @@ frontend/public/data/
 *.sqlite3
 backend/climate_app.db
 
-# === Ignored Folders (If still exists somehow) ===
-ComputeIndices/
-Dataset/
-Information/
-test_output/
-SPI_Event_Calc/
-Output/
-output_geojson_cmip6/
-
 # === Archives ===
 *.zip
 *.tar.gz
