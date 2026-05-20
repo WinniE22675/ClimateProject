@@ -12,8 +12,8 @@ The system provides an end-to-end data pipeline covering raw file ingestion, ind
 ![Dashboard](images/dashboard.png)
 *Spatial grid map, annual time-series, and seasonal cycle chart.*
 
-![DashboardWithTrendMap](images/dashboardwithtrendmap.png)
-*Trend grid map with Theli-Sen slope and Mann-Kendall trend analysis, annual time-series, and seasonal cycle chart.*
+<!-- ![DashboardWithTrendMap](images/dashboardwithtrendmap.png)
+*Trend grid map with Theli-Sen slope and Mann-Kendall trend analysis, annual time-series, and seasonal cycle chart.* -->
 
 ### Manipulate — Dataset Upload & Management
 ![Manipulate](images/manipulate.png)
