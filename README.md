@@ -163,6 +163,46 @@ Once running, access the services at:
 | Backend API (Swagger UI) | http://localhost:10001/docs |
 | PostgreSQL | `localhost:10003` |
 
+### First-Time Setup — Creating Users
+
+The application has no default users. After starting the services, create your first user using the provided CLI script.
+
+**Step 1 — Set the `ADMIN_CODE` in `backend/.env`**
+
+The `ADMIN_CODE` is a secret passphrase required to register accounts with the `analyst` role. Set it in your `backend/.env` file:
+
+```env
+ADMIN_CODE=your-chosen-secret-code
+```
+
+**Step 2 — Run the user creation script**
+
+```bash
+# With Docker Compose (recommended)
+docker compose exec backend python scripts/create_user.py
+
+# Without Docker (local dev)
+cd backend
+python scripts/create_user.py
+```
+
+The script will prompt you interactively:
+
+```
+========================================
+   Create New User (Production Safe)
+========================================
+Enter email: admin@example.com
+Enter password (hidden):
+Enter role (viewer/analyst) [default: viewer]: analyst
+
+[+] Success: User 'admin@example.com' created with role 'analyst'.
+```
+
+Run the script once per user. It is safe to run multiple times — it checks for duplicates before creating.
+
+> **Note:** The `ADMIN_CODE` in `.env` is only used by this CLI script and the registration endpoint. Keep it secret — do not share it publicly.
+
 ```bash
 # Stop all services
 docker compose down
@@ -238,7 +278,15 @@ App available at: http://localhost:5173
 | `viewer` | Climate Dashboard (maps & charts) |
 | `analyst` | Dashboard + Upload Dataset + Process Dataset |
 
-An **Admin Code** is required when registering as an `analyst`.
+An **Admin Code** is required when registering as an `analyst` — either through the web UI registration form or via the CLI script.
+
+To set the Admin Code, add it to `backend/.env`:
+
+```env
+ADMIN_CODE=your-chosen-secret-code
+```
+
+> Keep this value private. Anyone with the Admin Code can register an Analyst account.
 
 ---
 
