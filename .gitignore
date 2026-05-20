@@ -24,3 +24,7 @@ __pycache__/
 # === OS Generated ===
 .DS_Store
 Thumbs.db
+
+.env
+backend/.env
+frontend/.env
