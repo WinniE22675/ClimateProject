@@ -262,12 +262,14 @@ export default function GridMapViewer({
     "tmin",
   ];
 
-  const supportsTrend = !NO_TREND_INDICES.includes(indexName);
-
   const isSPI = indexName.startsWith("SPI");
 
   const isSPIEvent = indexName.startsWith("SPI") && (indexName.includes("_Drought_") || indexName.includes("_Flood_"));
-  
+
+  const isSPIFrequency = isSPIEvent && indexName.includes("Frequency");
+
+  const supportsTrend = !NO_TREND_INDICES.includes(indexName) && !isSPIFrequency;
+
   // Check if the current shapefile has multiple sub-areas (e.g., provinces)
   const hasSubAreas = allProvincesData?.features?.length > 1;
 
@@ -923,7 +925,6 @@ if (loading || isGenerating) {
                     <span className="text-base font-bold text-gray-500">Color</span>
                     <select
                       className="block text-base border border-gray-300 rounded-md px-1 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                      style={{ width: "140px" }}
                       value={colorSchemes[mode]}
                       onChange={(e) =>
                         setColorSchemes((prev) => ({ ...prev, [mode]: e.target.value }))
@@ -932,13 +933,13 @@ if (loading || isGenerating) {
                       {mode === "actual" ? (
                         <>
                           <optgroup label="Temperature">
-                            <option value="YlOrRd">Yellow-Orange-Red</option>
+                            <option value="YlOrRd">Yl-Or-Rd</option>
                             <option value="OrRd">Orange-Red</option>
                             <option value="Reds">Reds</option>
                           </optgroup>
                           <optgroup label="Precipitation">
                             <option value="Blues">Blues</option>
-                            <option value="YlGnBu">Yellow-Green-Blue</option>
+                            <option value="YlGnBu">Yl-Gn-Bu</option>
                             <option value="GnBu">Green-Blue</option>
                           </optgroup>
                         </>
