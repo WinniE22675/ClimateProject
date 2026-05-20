@@ -10,10 +10,13 @@ The system provides an end-to-end data pipeline covering raw file ingestion, ind
 
 ### Dashboard — Climate Index Visualization
 ![Dashboard](images/dashboard.png)
-*Spatial grid map, annual time-series, and seasonal cycle chart.*
+*Average spatial grid map, annual time-series, and seasonal cycle chart.*
 
-<!-- ![DashboardWithTrendMap](images/dashboardwithtrendmap.png)
-*Trend grid map with Theli-Sen slope and Mann-Kendall trend analysis, annual time-series, and seasonal cycle chart.* -->
+![DashboardWithTrendMap](images/dashboardwithtrendmap.png)
+*Trend grid map with Theli-Sen slope and Mann-Kendall trend analysis*
+
+![DashboardWithShapefileMode](images/dashboardwithshapefilemode.png) 
+*Average data map aggregated within Shapefile boundaries*
 
 ### Manipulate — Dataset Upload & Management
 ![Manipulate](images/manipulate.png)
