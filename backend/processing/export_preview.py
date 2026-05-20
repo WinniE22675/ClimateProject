@@ -11,9 +11,7 @@ from processing.clipping import prep_for_rio, calc_weighted_mean ,clip_to_shape
 from processing.export_timeseries import export_yearly_timeseries, export_seasonal_cycle
 from processing.export_maps import (
     export_actual_maps_xesmf,
-    export_trend_map_xesmf,
     export_actual_map_shapefile,
-    export_trend_map_shapefile
 )
 
 def export_preview_all(
@@ -24,7 +22,7 @@ def export_preview_all(
     country_name: str = "custom_workspace"
     ):
     """
-    Generate Maps (Actual & Trend) for Raw Data constrained to Thailand.
+    Generate Maps Actual for Raw Data constrained to Thailand.
     Includes both Grid (GeoJSON) and Shapefile modes.
     """
     output_base_dir = f"output/{dataset_name}"
@@ -54,7 +52,7 @@ def export_preview_all(
         except Exception as e:
             print(f"[WARNING] Failed to clip base data to Thailand boundary: {e}")
 
-        # Resample to Annual data before generating maps/trends.
+        # Resample to Annual data before generating maps.
         # Running Mann-Kendall on daily/monthly data takes too long.
         print(f"[Preview] Resampling {var} to Annual for map generation...")
         if var == "pr":
@@ -95,18 +93,9 @@ def export_preview_all(
                 province_name=None 
             )
             
-            trend_json_path_overview = export_trend_map_xesmf(
-                index_data=da_annual, 
-                index_name=var, 
-                output_base_dir=output_base_dir,
-                region_name=country_name,
-                province_name=None
-            )
-            
             # Optional: Overlay shapefile boundary on grid maps
             if shp_boundary is not None: 
                 overlay_with_shapefile(actual_json_path_overview, shp_boundary) 
-                overlay_with_shapefile(trend_json_path_overview, shp_boundary) 
                 
         except Exception as e:
             print(f"[ERROR] Failed generating Grid maps for {var}: {e}")
@@ -179,7 +168,7 @@ def export_preview_all(
                         province_name=province
                     )
 
-            # Generate Shapefile Actual & Trend Maps
+            # Generate Shapefile Actual Maps
             if provincial_ts_dict:
                 print(f"[Preview] Generating Shapefile Maps for {var}...")
                 try:
@@ -192,14 +181,6 @@ def export_preview_all(
                         region_name=country_name 
                     )
                     
-                    export_trend_map_shapefile(
-                        provincial_ts_dict=provincial_ts_dict,
-                        index_name=var,
-                        output_base_dir=output_base_dir,
-                        gdf_provinces=shp_areas, 
-                        target_col=target_col, 
-                        region_name=country_name 
-                    )
                 except Exception as e:
                      print(f"[ERROR] Failed generating Shapefile maps for {var}: {e}")
 
