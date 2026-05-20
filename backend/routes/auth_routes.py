@@ -22,6 +22,8 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "fallback_secret_key_if_env_missing")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", 1440))
 
+ADMIN_CODE = os.getenv("ADMIN_CODE")
+
 # Setup for password hashing using bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -55,6 +57,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: Optional[str] = "viewer"
+    admin_code: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -85,6 +88,12 @@ router = APIRouter()
 #     # Validate and assign role securely (prevent users from sending fake roles like 'admin_super')
 #     valid_roles = ["viewer", "analyst"]
 #     assigned_role = user_data.role if user_data.role in valid_roles else "viewer"
+#     if assigned_role == "analyst":
+#         if not ADMIN_CODE or user_data.admin_code != ADMIN_CODE:
+#             raise HTTPException(
+#                 status_code=status.HTTP_403_FORBIDDEN,
+#                 detail="Invalid Administrator Code. You cannot register as an Analyst."
+#             )
     
 #     # Create new user with hashed password
 #     hashed_pw = get_password_hash(user_data.password)

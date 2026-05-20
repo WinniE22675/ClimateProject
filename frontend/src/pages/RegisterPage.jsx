@@ -32,16 +32,11 @@ const RegisterPage = () => {
             return;
         }
 
-        if (role === 'analyst' && adminCode !== 'Cdti_2026') {
-            setErrorMsg("Invalid Administrator Code. You cannot register as an Analyst.");
-            return;
-        }
-
         setIsLoading(true);
 
         try {
             // Call the API service to register
-            const response = await authAPI.register({ email, password, role });
+            const response = await authAPI.register({ email, password, role, admin_code: adminCode });
 
             // Handle backend errors (e.g., Email already exists)
             if (!response.ok) {
