@@ -1,0 +1,20 @@
+# Python & Backend specific
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# CRITICAL: Climate Data & Application Volumes
+data/
+uploads/
+output/
+
+# Environment variables
+.env
+
+# OS generated files
+.DS_Store
+Thumbs.db

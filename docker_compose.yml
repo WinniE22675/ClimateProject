@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # Persist database data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "10003:5432"
+    restart: always
+
+  backend:
+    build: ./backend
+    # Map container port 8000 to host port 8081 (since 8080 might be used)
+    ports:
+      - "10001:8000"
+    # Persist climate datasets and uploaded geojson files
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/uploads:/app/uploads
+      - ./backend/output:/app/output
+    environment:
+      - DATABASE_URL=postgresql://climate_user:climate_pass@db:5432/climate_db
+    depends_on:
+      - db
+    env_file:
+      - ./backend/.env
+    restart: always
+
+  frontend:
+    build: ./frontend
+    # Map container port 80 to host port 8082
+    ports:
+      - "10002:80"
+    depends_on:
+      - backend
+    env_file:
+      - ./frontend/.env
+    restart: always
+
+volumes:
+  postgres_data:

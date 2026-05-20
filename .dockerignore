@@ -1,0 +1,46 @@
+# Git and version control
+.git
+.gitignore
+
+# Editor and IDE directories
+.vscode/
+.idea/
+
+# Environment variables (Security risk if included in image)
+.env
+
+# ---------------------------------------------------
+# Python & Backend specific
+# ---------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# ---------------------------------------------------
+# Node.js & Frontend specific
+# ---------------------------------------------------
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+
+# ---------------------------------------------------
+# CRITICAL: Climate Data & Application Volumes
+# Do not copy large spatial data into the image.
+# These will be mapped via docker-compose volumes instead.
+# ---------------------------------------------------
+backend/data/
+backend/uploads/
+backend/output/
+data/
+uploads/
+output/
+
+# OS generated files
+.DS_Store
+Thumbs.db
