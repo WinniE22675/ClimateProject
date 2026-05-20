@@ -2,15 +2,31 @@
 
 A full-stack web application for processing, managing, and visualizing multi-dimensional climate datasets (NetCDF). The platform bridges complex climate data science with accessible interactive mapping and statistical analysis tools.
 
----
-
 ## Overview
 
 The system provides an end-to-end data pipeline covering raw file ingestion, index computation, geospatial visualization, and role-based access control. It is designed to handle large-scale NetCDF files safely through chunked uploads, and asynchronous background processing.
 
+## Screenshots
+
+### Dashboard — Climate Index Visualization
+![Dashboard](images/dashboard.png)
+*Spatial grid map, annual time-series, and seasonal cycle chart.*
+
+![DashboardWithTrendMap](images/dashboardwithtrendmap.png)
+*Trend grid map with Theli-Sen slope and Mann-Kendall trend analysis, annual time-series, and seasonal cycle chart.*
+
+### Manipulate — Dataset Upload & Management
+![Manipulate](images/manipulate.png)
+*Chunked NetCDF upload with time/spatial clipping controls and preset slot management.*
+
+### Process — Index Configuration & Boundary Setup
+![Process](images/process.png)
+*Dataset preview, Shapefile boundary configuration, and climate index selection panel.*
+
 ## Key Features
 
 - **Chunked Data Ingestion** — Handles large NetCDF uploads without RAM spikes using streaming I/O and lazy loading.
+- **Multi-Dimensional Spatiotemporal Filtering** — Supports datasets spanning multiple spatial and temporal dimensions, with flexible selection of custom time ranges, geographic bounding boxes, and administrative boundaries for targeted analysis.
 - **Climate Index Computation** — Calculates standard indices (SPI, TXx, PRCPTOT, and more) via `xclim`, with configurable baselines and SPI-event detection.
 - **Geospatial Processing** — Spatial clipping to Shapefile boundaries with area-weighted mean calculations.
 - **Interactive Visualization** — Spatial grid maps (Leaflet + D3.js) with Mann-Kendall & Theil-Sen Slope for trend maps; time-series and seasonal cycle charts (Recharts).
