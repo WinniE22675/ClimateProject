@@ -148,7 +148,7 @@ my-app/
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/WinniE22675/ClimateProject.git
 cd my-app
 
 # Build and start all services (frontend, backend, database)
