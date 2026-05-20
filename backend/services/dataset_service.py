@@ -327,7 +327,7 @@ def run_async_calculation(
         spi_threshold=spi_threshold
     )
 
-    update_metadata_json(dataset_name, {"available_indices": unique_indices, "status": "ready", "step": "ready"})
+    update_metadata_json(dataset_name, {"status": "ready", "step": "ready"})
 
     return {
         "status": "success",
