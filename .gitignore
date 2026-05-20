@@ -19,12 +19,10 @@ node_modules/
 __pycache__/
 .venv/
 .env
+backend/.env
+frontend/.env
 .pytest_cache
 
 # === OS Generated ===
 .DS_Store
 Thumbs.db
-
-.env
-backend/.env
-frontend/.env
